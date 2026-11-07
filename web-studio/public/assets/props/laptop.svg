@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-120 -140 240 280" width="240" height="280">
+                <rect x="-80" y="-80" width="160" height="160" rx="24" fill="#F1F5F9" stroke="#141414" stroke-width="8" />
+                <circle cx="0" cy="0" r="40" fill="#E2E8F0" stroke="#141414" stroke-width="6" />
+                <text x="0" y="8" text-anchor="middle" font-size="20" font-weight="900" fill="#141414" font-family="sans-serif">laptop</text>
+              </svg>

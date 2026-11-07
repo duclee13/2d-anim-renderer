@@ -1,0 +1,178 @@
+name: Distributed 2K 60FPS Video Renderer
+
+on:
+  workflow_dispatch:
+    inputs:
+      scriptId:
+        description: 'Identifier for the animation script'
+        required: true
+        default: 'story_001'
+      totalFrames:
+        description: 'Total number of frames to render (e.g. 18000 for 5 mins @ 60fps)'
+        required: true
+        default: '3600'
+      chunkCount:
+        description: 'Number of parallel chunks (e.g. 10 to 15)'
+        required: true
+        default: '10'
+      scenePayloadUrl:
+        description: 'Signed URL or raw JSON string containing the Scene Graph'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  prepare-matrix:
+    name: Calculate Frame Chunks
+    runs-on: ubuntu-latest
+    outputs:
+      chunks: ${{ steps.set-matrix.outputs.chunks }}
+    steps:
+      - name: Compute Frame Ranges
+        id: set-matrix
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const totalFrames = parseInt('${{ github.event.inputs.totalFrames }}', 10);
+            const chunkCount = parseInt('${{ github.event.inputs.chunkCount }}', 10);
+            const chunkSize = Math.ceil(totalFrames / chunkCount);
+            const chunks = [];
+
+            for (let i = 0; i < chunkCount; i++) {
+              const start = i * chunkSize;
+              const end = Math.min((i + 1) * chunkSize - 1, totalFrames - 1);
+              if (start <= totalFrames - 1) {
+                chunks.push({
+                  index: i,
+                  startFrame: start,
+                  endFrame: end,
+                  paddedIndex: String(i).padStart(3, '0')
+                });
+              }
+            }
+            core.setOutput('chunks', JSON.stringify(chunks));
+
+  render-chunk:
+    name: Render Chunk ${{ matrix.chunk.paddedIndex }}
+    needs: prepare-matrix
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        chunk: ${{ fromJson(needs.prepare-matrix.outputs.chunks) }}
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: web-studio/package.json
+
+      - name: Install System Dependencies for Headless Chromium
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ffmpeg \
+            libnss3 \
+            libatk-bridge2.0-0 \
+            libx11-xcb1 \
+            libxcomposite1 \
+            libxdamage1 \
+            libxrandr2 \
+            libgbm1 \
+            libasound2 \
+            fonts-noto-color-emoji
+
+      - name: Install Project Dependencies
+        working-directory: web-studio
+        run: npm ci --prefer-offline
+
+      - name: Render Video Chunk via Remotion & FFmpeg In-Memory Pipe
+        working-directory: web-studio
+        env:
+          START_FRAME: ${{ matrix.chunk.startFrame }}
+          END_FRAME: ${{ matrix.chunk.endFrame }}
+          CHUNK_INDEX: ${{ matrix.chunk.paddedIndex }}
+          SCENE_PAYLOAD_URL: ${{ github.event.inputs.scenePayloadUrl }}
+        run: |
+          mkdir -p ../dist/chunks
+          echo "Rendering frames $START_FRAME to $END_FRAME (Chunk $CHUNK_INDEX)..."
+          
+          # Render chunk using Remotion with libx264 superfast animation profile
+          npx remotion render src/remotion/index.ts MainScene ../dist/chunks/chunk_${CHUNK_INDEX}.mp4 \
+            --frames=${START_FRAME}-${END_FRAME} \
+            --props="{\"scenePayloadUrl\":\"${SCENE_PAYLOAD_URL}\"}" \
+            --pixel-format=yuv420p \
+            --codec=h264 \
+            --crf=18 \
+            --gl=angle \
+            --concurrency=4 \
+            --log=info
+
+      - name: Upload Chunk Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: chunk-${{ matrix.chunk.paddedIndex }}
+          path: dist/chunks/chunk_${{ matrix.chunk.paddedIndex }}.mp4
+          retention-days: 1
+
+  stitch-and-release:
+    name: Concat Chunks & Publish GitHub Release
+    needs: [prepare-matrix, render-chunk]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup FFmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Download All Chunk Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: downloaded_chunks
+          pattern: chunk-*
+          merge-multiple: true
+
+      - name: Assemble Video with Zero Re-encoding (FFmpeg Concat)
+        run: |
+          mkdir -p output
+          ls -lah downloaded_chunks/
+
+          # Tạo file danh sách chunk theo đúng thứ tự
+          for f in $(ls downloaded_chunks/chunk_*.mp4 | sort -V); do
+            echo "file '$PWD/$f'" >> concat_list.txt
+          done
+
+          echo "Concat list:"
+          cat concat_list.txt
+
+          # Ghép nối cực nhanh trong vài giây bằng cách copy stream (-c copy)
+          ffmpeg -f concat -safe 0 -i concat_list.txt -c copy output/final_raw.mp4
+
+          # Tối ưu hóa FastStart cho Web Streaming
+          ffmpeg -i output/final_raw.mp4 -c copy -movflags +faststart output/story_${{ github.event.inputs.scriptId }}_2k60fps.mp4
+
+      - name: Create GitHub Release and Upload 2K Video
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: render-${{ github.event.inputs.scriptId }}-${{ github.run_id }}
+          name: "Render 2K 60FPS: ${{ github.event.inputs.scriptId }}"
+          body: |
+            ### Automated Render Completion
+            - **Script ID:** `${{ github.event.inputs.scriptId }}`
+            - **Resolution:** `2560x1440 (2K QHD)`
+            - **Frame Rate:** `60 FPS`
+            - **Total Frames:** `${{ github.event.inputs.totalFrames }}`
+            - **Parallel Chunks:** `${{ github.event.inputs.chunkCount }}`
+          files: output/story_${{ github.event.inputs.scriptId }}_2k60fps.mp4
+          draft: false
+          prerelease: false

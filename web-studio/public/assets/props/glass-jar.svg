@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-120 -140 240 280" width="240" height="280">
+  <defs>
+    <linearGradient id="jarGlassGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#BAE6FD" stop-opacity="0.35"/>
+      <stop offset="50%" stop-color="#E0F2FE" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#7DD3FC" stop-opacity="0.4"/>
+    </linearGradient>
+  </defs>
+  <!-- Glass Body -->
+  <rect x="-110" y="-105" width="220" height="235" rx="24" ry="24" fill="url(#jarGlassGrad)" stroke="#38BDF8" stroke-width="8" stroke-linejoin="round"/>
+  <!-- Specular Reflection Curves -->
+  <path d="M -94 -70 L -94 95" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" opacity="0.8"/>
+  <path d="M 94 -70 L 94 40" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" opacity="0.5"/>
+  <!-- Bottom Rim -->
+  <path d="M -80 115 Q 0 125 80 115" stroke="#0284C7" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <!-- Orange Grooved Lid -->
+  <rect x="-120" y="-135" width="240" height="42" rx="8" ry="8" fill="#F97316" stroke="#141414" stroke-width="9" stroke-linejoin="round"/>
+  <!-- Lid Ridges -->
+  <g stroke="#141414" stroke-width="4" stroke-linecap="round">
+    <line x1="-80" y1="-128" x2="-80" y2="-100"/>
+    <line x1="-40" y1="-128" x2="-40" y2="-100"/>
+    <line x1="0" y1="-128" x2="0" y2="-100"/>
+    <line x1="40" y1="-128" x2="40" y2="-100"/>
+    <line x1="80" y1="-128" x2="80" y2="-100"/>
+  </g>
+</svg>

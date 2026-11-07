@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-190 -140 390 150" width="390" height="150">
+  <!-- Light cone -->
+  <polygon points="20,-115 -180,0 200,0" fill="rgba(254, 240, 138, 0.38)" stroke="none" />
+  <!-- Stand & Shade -->
+  <g stroke="#141414" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+    <ellipse cx="0" cy="-4" rx="32" ry="8" fill="#27272A" />
+    <polyline points="0,-4 0,-70 20,-100" fill="none" />
+    <polygon points="-20,-125 55,-110 40,-80 -30,-90" fill="#FACC15" />
+  </g>
+</svg>

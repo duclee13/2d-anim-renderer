@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-370 -260 740 280" width="740" height="280">
+  <g stroke="#141414" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Back Left Leg -->
+    <rect x="-325" y="-210" width="24" height="210" fill="#B4773A" />
+    <!-- Back Right Leg -->
+    <rect x="301" y="-210" width="24" height="210" fill="#B4773A" />
+  </g>
+</svg>

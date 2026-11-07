@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2560 1440" width="2560" height="1440">
+  <!-- Sky -->
+  <rect x="0" y="0" width="2560" height="960" fill="#8FD5FE" />
+  <!-- Sun with Rays -->
+  <g transform="translate(2200, 260)">
+    <g stroke="#F59E0B" stroke-width="8" stroke-linecap="round">
+      <line x1="0" y1="-140" x2="0" y2="-175" />
+      <line x1="0" y1="140" x2="0" y2="175" />
+      <line x1="-140" y1="0" x2="-175" y2="0" />
+      <line x1="140" y1="0" x2="175" y2="0" />
+      <line x1="-100" y1="-100" x2="-125" y2="-125" />
+      <line x1="100" y1="-100" x2="125" y2="-125" />
+      <line x1="-100" y1="100" x2="-125" y2="125" />
+      <line x1="100" y1="100" x2="125" y2="125" />
+    </g>
+    <circle cx="0" cy="0" r="115" fill="#FBBF24" stroke="#141414" stroke-width="10" />
+  </g>
+  <!-- Clouds -->
+  <g transform="translate(500, 220)">
+    <path d="M 0,40 Q -40,40 -40,10 Q -40,-30 0,-30 Q 30,-70 80,-50 Q 140,-70 170,-20 Q 210,-20 210,20 Q 210,40 180,40 Z" fill="#FFFFFF" />
+  </g>
+  <g transform="translate(1300, 160)">
+    <path d="M 0,40 Q -40,40 -40,10 Q -40,-30 0,-30 Q 30,-70 80,-50 Q 140,-70 170,-20 Q 210,-20 210,20 Q 210,40 180,40 Z" fill="#FFFFFF" />
+  </g>
+  <!-- Lawn Ground -->
+  <rect x="0" y="960" width="2560" height="480" fill="#62B951" />
+  <line x1="0" y1="960" x2="2560" y2="960" stroke="#141414" stroke-width="10" />
+  <!-- Bush Bed -->
+  <g transform="translate(2000, 960)">
+    <ellipse cx="0" cy="0" rx="550" ry="180" fill="#277028" stroke="#141414" stroke-width="10" />
+    <g stroke="#141414" stroke-width="8" stroke-linejoin="round" fill="#38A137">
+      <path d="M -300,0 Q -270,-280 -250,-380 Q -210,-280 -180,0 Z" />
+      <path d="M -220,0 Q -190,-350 -160,-480 Q -120,-350 -90,0 Z" fill="#2E7D32" />
+      <path d="M -130,0 Q -90,-320 -70,-420 Q -40,-320 0,0 Z" />
+      <path d="M -30,0 Q 20,-370 50,-510 Q 80,-370 120,0 Z" fill="#43A047" />
+      <path d="M 90,0 Q 140,-340 170,-460 Q 210,-340 240,0 Z" fill="#2E7D32" />
+      <path d="M 210,0 Q 260,-300 290,-400 Q 330,-300 370,0 Z" />
+    </g>
+  </g>
+</svg>
