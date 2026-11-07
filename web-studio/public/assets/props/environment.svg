@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-150 -150 300 300" width="300" height="300">
+  <defs>
+    <!-- Clip path to keep continents and water inside the globe -->
+    <clipPath id="globe-clip">
+      <circle cx="0" cy="35" r="75" />
+    </clipPath>
+  </defs>
+
+  <!-- Sun Rays & Sun (Top Right) -->
+  <g id="sun">
+    <!-- Sun Rays -->
+    <path d="M 75 -90 L 75 -105" stroke="#FBBF24" stroke-width="10" stroke-linecap="round" />
+    <path d="M 105 -60 L 120 -60" stroke="#FBBF24" stroke-width="10" stroke-linecap="round" />
+    <path d="M 96 -81 L 108 -93" stroke="#FBBF24" stroke-width="10" stroke-linecap="round" />
+    <!-- Sun Body -->
+    <circle cx="75" cy="-60" r="24" fill="#FBBF24" stroke="#141414" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" />
+    <!-- Sun Highlight -->
+    <circle cx="68" cy="-67" r="5" fill="#FEF08A" />
+  </g>
+
+  <!-- Little Sprout Leaves (Top Left of Globe) -->
+  <g id="sprout">
+    <path d="M -70 -15 C -90 -25 -85 -55 -60 -45 C -60 -25 -70 -15 -70 -15 Z" fill="#4ADE80" stroke="#141414" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M -70 -25 C -75 -35 -68 -42 -63 -43" fill="none" stroke="#141414" stroke-width="4" stroke-linecap="round" />
+  </g>
+
+  <!-- Globe Base & Ocean -->
+  <circle cx="0" cy="35" r="75" fill="#38BDF8" stroke="#141414" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" />
+
+  <!-- Ocean Shading & Continents (Clipped to Globe) -->
+  <g clip-path="url(#globe-clip)">
+    <!-- Bottom ocean depth shadow -->
+    <ellipse cx="0" cy="115" rx="80" ry="25" fill="#0284C7" />
+
+    <!-- Left Continent -->
+    <path d="M -85 10 C -60 5 -45 25 -50 45 C -55 65 -30 75 -40 95 C -55 115 -80 115 -90 95 Z" fill="#4ADE80" stroke="#141414" stroke-width="10" stroke-linejoin="round" />
+    <!-- Left Continent Highlight -->
+    <path d="M -75 25 C -65 25 -58 35 -60 50" fill="none" stroke="#86EFAC" stroke-width="5" stroke-linecap="round" />
+
+    <!-- Right Continent -->
+    <path d="M 20 20 C 45 10 70 20 85 45 C 90 55 75 75 80 90 C 65 95 55 80 45 75 C 30 70 15 85 5 70 C -5 55 5 25 20 20 Z" fill="#4ADE80" stroke="#141414" stroke-width="10" stroke-linejoin="round" />
+    <!-- Mini Island -->
+    <ellipse cx="5" cy="100" rx="14" ry="8" fill="#4ADE80" stroke="#141414" stroke-width="8" stroke-linejoin="round" />
+
+    <!-- Globe Glass/Atmosphere Arc Highlight -->
+    <path d="M -60 -15 A 75 75 0 0 1 50 -20" fill="none" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round" opacity="0.6" />
+  </g>
+
+  <!-- Tree Trunk (On top of Globe) -->
+  <path d="M -16 5 L -10 -40 C -10 -45 -5 -48 0 -48 C 5 -48 10 -45 10 -40 L 16 5 Z" fill="#92400E" stroke="#141414" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" />
+  <!-- Tree Roots Spread -->
+  <path d="M -14 0 C -5 8 5 8 14 0" fill="none" stroke="#141414" stroke-width="10" stroke-linecap="round" />
+
+  <!-- Tree Foliage/Canopy (Big fluffy cloud/bush shape) -->
+  <g id="tree-canopy">
+    <!-- Canopy Shadow/Backing -->
+    <path d="M 0 -115 C -25 -115 -42 -98 -42 -75 C -42 -68 -40 -62 -36 -56 C -48 -53 -55 -40 -50 -28 C -46 -17 -34 -12 -22 -15 C -15 -8 0 -5 10 -10 C 22 -6 38 -10 44 -22 C 54 -28 54 -45 44 -56 C 48 -62 48 -72 42 -80 C 38 -98 22 -115 0 -115 Z" fill="#15803D" />
+
+    <!-- Canopy Main Body -->
+    <path d="M 0 -118 C -24 -118 -40 -102 -40 -80 C -40 -74 -38 -67 -34 -62 C -45 -58 -52 -46 -48 -34 C -44 -23 -32 -18 -20 -20 C -12 -12 2 -10 12 -14 C 22 -10 36 -14 42 -25 C 50 -32 50 -48 40 -58 C 45 -65 45 -74 38 -82 C 35 -102 20 -118 0 -118 Z" fill="#22C55E" stroke="#141414" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" />
+
+    <!-- Foliage Inner Highlights -->
+    <path d="M -15 -98 C -5 -105 10 -105 18 -98" fill="none" stroke="#86EFAC" stroke-width="6" stroke-linecap="round" />
+    <path d="M -28 -60 C -22 -68 -10 -68 -5 -62" fill="none" stroke="#86EFAC" stroke-width="6" stroke-linecap="round" />
+    <path d="M 12 -50 C 20 -58 30 -54 34 -46" fill="none" stroke="#86EFAC" stroke-width="5" stroke-linecap="round" />
+    <!-- Cute Red Apple / Fruit in Tree -->
+    <circle cx="-14" cy="-40" r="7" fill="#EF4444" stroke="#141414" stroke-width="5" />
+    <circle cx="20" cy="-68" r="6" fill="#EF4444" stroke="#141414" stroke-width="5" />
+  </g>
+
+  <!-- Puffy Floating Cloud (Front-Left) -->
+  <g id="cloud">
+    <!-- Cloud Shadow -->
+    <path d="M -75 -46 C -86 -46 -96 -37 -96 -26 C -96 -24 -95 -21 -94 -19 C -103 -18 -110 -10 -110 0 C -110 11 -101 20 -90 20 L -45 20 C -34 20 -25 11 -25 0 C -25 -10 -32 -18 -42 -20 C -42 -32 -52 -42 -64 -42 C -68 -42 -72 -40 -75 -38 Z" fill="#CBD5E1" />
+    <!-- Cloud Base Body -->
+    <path d="M -75 -50 C -86 -50 -96 -41 -96 -30 C -96 -28 -95 -25 -94 -23 C -103 -22 -110 -14 -110 -4 C -110 7 -101 16 -90 16 L -45 16 C -34 16 -25 7 -25 -4 C -25 -14 -32 -22 -42 -24 C -42 -36 -52 -46 -64 -46 C -68 -46 -72 -44 -75 -42 Z" fill="#FFFFFF" stroke="#141414" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" />
+    <!-- Cloud Puffs Interior Lines -->
+    <path d="M -85 -24 C -80 -30 -70 -30 -66 -24" fill="none" stroke="#E2E8F0" stroke-width="5" stroke-linecap="round" />
+  </g>
+
+  <!-- Little Eco Wind Swirls (Bottom Right) -->
+  <path d="M 85 8 C 105 10 115 25 105 38 C 96 48 82 42 85 32 C 87 25 96 25 98 30" fill="none" stroke="#141414" stroke-width="8" stroke-linecap="round" />
+  <path d="M 75 -15 C 95 -18 102 -5 96 5" fill="none" stroke="#141414" stroke-width="6" stroke-linecap="round" />
+
+  <!-- Fresh Sparkles / Stars -->
+  <g id="sparkles">
+    <path d="M -100 -85 L -100 -75 M -105 -80 L -95 -80" stroke="#FBBF24" stroke-width="5" stroke-linecap="round" />
+    <path d="M 105 -15 L 105 -5 M 100 -10 L 110 -10" stroke="#FBBF24" stroke-width="4" stroke-linecap="round" />
+  </g>
+</svg>

@@ -93,16 +93,25 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
   );
 
   // =========================================================================
-  // TÍNH TOÁN TRẠNG THÁI NHÂN VẬT VỚI MICRO-ANIMATIONS
+  // TÍNH TOÁN TRẠNG THÁI NHÂN VẬT VỚI MICRO-ANIMATIONS & DYNAMIC MOTION
   // =========================================================================
+  const sceneText = `${currentScene.name || ""} ${safeSubtitles.map((s) => s.text).join(" ")}`.toLowerCase();
+  const hasHoldAction = /cầm|bê|mang|xách|giữ|nâng|holding|carry/i.test(sceneText);
+  const hasWalkAction = /mang ra|bước|đi bộ|chạy|di chuyển|walk|going/i.test(sceneText);
+
   const isSitting = currentScene.character.pose === "sittingBehindDesk";
-  const isHolding = currentScene.character.pose === "holdingObject";
+  const isHolding =
+    currentScene.character.pose === "holdingObject" ||
+    (hasHoldAction && currentScene.props.length > 0 && !isSitting);
   const isCharacterVisible = currentScene.character.x > -9000;
 
   // Bắt đầu với state ban đầu
   const dynamicCharacterState: StickmanState = { ...currentScene.character };
+  if (isHolding) {
+    dynamicCharacterState.pose = "holdingObject";
+  }
 
-  // --- Áp dụng keyframe "moveCharacter" nếu có ---
+  // --- Áp dụng keyframe "moveCharacter" hoặc tự động bước đi khi có keyword walk ---
   const moveCharKf = activeKeyframes.find(
     (kf) => kf.action === "moveCharacter" && kf.target === "character"
   );
@@ -129,6 +138,25 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
         cfg
       );
     }
+  } else if (hasWalkAction && isCharacterVisible && currentScene.durationInFrames > 60) {
+    // Tự động bước đi mượt mà từ vị trí xuất phát nếu kịch bản có từ khóa "mang ra vườn/bước đi"
+    const startX = currentScene.character.facing === "left" ? 1700 : 700;
+    const endX = currentScene.character.facing === "left" ? 900 : 1700;
+    const walkProgress = Math.min(1, sceneLocalFrame / (currentScene.durationInFrames * 0.85));
+    dynamicCharacterState.x = interpolate(walkProgress, [0, 1], [startX, endX]);
+  }
+
+  // --- Hiệu ứng bước chân (Walk Cycle Animation) khi di chuyển ---
+  const isWalkingActive =
+    dynamicCharacterState.pose === "walking" ||
+    Boolean(moveCharKf) ||
+    (hasWalkAction && currentScene.durationInFrames > 60);
+
+  if (isWalkingActive) {
+    dynamicCharacterState.walkCycleProgress = (sceneLocalFrame * 0.045) % 1;
+    // Nhấp nhô nhịp bước chân
+    const walkBobY = Math.abs(Math.sin(sceneLocalFrame * 0.045 * Math.PI * 2)) * 14;
+    dynamicCharacterState.y = (dynamicCharacterState.y || 1120) - walkBobY;
   }
 
   // --- Áp dụng keyframe "changeExpression" ---
@@ -157,14 +185,23 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
     }
   }
 
-  // --- Tự động gán holdingTarget từ Auto-Anchoring ---
-  if (isHolding && !dynamicCharacterState.holdingTarget) {
-    const primaryProp = currentScene.props[0];
-    if (primaryProp && activePropAnchors[primaryProp.id]) {
+  // --- Tự động gán holdingTarget từ Auto-Anchoring IK ---
+  const primaryProp = currentScene.props[0];
+  if (isHolding && primaryProp) {
+    const propDims = { width: 320, height: 420 };
+    const propHoldingX = dynamicCharacterState.x + (dynamicCharacterState.facing === "left" ? -140 : 140);
+    const propHoldingY = (dynamicCharacterState.y || 1120) - 170;
+
+    if (activePropAnchors[primaryProp.id]) {
       const anchors = activePropAnchors[primaryProp.id];
       dynamicCharacterState.holdingTarget = {
         leftGrip: anchors.leftGrip,
         rightGrip: anchors.rightGrip,
+      };
+    } else {
+      dynamicCharacterState.holdingTarget = {
+        leftGrip: { x: propHoldingX - propDims.width * 0.35, y: propHoldingY },
+        rightGrip: { x: propHoldingX + propDims.width * 0.35, y: propHoldingY },
       };
     }
   }
@@ -285,6 +322,12 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
           break;
         }
       }
+    }
+
+    // Nếu nhân vật đang cầm đạo cụ này (ví dụ lọ thủy tinh khi mang đi), đạo cụ tự động dính chặt theo tay nhân vật
+    if (isHolding && primaryProp && prop.id === primaryProp.id) {
+      px = dynamicCharacterState.x + (dynamicCharacterState.facing === "left" ? -140 : 140);
+      py = (dynamicCharacterState.y || 1120) - 170;
     }
 
     return { x: px, y: py, scaleVal: ps, rotation: pr, squash: sq };

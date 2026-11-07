@@ -83,8 +83,8 @@ export function springMove(
 export function breathingOscillation(
   frame: number,
   fps: number,
-  cycleSeconds: number = 3.5,
-  amplitude: number = 0.012
+  cycleSeconds: number = 3.0,
+  amplitude: number = 0.038
 ): number {
   const phase = (frame / fps) * (Math.PI * 2) / cycleSeconds;
   return 1.0 + Math.sin(phase) * amplitude;
@@ -134,8 +134,8 @@ export function talkingMouthCycle(frame: number, fps: number): boolean {
 export function idleSway(
   frame: number,
   fps: number,
-  amplitudeX: number = 4,
-  cycleSeconds: number = 4.0
+  amplitudeX: number = 14,
+  cycleSeconds: number = 3.6
 ): number {
   const phase = (frame / fps) * (Math.PI * 2) / cycleSeconds;
   return Math.sin(phase) * amplitudeX;

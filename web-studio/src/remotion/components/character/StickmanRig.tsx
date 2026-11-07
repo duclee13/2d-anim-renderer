@@ -105,15 +105,15 @@ export const StickmanRig: React.FC<StickmanRigProps> = ({
     rightElbow = rightArmIK.joint;
     rightHand = rightArmIK.reachedTarget;
   } else if (pose === "holdingObject") {
-    leftHand = { x: -50, y: -130 };
-    rightHand = { x: 50, y: -130 };
-    leftElbow = { x: -105, y: -180 };
-    rightElbow = { x: 105, y: -180 };
+    leftElbow = { x: -90, y: neck.y + 110 };
+    rightElbow = { x: 90, y: neck.y + 110 };
+    leftHand = { x: -55, y: neck.y + 140 };
+    rightHand = { x: 55, y: neck.y + 140 };
   } else if (pose === "sittingBehindDesk") {
-    leftHand = { x: -70, y: -60 };
-    rightHand = { x: 70, y: -60 };
-    leftElbow = { x: -100, y: -150 };
-    rightElbow = { x: 100, y: -150 };
+    leftElbow = { x: -95, y: neck.y + 120 };
+    rightElbow = { x: 95, y: neck.y + 120 };
+    leftHand = { x: -65, y: neck.y + 160 };
+    rightHand = { x: 65, y: neck.y + 160 };
   } else if (pose === "pointing" && pointingTarget) {
     const targetLocal: Point2D = {
       x: (pointingTarget.x - x) / scale,

@@ -19,17 +19,26 @@ Strict Rules:
    - GlassJar: Full shot scale = 1.0 (x = 780, y = 960). Close-up shot scale = 2.15 (x = 1280, y = 720, height ~900px).
    - In close-up shots, DO NOT use scale from 0 to prevent white flash. Use pop or direct transition.
 5. Character Poses: 'standing', 'sittingBehindDesk', 'holdingObject', 'walking', 'pointing', 'shrugging'.
-6. Facial Expressions:
+6. ACTION & MOTION RULES (CRITICAL - NEVER LEAVE CHARACTER STATIC):
+   - When the script mentions holding, carrying, holding in hands ("cầm", "giữ", "bê", "mang", "xách"):
+     * Character pose MUST be 'holdingObject'.
+     * Position the held prop near the character (e.g. character at x: 1200, prop at x: 1340, y: 950).
+   - When the script mentions moving, walking, bringing outside ("mang ra", "bước", "đi", "chạy"):
+     * MUST add a 'moveCharacter' keyframe in 'keyframes':
+       { "frame": 0, "action": "moveCharacter", "target": "character", "params": { "fromX": 600, "toX": 1600 } }
+     * Character facing MUST match direction of motion (e.g. 'right').
+   - Avoid motionless scenes: use keyframes ('moveCharacter', 'changeExpression') so characters feel alive.
+7. Facial Expressions:
    - eyes: 'neutral' | 'wide' | 'surprised' | 'happy' | 'closed' | 'curious'
    - eyebrows: 'neutral' | 'raised' | 'inquisitive' | 'worried' | 'furrowed'
    - mouth: 'smile' | 'circleOpen' | 'line' | 'talking' | 'gasp'
-7. Anti-Clash & Physics Rules:
+8. Anti-Clash & Physics Rules:
    - If the character is sitting behind a desk, pose MUST be 'sittingBehindDesk' at y = 1120. Never use 'standing' behind a desk.
-   - If holding an object (e.g. glassJar), character pose MUST be 'holdingObject' with holdingTarget set to prop grip points.
    - Z-Index layering must assign props to 'midgroundBackLayer' or 'midgroundFrontLayer'.
-8. Dynamic Asset Bank Awareness:
-   - Standard built-in props: 'glassJar', 'spider', 'sofa', 'desk', 'deskLamp', 'gaugeMeter', 'pottedPlant'.
-9. Output ONLY a valid JSON object matching the MasterSceneGraph schema. No markdown formatting.
+9. Dynamic Asset Bank Awareness:
+   - Standard built-in props: 'glassJar', 'spider', 'sofa', 'desk', 'deskLamp', 'gaugeMeter', 'pottedPlant', 'chair', 'table', 'tv', 'pizza', 'apple', 'guitar', 'cat', 'tree', 'balloon', 'trophy', 'star', 'heart', 'whiteboard', 'laptop', 'coffeeCup', 'phone', 'book', 'clock'.
+   - Background presets: 'livingRoomDay', 'livingRoomNight', 'gardenDay', 'infographicStripes'.
+10. Output ONLY a valid JSON object matching the MasterSceneGraph schema. No markdown formatting.
 `;
 
 /**
@@ -103,6 +112,31 @@ function sanitizeSceneGraph(raw: any): MasterSceneGraph {
 
     currentStart = start + dur;
 
+    // Tự động suy luận tư thế nhân vật nếu mô tả kịch bản có hành động cụ thể
+    let characterPose = s?.character?.pose || "standing";
+    const subTexts = Array.isArray(s?.subtitles) ? s.subtitles.map((sub: any) => sub?.text || "").join(" ") : "";
+    const sceneCombinedText = `${s?.name || ""} ${subTexts}`.toLowerCase();
+
+    if (/cầm|bê|mang|xách|giữ|nâng|holding|carry/i.test(sceneCombinedText) && characterPose === "standing") {
+      characterPose = "holdingObject";
+    }
+
+    // Tự động sinh keyframe di chuyển nếu kịch bản có hành động bước đi / mang ra vườn
+    let finalKeyframes = Array.isArray(s?.keyframes) ? s.keyframes : [];
+    if (finalKeyframes.length === 0 && /mang ra|bước|đi bộ|chạy|di chuyển|walk|ra vườn/i.test(sceneCombinedText)) {
+      finalKeyframes = [
+        {
+          action: "moveCharacter",
+          target: "character",
+          frame: 0,
+          params: {
+            fromX: 680,
+            toX: 1680,
+          },
+        },
+      ];
+    }
+
     return {
       id: String(s?.id || `scene_${idx + 1}`),
       name: String(s?.name || `Cảnh ${idx + 1}`),
@@ -118,10 +152,10 @@ function sanitizeSceneGraph(raw: any): MasterSceneGraph {
       },
       character: {
         x: s?.character?.x !== undefined ? Number(s.character.x) : 1560,
-        y: s?.character?.y !== undefined ? Number(s.character.y) : 1040,
+        y: s?.character?.y !== undefined ? Number(s.character.y) : 1120,
         scale: Number(s?.character?.scale) || 1.0,
-        facing: s?.character?.facing === "right" ? ("right" as const) : ("left" as const),
-        pose: s?.character?.pose || "standing",
+        facing: s?.character?.facing === "left" ? ("left" as const) : ("right" as const),
+        pose: characterPose,
         eyes: s?.character?.eyes || "neutral",
         eyebrows: s?.character?.eyebrows || "neutral",
         mouth: s?.character?.mouth || "smile",
@@ -149,7 +183,7 @@ function sanitizeSceneGraph(raw: any): MasterSceneGraph {
           }))
         : [],
       speechBubbles: Array.isArray(s?.speechBubbles) ? s.speechBubbles : [],
-      keyframes: Array.isArray(s?.keyframes) ? s.keyframes : [],
+      keyframes: finalKeyframes,
       lines: Array.isArray(s?.lines) ? s.lines : [],
     };
   });

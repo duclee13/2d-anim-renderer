@@ -79,8 +79,9 @@ export const DynamicProp: React.FC<DynamicPropProps> = ({
   const [dimensions, setDimensions] = useState<SvgDimensionInfo>(initialDims);
   const [svgXml, setSvgXml] = useState<string | null>(customSvgContent || null);
 
-  // Thêm query hash cache-busting để trình duyệt luôn tải đúng phiên bản 2K mới nhất
-  const assetUrl = staticFile(`assets/props/${id}.svg?v=20261107_2k`);
+  // Sử dụng staticFile chuẩn không chứa query param (tránh encodeURIComponent biến '?' thành '%3F')
+  const baseAssetPath = staticFile(`assets/props/${id}.svg`);
+  const assetUrl = `${baseAssetPath}?v=20261107_2k`;
 
   // Tự động tải SVG để bóc tách kích thước thực tế (Bounding Box)
   useEffect(() => {
