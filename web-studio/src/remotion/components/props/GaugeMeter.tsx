@@ -11,15 +11,16 @@ export interface GaugeMeterProps {
 }
 
 /**
- * GaugeMeter Wrapper Component (Figma-to-React Standard)
+ * GaugeMeter Wrapper Component (Figma-to-React Standard & Pivot Isolation)
  * Xử lý chuyển động quay của kim đo (`needleAngle`) dựa trên giá trị tham số.
+ * Nhãn chữ được đặt bên dưới trục quay (y = +75px) để kim quay tự do không bao giờ quệt vào chữ.
  */
 export const GaugeMeter: React.FC<GaugeMeterProps> = ({
   x,
   y,
   scale = 1,
   value = 35,
-  label = "TRAO ĐỔI CHẤT",
+  label = "TRAO ĐỔI CHẤT: 35%",
   dialArtwork,
   needleArtwork,
 }) => {
@@ -32,46 +33,42 @@ export const GaugeMeter: React.FC<GaugeMeterProps> = ({
       transform={`translate(${x}, ${y}) scale(${scale})`}
       data-prop-type="gaugeMeter"
     >
-      {/* =========================================================================
-          1. MẶT ĐỒNG HỒ ĐO (Gauge Dial Background)
-         ========================================================================= */}
+      {/* 1. MẶT ĐỒNG HỒ ĐO (Gauge Dial Background) */}
       <g id="gauge-meter-dial">
-        {dialArtwork ? (
-          dialArtwork
-        ) : (
-          /* BẠN HÃY PASTE MÃ SVG MẶT ĐỒNG HỒ TỪ FIGMA VÀO ĐÂY */
-          /* <!-- PASTE REAL SVG HERE --> */
-          null
-        )}
+        {dialArtwork || null}
       </g>
 
-      {/* =========================================================================
-          2. KIM ĐỒNG HỒ ĐƯỢC XOAY ĐỘNG THEO needleAngle (Needle Pointer)
-         ========================================================================= */}
+      {/* 2. KIM ĐỒNG HỒ ĐƯỢC XOAY ĐỘNG THEO needleAngle (Needle Pointer) */}
       <g id="gauge-meter-needle" transform={`rotate(${needleAngle}, 0, 0)`}>
-        {needleArtwork ? (
-          needleArtwork
-        ) : (
-          /* BẠN HÃY PASTE MÃ SVG KIM CHỈ ĐỒNG HỒ TỪ FIGMA VÀO ĐÂY */
-          /* <!-- PASTE REAL SVG HERE --> */
-          null
-        )}
+        {needleArtwork || null}
       </g>
 
-      {/* 3. NHÃN CHỮ INFOGRAPHIC */}
+      {/* 3. NHÃN CHỮ INFOGRAPHIC (Đặt bên dưới trục quay y = +75px kèm nền trắng bo góc) */}
       {label && (
-        <text
-          x={0}
-          y={65}
-          textAnchor="middle"
-          fill="#141414"
-          fontSize={38}
-          fontWeight="900"
-          letterSpacing="2px"
-          fontFamily="var(--font-be-vietnam-pro), sans-serif"
-        >
-          {label}
-        </text>
+        <g id="gauge-meter-label-pill" transform="translate(0, 75)">
+          <rect
+            x={-140}
+            y={-30}
+            width={280}
+            height={60}
+            rx={14}
+            fill="#FFFFFF"
+            stroke="#141414"
+            strokeWidth={5}
+          />
+          <text
+            x={0}
+            y={12}
+            textAnchor="middle"
+            fill="#141414"
+            fontSize={30}
+            fontWeight="900"
+            letterSpacing="1px"
+            fontFamily="var(--font-be-vietnam-pro), sans-serif"
+          >
+            {label}
+          </text>
+        </g>
       )}
     </g>
   );

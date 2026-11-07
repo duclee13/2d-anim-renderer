@@ -55,6 +55,7 @@ export interface StickmanAnchors {
 export interface StickmanState {
   x: number;
   y: number;
+  slot?: string; // Semantic slot e.g. "floor.center", "desk.seat"
   scale?: number;
   rotation?: number;
   facing?: "left" | "right";

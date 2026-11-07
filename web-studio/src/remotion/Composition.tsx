@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
+import { useCurrentFrame, useVideoConfig, interpolate, AbsoluteFill } from "remotion";
 import {
   MasterSceneGraph,
   SceneGraphScene,
@@ -25,6 +25,7 @@ import {
   squashStretch,
 } from "./lib/motionEngine";
 import { sampleScriptSceneGraph } from "./data/sampleScript";
+import { resolveSemanticSlot, STAGE_CONFIG } from "./utils/slotResolver";
 
 export interface MainCompositionProps {
   sceneGraph?: MasterSceneGraph;
@@ -105,8 +106,18 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
     (hasHoldAction && currentScene.props.length > 0 && !isSitting);
   const isCharacterVisible = currentScene.character.x > -9000;
 
+  // Phân giải vị trí chuẩn qua Semantic Slot (Zero-Guessing Pixel Engine)
+  const baseCharPos = resolveSemanticSlot(currentScene.character.slot, {
+    x: currentScene.character.x,
+    y: currentScene.character.y ?? STAGE_CONFIG.floorY,
+  });
+
   // Bắt đầu với state ban đầu
-  const dynamicCharacterState: StickmanState = { ...currentScene.character };
+  const dynamicCharacterState: StickmanState = {
+    ...currentScene.character,
+    x: baseCharPos.x,
+    y: baseCharPos.y,
+  };
   if (isHolding) {
     dynamicCharacterState.pose = "holdingObject";
   }
@@ -156,7 +167,7 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
     dynamicCharacterState.walkCycleProgress = (sceneLocalFrame * 0.045) % 1;
     // Nhấp nhô nhịp bước chân
     const walkBobY = Math.abs(Math.sin(sceneLocalFrame * 0.045 * Math.PI * 2)) * 14;
-    dynamicCharacterState.y = (dynamicCharacterState.y || 1120) - walkBobY;
+    dynamicCharacterState.y = (dynamicCharacterState.y || STAGE_CONFIG.floorY) - walkBobY;
   }
 
   // --- Áp dụng keyframe "changeExpression" ---
@@ -188,9 +199,8 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
   // --- Tự động gán holdingTarget từ Auto-Anchoring IK ---
   const primaryProp = currentScene.props[0];
   if (isHolding && primaryProp) {
-    const propDims = { width: 320, height: 420 };
     const propHoldingX = dynamicCharacterState.x + (dynamicCharacterState.facing === "left" ? -140 : 140);
-    const propHoldingY = (dynamicCharacterState.y || 1120) - 170;
+    const propHoldingY = (dynamicCharacterState.y || STAGE_CONFIG.floorY) - 170;
 
     if (activePropAnchors[primaryProp.id]) {
       const anchors = activePropAnchors[primaryProp.id];
@@ -200,8 +210,8 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
       };
     } else {
       dynamicCharacterState.holdingTarget = {
-        leftGrip: { x: propHoldingX - propDims.width * 0.35, y: propHoldingY },
-        rightGrip: { x: propHoldingX + propDims.width * 0.35, y: propHoldingY },
+        leftGrip: { x: propHoldingX - 110, y: propHoldingY },
+        rightGrip: { x: propHoldingX + 110, y: propHoldingY },
       };
     }
   }
@@ -243,19 +253,21 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
       armchair: "chair",
       petcat: "cat",
       kitten: "cat",
+      bush: "potted-plant",
     };
 
     return aliasMap[normalized] || aliasMap[type.toLowerCase()] || normalized;
   };
 
   // =========================================================================
-  // TÍNH TOÁN VỊ TRÍ PROP VỚI ENTRANCE ANIMATION + KEYFRAMES
+  // TÍNH TOÁN VỊ TRÍ PROP VỚI ENTRANCE ANIMATION + KEYFRAMES + SEMANTIC SLOTS
   // =========================================================================
   const computePropTransform = (
     prop: typeof currentScene.props[0]
   ): { x: number; y: number; scaleVal: number; rotation: number; squash: { scaleX: number; scaleY: number } } => {
-    let px = prop.x;
-    let py = prop.y;
+    const basePos = resolveSemanticSlot(prop.slot, { x: prop.x, y: prop.y });
+    let px = basePos.x;
+    let py = basePos.y;
     let ps = prop.scale ?? 1;
     let pr = prop.rotation ?? 0;
     let sq = { scaleX: 1, scaleY: 1 };
@@ -269,10 +281,10 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
         case "spring":
         case "slide": {
           const offsetDist = 800;
-          if (from === "left") px = interpolate(enterProgress, [0, 1], [prop.x - offsetDist, prop.x]);
-          else if (from === "right") px = interpolate(enterProgress, [0, 1], [prop.x + offsetDist, prop.x]);
-          else if (from === "top") py = interpolate(enterProgress, [0, 1], [prop.y - offsetDist, prop.y]);
-          else if (from === "bottom") py = interpolate(enterProgress, [0, 1], [prop.y + offsetDist, prop.y]);
+          if (from === "left") px = interpolate(enterProgress, [0, 1], [basePos.x - offsetDist, basePos.x]);
+          else if (from === "right") px = interpolate(enterProgress, [0, 1], [basePos.x + offsetDist, basePos.x]);
+          else if (from === "top") py = interpolate(enterProgress, [0, 1], [basePos.y - offsetDist, basePos.y]);
+          else if (from === "bottom") py = interpolate(enterProgress, [0, 1], [basePos.y + offsetDist, basePos.y]);
           break;
         }
         case "pop": {
@@ -280,18 +292,17 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
           break;
         }
         case "drop": {
-          const startY = from === "top" ? -200 : prop.y - 600;
-          py = interpolate(enterProgress, [0, 1], [startY, prop.y]);
+          const startY = from === "top" ? -200 : basePos.y - 600;
+          py = interpolate(enterProgress, [0, 1], [startY, basePos.y]);
           break;
         }
         case "fadeIn": {
-          // Opacity handled separately; position stays
           break;
         }
       }
     }
 
-    // --- Keyframe overrides (moveProp, scaleProp, squashImpact) ---
+    // --- Keyframe overrides (moveProp, scaleProp, squashImpact, rotateProp) ---
     const propKeyframes = activeKeyframes.filter((kf) => kf.target === prop.id);
     for (const kf of propKeyframes) {
       switch (kf.action) {
@@ -327,7 +338,7 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
     // Nếu nhân vật đang cầm đạo cụ này (ví dụ lọ thủy tinh khi mang đi), đạo cụ tự động dính chặt theo tay nhân vật
     if (isHolding && primaryProp && prop.id === primaryProp.id) {
       px = dynamicCharacterState.x + (dynamicCharacterState.facing === "left" ? -140 : 140);
-      py = (dynamicCharacterState.y || 1120) - 170;
+      py = (dynamicCharacterState.y || STAGE_CONFIG.floorY) - 170;
     }
 
     return { x: px, y: py, scaleVal: ps, rotation: pr, squash: sq };
@@ -395,93 +406,167 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
   };
 
   // =========================================================================
-  // RENDER
+  // RENDER THEO CHIỀU SÂU (DEPTH / Z-INDEX 100% CHUẨN XÁC)
   // =========================================================================
   return (
-    <svg
-      viewBox={`0 0 ${width} ${height}`}
-      className="w-full h-full select-none"
-      style={{ backgroundColor: "#F8EFE3" }}
-    >
-      {/* ===============================================================
-          LAYER 1: DYNAMIC BACKGROUND (Nạp từ public/assets/backgrounds/)
-      =============================================================== */}
-      <g id="layer-background">
-        <DynamicBackground preset={currentScene.background.preset} />
-      </g>
+    <AbsoluteFill style={{ width: "100%", height: "100%", backgroundColor: "#F8EFE3", overflow: "hidden" }}>
+      <svg
+        viewBox={`0 0 ${width} ${height}`}
+        className="w-full h-full select-none"
+        style={{ width: "100%", height: "100%" }}
+      >
+        {/* ===============================================================
+            LAYER 10: DYNAMIC BACKGROUND (Nạp từ public/assets/backgrounds/)
+        =============================================================== */}
+        <g id="layer-background">
+          <DynamicBackground preset={currentScene.background.preset} />
+        </g>
 
-      {/* ===============================================================
-          LAYER 2: MIDGROUND BACK LAYER (Sofa, Chân sau bàn học)
-      =============================================================== */}
-      <g id="layer-midground-back">
-        {currentScene.props
-          .filter((p) => p.layer === "midgroundBackLayer")
-          .map((prop) => {
-            const t = computePropTransform(prop);
-            const opacity = computeEntranceOpacity(prop);
-            return (
-              <g key={prop.id} opacity={opacity}>
-                <DynamicProp
-                  id={resolvePropAssetId(prop.type)}
-                  x={t.x}
-                  y={t.y}
-                  scale={t.scaleVal}
-                  rotation={t.rotation}
+        {/* ===============================================================
+            LAYER 20: MIDGROUND BACK LAYER (Sofa, Chân sau bàn học)
+        =============================================================== */}
+        <g id="layer-midground-back">
+          {currentScene.props
+            .filter((p) => p.layer === "midgroundBackLayer")
+            .map((prop) => {
+              const t = computePropTransform(prop);
+              const opacity = computeEntranceOpacity(prop);
+              return (
+                <g key={prop.id} opacity={opacity}>
+                  <DynamicProp
+                    id={resolvePropAssetId(prop.type)}
+                    x={t.x}
+                    y={t.y}
+                    scale={t.scaleVal}
+                    rotation={t.rotation}
+                  />
+                </g>
+              );
+            })}
+
+          {isSitting && (
+            <DynamicProp
+              id="desk-back"
+              x={STAGE_CONFIG.deskX}
+              y={STAGE_CONFIG.deskY}
+              scale={1.0}
+              defaultDimensions={{ width: 1100, height: 400 }}
+            />
+          )}
+        </g>
+
+        {/* ===============================================================
+            LAYER 25: DYNAMIC LINES — BEHIND CHARACTER (silk, light cones)
+        =============================================================== */}
+        <g id="layer-lines-back">
+          {activeLines
+            .filter((l) => l.style === "silk" || l.style === "light")
+            .map((line) => {
+              const { start, end } = resolveLineEndpoints(line);
+              return (
+                <DynamicLine
+                  key={line.id}
+                  start={start}
+                  end={end}
+                  style={line.style}
+                  color={line.color}
+                  strokeWidth={line.strokeWidth}
+                  animated={line.animated}
+                  animationDelay={line.startFrame - currentScene.startFrame}
+                  coneAngle={line.coneAngle}
+                  coneLength={line.coneLength}
                 />
-              </g>
-            );
-          })}
+              );
+            })}
+        </g>
 
-        {isSitting && (
-          <DynamicProp
-            id="desk-back"
-            x={1150}
-            y={1120}
-            scale={1.0}
-            defaultDimensions={{ width: 1100, height: 400 }}
-          />
+        {/* ===============================================================
+            LAYER 30: CHARACTER LOWER LAYER KHI NGỒI SAU BÀN (THÂN & ĐẦU)
+            (Toàn bộ thân và hông nằm sau mặt bàn gỗ, không lộ chân)
+        =============================================================== */}
+        {isSitting && isCharacterVisible && (
+          <g id="layer-character-seated-body" transform={`translate(${swayX}, 0)`}>
+            <StickmanRig
+              state={dynamicCharacterState}
+              renderPart="bodyOnly"
+              breathScale={breathScale}
+            />
+          </g>
         )}
-      </g>
 
-      {/* ===============================================================
-          LAYER 2.5: DYNAMIC LINES — BEHIND CHARACTER (silk, light cones)
-      =============================================================== */}
-      <g id="layer-lines-back">
-        {activeLines
-          .filter((l) => l.style === "silk" || l.style === "light")
-          .map((line) => {
-            const { start, end } = resolveLineEndpoints(line);
-            return (
-              <DynamicLine
-                key={line.id}
-                start={start}
-                end={end}
-                style={line.style}
-                color={line.color}
-                strokeWidth={line.strokeWidth}
-                animated={line.animated}
-                animationDelay={line.startFrame - currentScene.startFrame}
-                coneAngle={line.coneAngle}
-                coneLength={line.coneLength}
-              />
-            );
-          })}
-      </g>
+        {/* ===============================================================
+            LAYER 35: MẶT BÀN GỖ (TABLETOP) CHE KHUẤT HÔNG NHÂN VẬT
+        =============================================================== */}
+        {isSitting && (
+          <g id="layer-desk-front">
+            <DynamicProp
+              id="desk-front"
+              x={STAGE_CONFIG.deskX}
+              y={STAGE_CONFIG.deskY}
+              scale={1.0}
+              defaultDimensions={{ width: 1100, height: 400 }}
+            />
+          </g>
+        )}
 
-      {/* ===============================================================
-          LAYER 3: CHARACTER LOWER LAYER (Thân & Đầu Stickman khi ngồi sau bàn)
-          + Micro-Animations: breathing, idle sway
-      =============================================================== */}
-      <g id="layer-character-base">
+        {/* ===============================================================
+            LAYER 40: MIDGROUND FRONT LAYER (Đèn bàn, Lọ thủy tinh trên bàn/sàn)
+        =============================================================== */}
+        <g id="layer-midground-front">
+          {currentScene.props
+            .filter((p) => p.layer !== "midgroundBackLayer")
+            .map((prop) => {
+              const t = computePropTransform(prop);
+              const opacity = computeEntranceOpacity(prop);
+              const assetId = resolvePropAssetId(prop.type);
+              const hasSpider = prop.properties?.hasSpiderInside;
+
+              return (
+                <g key={prop.id} opacity={opacity}>
+                  <g transform={`translate(${t.x}, ${t.y}) scale(${t.squash.scaleX}, ${t.squash.scaleY}) translate(${-t.x}, ${-t.y})`}>
+                    <DynamicProp
+                      id={assetId}
+                      x={t.x}
+                      y={t.y}
+                      scale={t.scaleVal}
+                      rotation={t.rotation}
+                      label={prop.properties?.label}
+                      showPointerCallout={prop.properties?.showPointerCallout}
+                      onAnchorsComputed={(anchors) => {
+                        setActivePropAnchors((prev) => ({
+                          ...prev,
+                          [prop.id]: anchors,
+                        }));
+                      }}
+                    >
+                      {/* Nhện bên trong lọ thủy tinh — kích thước chiếm 65-75% lòng lọ chuẩn 2K */}
+                      {hasSpider && (
+                        <g transform={`translate(${spiderOffset.offsetX}, ${spiderOffset.offsetY}) rotate(${spiderOffset.rotation})`}>
+                          <DynamicProp
+                            id="spider"
+                            x={0}
+                            y={0}
+                            scale={0.8}
+                            defaultDimensions={{ width: 320, height: 240 }}
+                          />
+                        </g>
+                      )}
+                    </DynamicProp>
+                  </g>
+                </g>
+              );
+            })}
+        </g>
+
+        {/* ===============================================================
+            LAYER 45: CHARACTER UPPER LAYER (TAY TỰA MẶT BÀN HOẶC TOÀN THÂN ĐỨNG)
+        =============================================================== */}
         {isCharacterVisible && (
-          <g
-            transform={`translate(${swayX}, 0)`}
-            data-micro-anim="idle-sway"
-          >
+          <g id="layer-character-front" transform={`translate(${swayX}, 0)`}>
             {isSitting ? (
               <StickmanRig
                 state={dynamicCharacterState}
-                renderPart="bodyOnly"
+                renderPart="armsOnly"
                 breathScale={breathScale}
               />
             ) : (
@@ -493,149 +578,76 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
             )}
           </g>
         )}
-      </g>
 
-      {/* ===============================================================
-          LAYER 4: MIDGROUND FRONT LAYER (Mặt bàn, Đèn bàn, Lọ thủy tinh)
-          + Entrance Animations + Squash/Stretch
-      =============================================================== */}
-      <g id="layer-midground-front">
-        {isSitting && (
-          <DynamicProp
-            id="desk-front"
-            x={1150}
-            y={1120}
-            scale={1.0}
-            defaultDimensions={{ width: 1100, height: 400 }}
-          />
-        )}
+        {/* ===============================================================
+            LAYER 50: DYNAMIC LINES — FRONT (pointer, dashed, glow)
+        =============================================================== */}
+        <g id="layer-lines-front">
+          {activeLines
+            .filter((l) => l.style !== "silk" && l.style !== "light")
+            .map((line) => {
+              const { start, end } = resolveLineEndpoints(line);
+              return (
+                <DynamicLine
+                  key={line.id}
+                  start={start}
+                  end={end}
+                  style={line.style}
+                  color={line.color}
+                  strokeWidth={line.strokeWidth}
+                  animated={line.animated}
+                  animationDelay={line.startFrame - currentScene.startFrame}
+                />
+              );
+            })}
+        </g>
 
-        {currentScene.props
-          .filter((p) => p.layer === "midgroundFrontLayer")
-          .map((prop) => {
-            const t = computePropTransform(prop);
-            const opacity = computeEntranceOpacity(prop);
-            const assetId = resolvePropAssetId(prop.type);
-            const hasSpider = prop.properties?.hasSpiderInside;
-
+        {/* ===============================================================
+            LAYER 60: SPEECH BUBBLES
+        =============================================================== */}
+        <g id="layer-speech-bubbles">
+          {activeSpeechBubbles.map((bubble) => {
+            const bubbleProgress = springScale(
+              frame,
+              fps,
+              bubble.startFrame,
+              { damping: 12, stiffness: 150, mass: 0.5 }
+            );
             return (
-              <g key={prop.id} opacity={opacity}>
-                <g transform={`translate(${t.x}, ${t.y}) scale(${t.squash.scaleX}, ${t.squash.scaleY}) translate(${-t.x}, ${-t.y})`}>
-                  <DynamicProp
-                    id={assetId}
-                    x={t.x}
-                    y={t.y}
-                    scale={t.scaleVal}
-                    rotation={t.rotation}
-                    label={prop.properties?.label}
-                    showPointerCallout={prop.properties?.showPointerCallout}
-                    onAnchorsComputed={(anchors) => {
-                      setActivePropAnchors((prev) => ({
-                        ...prev,
-                        [prop.id]: anchors,
-                      }));
-                    }}
-                  >
-                    {/* Nhện bên trong lọ thủy tinh — kích thước chiếm 65-75% lòng lọ chuẩn 2K */}
-                    {hasSpider && (
-                      <g transform={`translate(${spiderOffset.offsetX}, ${spiderOffset.offsetY}) rotate(${spiderOffset.rotation})`}>
-                        <DynamicProp
-                          id="spider"
-                          x={0}
-                          y={40}
-                          scale={0.8}
-                          defaultDimensions={{ width: 320, height: 240 }}
-                        />
-                      </g>
-                    )}
-                    {/* Nhện treo tự do (không trong lọ) */}
-                    {prop.type === "spider" && !hasSpider && (
-                      <g transform={`translate(${spiderOffset.offsetX}, ${spiderOffset.offsetY}) rotate(${spiderOffset.rotation})`} />
-                    )}
-                  </DynamicProp>
-                </g>
+              <g
+                key={bubble.id}
+                transform={`translate(${bubble.position.x}, ${bubble.position.y}) scale(${bubbleProgress}) translate(${-bubble.position.x}, ${-bubble.position.y})`}
+              >
+                <SpeechBubble
+                  x={bubble.position.x}
+                  y={bubble.position.y}
+                  text={bubble.text}
+                  hasMusicNote={bubble.hasMusicNote}
+                  tailAnchor={bubble.tailAnchor}
+                />
               </g>
             );
           })}
-      </g>
-
-      {/* ===============================================================
-          LAYER 5: CHARACTER UPPER LAYER (Tay tựa lên mặt bàn khi ngồi)
-      =============================================================== */}
-      {isSitting && isCharacterVisible && (
-        <g id="layer-character-arms-front">
-          <g transform={`translate(${swayX}, 0)`}>
-            <StickmanRig
-              state={dynamicCharacterState}
-              renderPart="armsOnly"
-              breathScale={breathScale}
-            />
-          </g>
         </g>
+      </svg>
+
+      {/* ===============================================================
+          LAYER 9999: SUBTITLE BOX (LUÔN LUÔN NẰM TRÊN MỌI VẬT THỂ & KHÔNG BAO GIỜ BỊ ĐÈ)
+      =============================================================== */}
+      {activeSubtitle && (
+        <AbsoluteFill style={{ zIndex: 9999, pointerEvents: "none" }}>
+          <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full select-none">
+            <SubtitleBox
+              text={activeSubtitle.text}
+              words={activeSubtitle.words}
+              currentFrame={frame}
+              fps={fps}
+              x={1280}
+              y={1340}
+            />
+          </svg>
+        </AbsoluteFill>
       )}
-
-      {/* ===============================================================
-          LAYER 5.5: DYNAMIC LINES — FRONT (pointer, dashed, glow)
-      =============================================================== */}
-      <g id="layer-lines-front">
-        {activeLines
-          .filter((l) => l.style !== "silk" && l.style !== "light")
-          .map((line) => {
-            const { start, end } = resolveLineEndpoints(line);
-            return (
-              <DynamicLine
-                key={line.id}
-                start={start}
-                end={end}
-                style={line.style}
-                color={line.color}
-                strokeWidth={line.strokeWidth}
-                animated={line.animated}
-                animationDelay={line.startFrame - currentScene.startFrame}
-              />
-            );
-          })}
-      </g>
-
-      {/* ===============================================================
-          LAYER 6: FOREGROUND UI & SUBTITLES (Bong bóng thoại & Phụ đề 2K)
-          + Spring entrance cho speech bubbles
-      =============================================================== */}
-      <g id="layer-foreground-ui">
-        {activeSpeechBubbles.map((bubble) => {
-          const bubbleProgress = springScale(
-            frame,
-            fps,
-            bubble.startFrame,
-            { damping: 12, stiffness: 150, mass: 0.5 }
-          );
-          return (
-            <g
-              key={bubble.id}
-              transform={`translate(${bubble.position.x}, ${bubble.position.y}) scale(${bubbleProgress}) translate(${-bubble.position.x}, ${-bubble.position.y})`}
-            >
-              <SpeechBubble
-                x={bubble.position.x}
-                y={bubble.position.y}
-                text={bubble.text}
-                hasMusicNote={bubble.hasMusicNote}
-                tailAnchor={bubble.tailAnchor}
-              />
-            </g>
-          );
-        })}
-
-        {activeSubtitle && (
-          <SubtitleBox
-            text={activeSubtitle.text}
-            words={activeSubtitle.words}
-            currentFrame={frame}
-            fps={fps}
-            x={1280}
-            y={1340}
-          />
-        )}
-      </g>
-    </svg>
+    </AbsoluteFill>
   );
 };

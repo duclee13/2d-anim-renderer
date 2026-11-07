@@ -14,9 +14,12 @@ export interface GlassJarProps {
 }
 
 /**
- * GlassJar Wrapper Component (Figma-to-React Standard)
- * Chịu trách nhiệm quản lý tọa độ không gian và xuất các cổng neo toán học (Anchor Ports).
- * Toàn bộ hình ảnh đồ họa đã được làm rỗng để chờ ghép mã SVG từ Figma.
+ * GlassJar Wrapper Component (Figma-to-React Standard & Bottom-Center Origin)
+ * 
+ * QUY CHUẨN ORIGIN = BOTTOM-CENTER:
+ * - Điểm (x, y) là đáy chính giữa chiếc lọ (chạm sàn / chạm mặt bàn).
+ * - Nhãn dán "TÁM" neo tại 1/3 phía trên thân lọ (y = -height * 0.72), nằm trên con nhện.
+ * - Con nhện ở đáy lọ (y = -height * 0.22).
  */
 export const GlassJar: React.FC<GlassJarProps> = ({
   x,
@@ -29,16 +32,15 @@ export const GlassJar: React.FC<GlassJarProps> = ({
   artwork,
   children,
 }) => {
-  // Kích thước chuẩn bounding box (240x280px ở canvas 2K) để tính toán điểm neo
-  const jarWidth = 240;
-  const jarHeight = 280;
+  const jarWidth = 320;
+  const jarHeight = 420;
 
-  // Tính toán Anchor Ports trong hệ tọa độ toàn cục
-  const leftGrip: Point2D = { x: x - (jarWidth / 2) * scale, y };
-  const rightGrip: Point2D = { x: x + (jarWidth / 2) * scale, y };
-  const surfaceDecal: Point2D = { x, y: y + 20 * scale };
-  const lidCenter: Point2D = { x, y: y - (jarHeight / 2) * scale };
-  const baseCenter: Point2D = { x, y: y + (jarHeight / 2) * scale };
+  // Tính toán Anchor Ports theo chuẩn Bottom-Center
+  const leftGrip: Point2D = { x: x - (jarWidth * 0.42) * scale, y: y - (jarHeight * 0.45) * scale };
+  const rightGrip: Point2D = { x: x + (jarWidth * 0.42) * scale, y: y - (jarHeight * 0.45) * scale };
+  const surfaceDecal: Point2D = { x, y: y - (jarHeight * 0.72) * scale };
+  const lidCenter: Point2D = { x, y: y - jarHeight * scale };
+  const baseCenter: Point2D = { x, y };
 
   React.useEffect(() => {
     if (onAnchorsComputed) {
@@ -58,54 +60,36 @@ export const GlassJar: React.FC<GlassJarProps> = ({
       transform={`translate(${x}, ${y}) scale(${scale}) rotate(${rotation})`}
       data-prop-type="glassJar"
     >
-      {/* =========================================================================
-          FIGMA SVG ARTWORK CONTAINER
-          BẠN HÃY PASTE MÃ SVG TỪ FIGMA VÀO ĐÂY (<!-- PASTE REAL SVG HERE -->)
-          
-          Lưu ý khi vẽ trên Figma:
-          - Vẽ chiếc lọ với tâm (Center/Pivot) tại tọa độ (0, 0).
-          - Kích thước tham chiếu 2K: rộng ~240px, cao ~280px.
-         ========================================================================= */}
       <g id="figma-glass-jar-artwork">
-        {artwork ? (
-          artwork
-        ) : (
-          /* BẠN HÃY PASTE MÃ SVG TỪ FIGMA VÀO ĐÂY */
-          /* <!-- PASTE REAL SVG HERE --> */
-          null
-        )}
+        {artwork || null}
       </g>
 
-      {/* =========================================================================
-          SLOT VẬT THỂ BÊN TRONG LỌ (Chứa con nhện Spider, thức ăn...)
-         ========================================================================= */}
+      {/* SLOT VẬT THỂ BÊN TRONG LỌ (Con nhện bám đáy lọ) */}
       {children && (
-        <g id="jar-interior-contents" transform="translate(0, 30)">
+        <g id="jar-interior-contents" transform={`translate(0, ${-Math.round(jarHeight * 0.22)})`}>
           {children}
         </g>
       )}
 
-      {/* =========================================================================
-          NHÃN DÁN ĐẠO CỤ (Neo cứng vào surfaceDecal - Triệt tiêu lỗi 1.2)
-         ========================================================================= */}
+      {/* NHÃN DÁN ĐẠO CỤ (Nằm ở 1/3 trên thân lọ, không che nhện) */}
       {label && !showPointerCallout && (
-        <g id="jar-surface-decal" transform="translate(0, 35)">
+        <g id="jar-surface-decal" transform={`translate(0, ${-Math.round(jarHeight * 0.72)})`}>
           <rect
-            x={-60}
-            y={-22}
-            width={120}
-            height={44}
-            rx={8}
+            x={-75}
+            y={-28}
+            width={150}
+            height={56}
+            rx={14}
             fill="#FFFFFF"
             stroke="#141414"
-            strokeWidth={4}
+            strokeWidth={5}
           />
           <text
             x={0}
-            y={8}
+            y={12}
             textAnchor="middle"
             fill="#E11D48"
-            fontSize={26}
+            fontSize={36}
             fontWeight="900"
             fontFamily="var(--font-be-vietnam-pro), sans-serif"
           >
@@ -114,26 +98,25 @@ export const GlassJar: React.FC<GlassJarProps> = ({
         </g>
       )}
 
-      {/* THANH CHỈ TRỎ CALLOUT (Neo liền mạch với mép lọ cho Cảnh cận 1.2) */}
+      {/* THANH CALLOUT TRỎ */}
       {label && showPointerCallout && (
-        <g id="jar-pointer-callout" transform="translate(120, 20)">
-          <line x1={0} y1={0} x2={45} y2={0} stroke="#141414" strokeWidth={5} strokeLinecap="round" />
-          <circle cx={48} cy={0} r={7} fill="#FFFFFF" stroke="#141414" strokeWidth={4} />
-          <line x1={55} y1={0} x2={95} y2={8} stroke="#141414" strokeWidth={5} strokeLinecap="round" />
+        <g id="jar-pointer-callout" transform={`translate(${Math.round(jarWidth * 0.45)}, ${-Math.round(jarHeight * 0.65)})`}>
+          <circle cx={0} cy={0} r={7} fill="#141414" />
+          <line x1={0} y1={0} x2={55} y2={-10} stroke="#141414" strokeWidth={5} strokeLinecap="round" />
 
-          <g transform="translate(95, -30)">
+          <g transform="translate(55, -45)">
             <rect
               x={0}
               y={0}
-              width={140}
+              width={150}
               height={64}
-              rx={12}
+              rx={14}
               fill="#FFFFFF"
               stroke="#141414"
               strokeWidth={6}
             />
             <text
-              x={70}
+              x={75}
               y={44}
               textAnchor="middle"
               fill="#E11D48"

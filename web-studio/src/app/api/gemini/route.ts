@@ -12,34 +12,85 @@ Your job is to transform a story script into a precise, valid MasterSceneGraph J
 
 Strict Rules:
 1. Target resolution: 2560x1440 at 60 FPS.
-2. Contiguous Timeline: durationInFrames MUST be an integer number of frames (e.g. 120 for 2s at 60fps). startFrame MUST be contiguous (0, 120, 240, 360...).
+2. Contiguous Timeline & Audio Synchronization (CRITICAL):
+   - Each scene's duration MUST match spoken dialogue duration: word count / 2.8 words/sec * 60 FPS + 30 frames transition padding.
+   - Example: 10 words ≈ 210 frames + 30 = 240 frames (4s).
+   - startFrame MUST be strictly contiguous: Scene 1 starts at 0, Scene 2 starts at Scene 1 end, etc.
+   - NEVER add trailing frozen silence at the end of the video! Total duration = sum of scene durations.
 3. FULL SCENE FIDELITY: You MUST generate EVERY scene described or implied in the user's prompt. If the user provides 4 scenes (Cảnh 1 -> Cảnh 4), output EXACTLY 4 scenes in the 'scenes' array. NEVER truncate, omit, or merge them!
-4. 2K Viewport Scale Standards:
-   - Stickman standing floor baseline: y = 1120. Total character height ~750px-800px.
-   - GlassJar: Full shot scale = 1.0 (x = 780, y = 960). Close-up shot scale = 2.15 (x = 1280, y = 720, height ~900px).
+4. SEMANTIC SLOTS (PREFER OVER RAW PIXELS):
+   - Characters and props should use the 'slot' property so the engine resolves 100% exact coordinates:
+     * Floor slots (baseline y = 1120): 'floor.farLeft', 'floor.left', 'floor.centerLeft', 'floor.center', 'floor.centerRight', 'floor.right', 'floor.farRight'
+     * Desk slots: 'desk.seat' (character sitting at desk), 'desk.topLeft' (desk lamp), 'desk.topCenter' (laptop), 'desk.topRight' (glass jar / coffee cup)
+     * Close-up slots: 'screen.center', 'screen.centerCloseUp'
+     * Living room slots: 'sofa.seat', 'sofa.left', 'sofa.right'
+5. 2K Viewport Scale Standards (Origin = Bottom-Center):
+   - Stickman standing baseline: y = 1120. Total height ~750px-850px.
+   - GlassJar: Full shot scale = 1.0 (slot: 'floor.left'). Close-up shot scale = 2.15 (slot: 'screen.centerCloseUp', height ~900px).
    - In close-up shots, DO NOT use scale from 0 to prevent white flash. Use pop or direct transition.
-5. Character Poses: 'standing', 'sittingBehindDesk', 'holdingObject', 'walking', 'pointing', 'shrugging'.
-6. ACTION & MOTION RULES (CRITICAL - NEVER LEAVE CHARACTER STATIC):
+6. Character Poses: 'standing', 'sittingBehindDesk', 'holdingObject', 'walking', 'pointing', 'shrugging'.
+7. ACTION & MOTION RULES (NEVER LEAVE CHARACTER STATIC):
    - When the script mentions holding, carrying, holding in hands ("cầm", "giữ", "bê", "mang", "xách"):
      * Character pose MUST be 'holdingObject'.
-     * Position the held prop near the character (e.g. character at x: 1200, prop at x: 1340, y: 950).
+     * Position the held prop near the character.
    - When the script mentions moving, walking, bringing outside ("mang ra", "bước", "đi", "chạy"):
      * MUST add a 'moveCharacter' keyframe in 'keyframes':
        { "frame": 0, "action": "moveCharacter", "target": "character", "params": { "fromX": 600, "toX": 1600 } }
      * Character facing MUST match direction of motion (e.g. 'right').
    - Avoid motionless scenes: use keyframes ('moveCharacter', 'changeExpression') so characters feel alive.
-7. Facial Expressions:
+8. Facial Expressions:
    - eyes: 'neutral' | 'wide' | 'surprised' | 'happy' | 'closed' | 'curious'
    - eyebrows: 'neutral' | 'raised' | 'inquisitive' | 'worried' | 'furrowed'
    - mouth: 'smile' | 'circleOpen' | 'line' | 'talking' | 'gasp'
-8. Anti-Clash & Physics Rules:
-   - If the character is sitting behind a desk, pose MUST be 'sittingBehindDesk' at y = 1120. Never use 'standing' behind a desk.
-   - Z-Index layering must assign props to 'midgroundBackLayer' or 'midgroundFrontLayer'.
-9. Dynamic Asset Bank Awareness:
+9. Anti-Clash & Physics Rules:
+   - If the character is sitting behind a desk:
+     * Character slot MUST be 'desk.seat' and pose MUST be 'sittingBehindDesk'.
+     * Desk front and back are automatically layered by the engine.
+   - Z-Index layering: assign background furniture to 'midgroundBackLayer' and front props to 'midgroundFrontLayer'.
+10. Dynamic Asset Bank:
    - Standard built-in props: 'glassJar', 'spider', 'sofa', 'desk', 'deskLamp', 'gaugeMeter', 'pottedPlant', 'chair', 'table', 'tv', 'pizza', 'apple', 'guitar', 'cat', 'tree', 'balloon', 'trophy', 'star', 'heart', 'whiteboard', 'laptop', 'coffeeCup', 'phone', 'book', 'clock'.
    - Background presets: 'livingRoomDay', 'livingRoomNight', 'gardenDay', 'infographicStripes'.
-10. Output ONLY a valid JSON object matching the MasterSceneGraph schema. No markdown formatting.
+11. Output ONLY a valid JSON object matching the MasterSceneGraph schema. No markdown formatting.
 `;
+
+function getStandardPropFileName(type: string): string {
+  const normalized = type
+    .replace(/([A-Z])/g, "-$1")
+    .toLowerCase()
+    .replace(/^-/, "");
+
+  const aliasMap: Record<string, string> = {
+    glassjar: "glass-jar",
+    desklamp: "desk-lamp",
+    gaugemeter: "gauge-meter",
+    pottedplant: "potted-plant",
+    deskback: "desk-back",
+    deskfront: "desk-front",
+    alarmclock: "alarm-clock",
+    coffeecup: "coffee-cup",
+    teacup: "coffee-cup",
+    cup: "coffee-cup",
+    plant: "potted-plant",
+    lamp: "desk-lamp",
+    meter: "gauge-meter",
+    jar: "glass-jar",
+    whiteboard: "whiteboard",
+    television: "tv",
+    smarttv: "tv",
+    screen: "tv",
+    mobilephone: "phone",
+    cellphone: "phone",
+    smartphone: "phone",
+    diningtable: "table",
+    deskchair: "chair",
+    armchair: "chair",
+    petcat: "cat",
+    kitten: "cat",
+    bush: "potted-plant",
+  };
+
+  return aliasMap[normalized] || aliasMap[type.toLowerCase()] || normalized;
+}
 
 /**
  * Tự động gọi Google ModelService (ListModels) để lấy chính xác danh sách các model
@@ -60,7 +111,6 @@ async function fetchAccountModels(apiKey: string): Promise<string[]> {
     const data = await res.json();
     if (!data.models || !Array.isArray(data.models)) return [];
 
-    // Chỉ lấy các model hỗ trợ generateContent VÀ loại bỏ các model chuyên dụng không nhận systemInstruction
     const supported = data.models
       .filter((m: any) => {
         const name = m.name.toLowerCase();
@@ -72,9 +122,7 @@ async function fetchAccountModels(apiKey: string): Promise<string[]> {
       })
       .map((m: any) => m.name.replace(/^models\//, ""));
 
-    // Sắp xếp ưu tiên các model Flash đời mới nhất trước
     const score = (name: string): number => {
-      // Ưu tiên cao nhất các model Flash đời 3.x
       if (name === "gemini-3.8-flash") return 1000;
       if (name.includes("3.1-flash")) return 950;
       if (name.includes("3.") && name.includes("flash")) return 900;
@@ -87,7 +135,6 @@ async function fetchAccountModels(apiKey: string): Promise<string[]> {
     };
 
     supported.sort((a: string, b: string) => score(b) - score(a));
-    console.log("[Gemini API] Danh sách model text khả dụng đã lọc:", supported);
     return supported;
   } catch (err: any) {
     console.warn("[Gemini API] Lỗi mạng khi gọi ListModels:", err.message);
@@ -97,24 +144,30 @@ async function fetchAccountModels(apiKey: string): Promise<string[]> {
 
 /**
  * Chuẩn hóa và làm sạch 100% dữ liệu SceneGraph từ LLM
- * Đảm bảo các thuộc tính như durationInFrames, startFrame luôn là số nguyên (tránh lỗi NaN trong Remotion Player).
+ * Đảm bảo timeline liên tục, thời lượng đồng bộ audio và không bị đơ hình cuối video.
  */
 function sanitizeSceneGraph(raw: any): MasterSceneGraph {
   const scenesRaw = Array.isArray(raw?.scenes) ? raw.scenes : [];
   let currentStart = 0;
 
   const cleanScenes = scenesRaw.map((s: any, idx: number) => {
-    const dur = Math.max(30, Math.round(Number(s?.durationInFrames || s?.duration || 120)));
-    const start =
-      s?.startFrame !== undefined && !isNaN(Number(s.startFrame))
-        ? Math.round(Number(s.startFrame))
-        : currentStart;
+    const subTexts = Array.isArray(s?.subtitles)
+      ? s.subtitles.map((sub: any) => sub?.text || "").join(" ")
+      : "";
+    const wordCount = subTexts.trim() ? subTexts.trim().split(/\s+/).length : 0;
+    const estDialogueFrames = wordCount > 0 ? Math.round((wordCount / 2.8) * 60) + 30 : 120;
 
+    let dur = Math.max(60, Math.round(Number(s?.durationInFrames || s?.duration || estDialogueFrames)));
+    // Triệt tiêu khoảng lặng chết ở cuối: nếu thời lượng quá dài so với độ dài câu thoại, giới hạn lại
+    if (wordCount > 0 && dur > estDialogueFrames + 60) {
+      dur = estDialogueFrames + 30;
+    }
+
+    const start = currentStart;
     currentStart = start + dur;
 
     // Tự động suy luận tư thế nhân vật nếu mô tả kịch bản có hành động cụ thể
     let characterPose = s?.character?.pose || "standing";
-    const subTexts = Array.isArray(s?.subtitles) ? s.subtitles.map((sub: any) => sub?.text || "").join(" ") : "";
     const sceneCombinedText = `${s?.name || ""} ${subTexts}`.toLowerCase();
 
     if (/cầm|bê|mang|xách|giữ|nâng|holding|carry/i.test(sceneCombinedText) && characterPose === "standing") {
@@ -137,6 +190,18 @@ function sanitizeSceneGraph(raw: any): MasterSceneGraph {
       ];
     }
 
+    // Gán slot thông minh nếu chưa có
+    let charSlot = s?.character?.slot;
+    if (!charSlot) {
+      if (characterPose === "sittingBehindDesk") {
+        charSlot = "desk.seat";
+      } else if (s?.character?.x !== undefined) {
+        charSlot = undefined;
+      } else {
+        charSlot = "floor.center";
+      }
+    }
+
     return {
       id: String(s?.id || `scene_${idx + 1}`),
       name: String(s?.name || `Cảnh ${idx + 1}`),
@@ -151,7 +216,8 @@ function sanitizeSceneGraph(raw: any): MasterSceneGraph {
         zoom: Number(s?.camera?.zoom) || 1.0,
       },
       character: {
-        x: s?.character?.x !== undefined ? Number(s.character.x) : 1560,
+        slot: charSlot,
+        x: s?.character?.x !== undefined ? Number(s.character.x) : 1280,
         y: s?.character?.y !== undefined ? Number(s.character.y) : 1120,
         scale: Number(s?.character?.scale) || 1.0,
         facing: s?.character?.facing === "left" ? ("left" as const) : ("right" as const),
@@ -165,9 +231,10 @@ function sanitizeSceneGraph(raw: any): MasterSceneGraph {
         ? s.props.map((p: any, pIdx: number) => ({
             id: String(p?.id || `prop_${idx}_${pIdx}`),
             type: String(p?.type || "glassJar"),
+            slot: p?.slot || undefined,
             layer: p?.layer === "midgroundBackLayer" ? ("midgroundBackLayer" as const) : ("midgroundFrontLayer" as const),
             x: Number(p?.x) || 1280,
-            y: Number(p?.y) || 970,
+            y: Number(p?.y) || 1120,
             scale: Number(p?.scale) || 1.0,
             rotation: Number(p?.rotation) || 0,
             properties: p?.properties || {},
@@ -177,8 +244,8 @@ function sanitizeSceneGraph(raw: any): MasterSceneGraph {
         ? s.subtitles.map((sub: any, subIdx: number) => ({
             id: String(sub?.id || `sub_${idx}_${subIdx}`),
             text: String(sub?.text || ""),
-            startFrame: sub?.startFrame !== undefined ? Number(sub.startFrame) : start + 10,
-            endFrame: sub?.endFrame !== undefined ? Number(sub.endFrame) : start + dur - 10,
+            startFrame: sub?.startFrame !== undefined ? Number(sub.startFrame) : start + 5,
+            endFrame: sub?.endFrame !== undefined ? Number(sub.endFrame) : start + dur - 5,
             words: Array.isArray(sub?.words) ? sub.words : [],
           }))
         : [],
@@ -189,8 +256,8 @@ function sanitizeSceneGraph(raw: any): MasterSceneGraph {
   });
 
   const totalFrames = cleanScenes.reduce(
-    (acc: number, s: any) => Math.max(acc, s.startFrame + s.durationInFrames),
-    360
+    (acc: number, s: any) => acc + s.durationInFrames,
+    0
   );
 
   return {
@@ -199,7 +266,7 @@ function sanitizeSceneGraph(raw: any): MasterSceneGraph {
     width: 2560,
     height: 1440,
     fps: 60,
-    totalDurationInFrames: Math.round(totalFrames),
+    totalDurationInFrames: Math.max(120, Math.round(totalFrames)),
     scenes: cleanScenes.length > 0 ? cleanScenes : sampleScriptSceneGraph.scenes,
   };
 }
@@ -216,9 +283,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 1. Tự động lấy danh sách model thực tế từ chính API Key của người dùng
     let candidateModels = await fetchAccountModels(activeApiKey);
-
     if (candidateModels.length === 0) {
       candidateModels = [
         "gemini-3.8-flash",
@@ -232,7 +297,6 @@ export async function POST(req: NextRequest) {
     let successfulModel = "";
     let lastError: any = null;
 
-    // 2. Thử tuần tự các model khả dụng
     for (const modelName of candidateModels) {
       try {
         console.log(`[Gemini API] Đang kết nối tới model: ${modelName}...`);
@@ -261,7 +325,6 @@ export async function POST(req: NextRequest) {
         lastError = err;
         console.warn(`[Gemini API] Model ${modelName} thất bại:`, err.message);
 
-        // Nếu API key sai hoàn toàn
         if (
           err.message?.includes("API_KEY_INVALID") ||
           err.message?.includes("API key not valid")
@@ -280,15 +343,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 3. Làm sạch chuỗi trước khi parse JSON
     let cleanText = responseText.trim();
     cleanText = cleanText.replace(/^```(?:json)?\n?/i, "").replace(/\n?```$/i, "");
     const rawParsed = JSON.parse(cleanText);
 
-    // 4. Chuẩn hóa schema, tính toán lại frame an toàn 100% không bao giờ có NaN
     const parsedGraph = sanitizeSceneGraph(rawParsed);
 
-    // 5. ĐẢM BẢO TẤT CẢ PROPS CÓ FILE SVG CHUẨN HOẠT HỌA 2K (TỰ ĐỘNG SINH BẰNG AI HOẶC PROCEDURAL)
+    // ĐẢM BẢO TẤT CẢ PROPS CÓ FILE SVG CHUẨN HOẠT HỌA 2K (TỰ ĐỘNG NẠP TỪ KHO HOẶC SINH BẰNG GEMINI)
     const assetsDir = path.join(process.cwd(), "public", "assets", "props");
     if (!fs.existsSync(assetsDir)) {
       fs.mkdirSync(assetsDir, { recursive: true });
@@ -298,16 +359,16 @@ export async function POST(req: NextRequest) {
 
     for (const scene of parsedGraph.scenes) {
       for (const prop of scene.props) {
-        const normalizedId = prop.type.replace(/([A-Z])/g, "-$1").toLowerCase().replace(/^-/, "");
-        const fileName = `${normalizedId}.svg`;
+        const canonicalId = getStandardPropFileName(prop.type);
+        const fileName = `${canonicalId}.svg`;
 
         if (!fs.existsSync(path.join(assetsDir, fileName))) {
           try {
-            console.log(`[AssetGenerator] Đang tự động vẽ vector hoạt họa cho đạo cụ: '${normalizedId}'...`);
-            await generateVectorAsset(prop.type, normalizedId, "gemini", activeApiKey);
-            generatedAssets.push(normalizedId);
+            console.log(`[AssetGenerator] Đang tự động vẽ vector hoạt họa cho đạo cụ: '${canonicalId}'...`);
+            await generateVectorAsset(prop.type, canonicalId, "gemini", activeApiKey);
+            generatedAssets.push(canonicalId);
           } catch (genErr: any) {
-            console.warn(`[AssetGenerator] Lỗi khi tạo asset cho ${normalizedId}:`, genErr.message);
+            console.warn(`[AssetGenerator] Lỗi khi tạo asset cho ${canonicalId}:`, genErr.message);
           }
         }
       }

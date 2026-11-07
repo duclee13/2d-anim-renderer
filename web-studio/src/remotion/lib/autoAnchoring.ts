@@ -38,12 +38,13 @@ export function extractSvgDimensions(svgText: string): SvgDimensionInfo {
 /**
  * Tự động tính toán các cổng neo toán học (Auto-Anchoring) dựa trên Bounding Box thực tế của SVG.
  * 
- * Quy ước Bounding Box đối xứng quanh Pivot (0, 0):
- * - leftGrip: Cạnh trái ở giữa chiều cao (-width / 2, 0)
- * - rightGrip: Cạnh phải ở giữa chiều cao (+width / 2, 0)
- * - surfaceDecal: Tâm mặt trước (0, 0)
- * - lidCenter / topAnchor: Đỉnh trên (0, -height / 2)
- * - baseCenter / bottomAnchor: Đáy dưới (0, +height / 2)
+ * QUY CHUẨN ORIGIN = BOTTOM-CENTER (Gốc tọa độ tại Chính Giữa Đáy):
+ * - Điểm (0, 0) là đáy chính giữa của vật thể (chạm sàn / chạm mặt bàn).
+ * - baseCenter / bottomAnchor: (0, 0)
+ * - topAnchor / lidCenter: Đỉnh trên (0, -height)
+ * - surfaceDecal: Tâm mặt trước (0, -height * 0.5)
+ * - leftGrip: Cạnh trái cầm nắm (-width * 0.42, -height * 0.45)
+ * - rightGrip: Cạnh phải cầm nắm (+width * 0.42, -height * 0.45)
  */
 export function computeAutoAnchorPorts(
   dimensions: SvgDimensionInfo,
@@ -56,7 +57,7 @@ export function computeAutoAnchorPorts(
   const cos = Math.cos(rad);
   const sin = Math.sin(rad);
 
-  // Helper xoay điểm cục bộ quanh tâm (0, 0) và cộng offset toàn cục (x, y)
+  // Helper xoay điểm cục bộ quanh đáy chính giữa (0, 0) và cộng offset toàn cục (x, y)
   const toGlobal = (localX: number, localY: number): Point2D => {
     const scaledX = localX * scale;
     const scaledY = localY * scale;
@@ -67,10 +68,10 @@ export function computeAutoAnchorPorts(
   };
 
   return {
-    leftGrip: toGlobal(-width / 2, 0),
-    rightGrip: toGlobal(width / 2, 0),
-    surfaceDecal: toGlobal(0, 0),
-    lidCenter: toGlobal(0, -height / 2),
-    baseCenter: toGlobal(0, height / 2),
+    leftGrip: toGlobal(-width * 0.42, -height * 0.45),
+    rightGrip: toGlobal(width * 0.42, -height * 0.45),
+    surfaceDecal: toGlobal(0, -height * 0.5),
+    lidCenter: toGlobal(0, -height),
+    baseCenter: toGlobal(0, 0),
   };
 }

@@ -29,7 +29,8 @@ export const sampleScriptSceneGraph: MasterSceneGraph = {
       background: { preset: "livingRoomDay" },
       camera: { x: 1280, y: 720, zoom: 1.0 },
       character: {
-        x: 1600,
+        slot: "floor.right",
+        x: 1850,
         y: 1120,
         scale: 1.0,
         facing: "left",
@@ -43,9 +44,10 @@ export const sampleScriptSceneGraph: MasterSceneGraph = {
         {
           id: "jar_s1",
           type: "glassJar",
+          slot: "floor.left",
           layer: "midgroundFrontLayer",
           x: 780,
-          y: 960,
+          y: 1120,
           scale: 1.0,
           properties: {
             hasSpiderInside: true,
@@ -58,8 +60,9 @@ export const sampleScriptSceneGraph: MasterSceneGraph = {
         {
           id: "sofa_bg",
           type: "sofa",
+          slot: "floor.farRight",
           layer: "midgroundBackLayer",
-          x: 2300,
+          x: 2200,
           y: 1120,
           scale: 1.0,
         },
@@ -102,7 +105,7 @@ export const sampleScriptSceneGraph: MasterSceneGraph = {
           frame: 0,
           action: "moveCharacter",
           target: "character",
-          params: { fromX: 2300, toX: 1600, fromY: 1120, toY: 1120 },
+          params: { fromX: 2100, toX: 1750, fromY: 1120, toY: 1120 },
           springConfig: { damping: 14, stiffness: 75, mass: 0.8 },
         },
       ],
@@ -110,7 +113,7 @@ export const sampleScriptSceneGraph: MasterSceneGraph = {
 
     // =====================================================================
     // SCENE 2 (120→240 frames / 2s→4s)
-    // Cận cảnh chiếc lọ khổng lồ 900px, nhện to 70% lòng lọ, nhãn dán "TÁM"
+    // Cận cảnh chiếc lọ khổng lồ 900px, nhện to 70% lòng lọ, nhãn dán "TÁM" ở 1/3 trên
     // =====================================================================
     {
       id: "scene_02",
@@ -128,14 +131,15 @@ export const sampleScriptSceneGraph: MasterSceneGraph = {
         {
           id: "jar_closeup",
           type: "glassJar",
+          slot: "screen.centerCloseUp",
           layer: "midgroundFrontLayer",
           x: 1280,
-          y: 720,
-          scale: 2.15, // Đạt chiều cao ~903px, rộng ~688px chuẩn 2K
+          y: 1150,
+          scale: 2.15, // Chiều cao ~903px chuẩn 2K
           properties: {
             hasSpiderInside: true,
             label: "TÁM",
-            showPointerCallout: false, // Dán decal trực tiếp lên thân lọ, triệt tiêu lỗi đường chỉ trôi lơ lửng
+            showPointerCallout: false,
           },
           entrance: {
             type: "pop",
@@ -169,7 +173,7 @@ export const sampleScriptSceneGraph: MasterSceneGraph = {
 
     // =====================================================================
     // SCENE 3 (240→360 frames / 4s→6s)
-    // Infographic đồng hồ đo trao đổi chất của nhện
+    // Infographic đồng hồ đo trao đổi chất của nhện (Nhãn đặt dưới trục quay kim)
     // =====================================================================
     {
       id: "scene_03",
@@ -187,6 +191,7 @@ export const sampleScriptSceneGraph: MasterSceneGraph = {
         {
           id: "gauge_meter",
           type: "gaugeMeter",
+          slot: "screen.center",
           layer: "midgroundFrontLayer",
           x: 1280,
           y: 720,
@@ -227,7 +232,7 @@ export const sampleScriptSceneGraph: MasterSceneGraph = {
 
     // =====================================================================
     // SCENE 4 (360→480 frames / 6s→8s)
-    // Cảnh đêm phòng làm việc: Nhân vật ngồi sau bàn làm việc, có đèn bàn và trăng sao
+    // Cảnh đêm phòng làm việc: Nhân vật ngồi sau bàn làm việc, đèn bàn & lọ trên bàn
     // =====================================================================
     {
       id: "scene_04",
@@ -237,6 +242,7 @@ export const sampleScriptSceneGraph: MasterSceneGraph = {
       background: { preset: "livingRoomNight" },
       camera: { x: 1280, y: 720, zoom: 1.0 },
       character: {
+        slot: "desk.seat",
         x: 1150,
         y: 1120,
         scale: 1.0,
@@ -251,18 +257,20 @@ export const sampleScriptSceneGraph: MasterSceneGraph = {
         {
           id: "desk_lamp_s4",
           type: "deskLamp",
+          slot: "desk.topLeft",
           layer: "midgroundFrontLayer",
-          x: 820,
-          y: 780,
+          x: 800,
+          y: 760,
           scale: 1.3,
         },
         {
           id: "jar_s4",
           type: "glassJar",
+          slot: "desk.topRight",
           layer: "midgroundFrontLayer",
-          x: 1520,
-          y: 830,
-          scale: 0.65,
+          x: 1480,
+          y: 760,
+          scale: 0.7,
           properties: {
             hasSpiderInside: true,
           },
@@ -270,8 +278,9 @@ export const sampleScriptSceneGraph: MasterSceneGraph = {
         {
           id: "sofa_bg_night",
           type: "sofa",
+          slot: "floor.farRight",
           layer: "midgroundBackLayer",
-          x: 2300,
+          x: 2200,
           y: 1120,
           scale: 1.0,
         },

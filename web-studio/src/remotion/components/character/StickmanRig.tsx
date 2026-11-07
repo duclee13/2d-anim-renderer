@@ -29,15 +29,16 @@ export interface StickmanRigProps {
 }
 
 /**
- * StickmanRig: Khung Xương Động "Figma-to-React Wrapper"
+ * StickmanRig: Khung Xương Động 2K 60FPS (Connected Topology & Bottom-Center Origin)
  * 
- * NGUYÊN TẮC:
- * - Giải thuật Kinematics tính toán chính xác tọa độ Pivot và Góc xoay (Rotation) của từng khớp.
- * - Mỗi bộ phận cơ thể là một thẻ <g id="bone-..."> được gắn:
- *   transform="translate(jointX, jointY) rotate(angleDeg)"
- * - Người dùng có thể paste các mảnh SVG từ Figma vào `parts`.
- * - NẾU CHƯA CÓ MẢNH TỪ FIGMA, hệ thống tự động render nét que tối giản siêu nét chuẩn 2K 60FPS
- *   kèm biểu cảm khuôn mặt động (FacialExpressions) và hiệu ứng thở phập phồng (breathScale).
+ * QUY CHUẨN TỌA ĐỘ GỐC (ORIGIN = BOTTOM-CENTER):
+ * - Điểm (x, y) truyền vào là điểm chính giữa 2 bàn chân chạm sàn (floor baseline).
+ * - Bàn chân chạm đất tại y = 0 trong hệ tọa độ cục bộ.
+ * - Đầu gối tại y = -175.
+ * - Khớp hông (Hip) tại y = -350 (đáy cột sống).
+ * - Đốt sống cổ (Neck) tại y = -350 - spineLength (~ -660).
+ * - Tâm đầu (HeadCenter) tại y = -660 - headRadius (~ -755).
+ * - Cả 2 chân và 2 tay đều hội tụ 100% tại 1 điểm duy nhất (Connected Topology).
  */
 export const StickmanRig: React.FC<StickmanRigProps> = ({
   state,
@@ -57,7 +58,7 @@ export const StickmanRig: React.FC<StickmanRigProps> = ({
     walkCycleProgress = 0,
   } = state;
 
-  // Kích thước chuẩn xương que 2K (Canvas 2560x1440, nhân vật cao ~750px-800px)
+  // Kích thước chuẩn xương que 2K (Canvas 2560x1440, tổng chiều cao ~750px - 850px)
   const spineLength = 310;
   const upperArmLength = 145;
   const forearmLength = 145;
@@ -68,10 +69,12 @@ export const StickmanRig: React.FC<StickmanRigProps> = ({
   // Hơi thở tác động nhẹ lên chiều dài sống lưng
   const effectiveSpineLength = spineLength * breathScale;
 
-  // Khớp gốc: Cổ và Hông (Connected Topology: 100% hội tụ tại trục thân 0, không có thanh đinh ba ngang)
-  const hip: Point2D = { x: 0, y: 0 };
-  const neck: Point2D = { x: 0, y: -effectiveSpineLength };
-  const headCenter: Point2D = { x: 0, y: -effectiveSpineLength - headRadius };
+  // =========================================================================
+  // KHỚP GỐC: HÔNG VÀ CỔ (Connected Topology - 100% hội tụ trục thân)
+  // =========================================================================
+  const hip: Point2D = { x: 0, y: -350 };
+  const neck: Point2D = { x: 0, y: -350 - effectiveSpineLength };
+  const headCenter: Point2D = { x: 0, y: -350 - effectiveSpineLength - headRadius };
 
   // Cả hai vai hội tụ chính xác tại 1 điểm duy nhất trên đốt sống cổ
   const leftShoulder: Point2D = { x: 0, y: neck.y };
@@ -81,19 +84,24 @@ export const StickmanRig: React.FC<StickmanRigProps> = ({
   const leftHipJoint: Point2D = { x: 0, y: hip.y };
   const rightHipJoint: Point2D = { x: 0, y: hip.y };
 
-  // 1. TÍNH TOÁN CÁNH TAY (Tư thế đứng A-pose tự nhiên: mở 28 độ so với thân, cong nhẹ khuỷu)
-  let leftElbow: Point2D = { x: -70, y: neck.y + 130 };
-  let leftHand: Point2D = { x: -100, y: neck.y + 265 };
-  let rightElbow: Point2D = { x: 70, y: neck.y + 130 };
-  let rightHand: Point2D = { x: 100, y: neck.y + 265 };
+  const flipSign = facing === "left" ? -1 : 1;
+
+  // =========================================================================
+  // 1. TÍNH TOÁN CÁNH TAY (ARMS & HANDS)
+  // Tư thế đứng A-pose tự nhiên: mở 25-30 độ so với thân, cong nhẹ khuỷu tay
+  // =========================================================================
+  let leftElbow: Point2D = { x: -65, y: neck.y + 130 };
+  let leftHand: Point2D = { x: -95, y: neck.y + 265 };
+  let rightElbow: Point2D = { x: 65, y: neck.y + 130 };
+  let rightHand: Point2D = { x: 95, y: neck.y + 265 };
 
   if (pose === "holdingObject" && holdingTarget) {
     const targetLeftLocal: Point2D = {
-      x: (holdingTarget.leftGrip.x - x) / scale,
+      x: ((holdingTarget.leftGrip.x - x) / scale) * flipSign,
       y: (holdingTarget.leftGrip.y - y) / scale,
     };
     const targetRightLocal: Point2D = {
-      x: (holdingTarget.rightGrip.x - x) / scale,
+      x: ((holdingTarget.rightGrip.x - x) / scale) * flipSign,
       y: (holdingTarget.rightGrip.y - y) / scale,
     };
 
@@ -105,18 +113,19 @@ export const StickmanRig: React.FC<StickmanRigProps> = ({
     rightElbow = rightArmIK.joint;
     rightHand = rightArmIK.reachedTarget;
   } else if (pose === "holdingObject") {
-    leftElbow = { x: -90, y: neck.y + 110 };
-    rightElbow = { x: 90, y: neck.y + 110 };
-    leftHand = { x: -55, y: neck.y + 140 };
-    rightHand = { x: 55, y: neck.y + 140 };
+    leftElbow = { x: -75, y: neck.y + 115 };
+    rightElbow = { x: 75, y: neck.y + 115 };
+    leftHand = { x: -40, y: neck.y + 160 };
+    rightHand = { x: 40, y: neck.y + 160 };
   } else if (pose === "sittingBehindDesk") {
-    leftElbow = { x: -95, y: neck.y + 120 };
-    rightElbow = { x: 95, y: neck.y + 120 };
-    leftHand = { x: -65, y: neck.y + 160 };
-    rightHand = { x: 65, y: neck.y + 160 };
+    // Hai tay đặt tự nhiên lên mặt bàn làm việc (tabletop tại y = -360)
+    leftElbow = { x: -110, y: -480 };
+    rightElbow = { x: 110, y: -480 };
+    leftHand = { x: -70, y: -360 };
+    rightHand = { x: 70, y: -360 };
   } else if (pose === "pointing" && pointingTarget) {
     const targetLocal: Point2D = {
-      x: (pointingTarget.x - x) / scale,
+      x: ((pointingTarget.x - x) / scale) * flipSign,
       y: (pointingTarget.y - y) / scale,
     };
     const pointIK = solveTwoBoneIK(rightShoulder, targetLocal, upperArmLength, forearmLength, true);
@@ -132,23 +141,29 @@ export const StickmanRig: React.FC<StickmanRigProps> = ({
   const rightLowerArmAngle = calculateSegmentAngle(rightElbow, rightHand, "downwards");
   const rightHandAngle = rightLowerArmAngle;
 
-  // 2. TÍNH TOÁN CHÂN (Tư thế đứng thẳng tự nhiên chữ V nhẹ: mở góc nhẹ)
-  let leftKnee: Point2D = { x: -35, y: thighLength };
-  let rightKnee: Point2D = { x: 35, y: thighLength };
-  let leftFoot: Point2D = { x: -50, y: thighLength + calfLength };
-  let rightFoot: Point2D = { x: 50, y: thighLength + calfLength };
+  // =========================================================================
+  // 2. TÍNH TOÁN CHÂN (LEGS & FEET)
+  // Bàn chân chạm đất tại y = 0, gối tại y = -175, hông tại y = -350
+  // =========================================================================
+  let leftKnee: Point2D = { x: -35, y: -175 };
+  let rightKnee: Point2D = { x: 35, y: -175 };
+  let leftFoot: Point2D = { x: -45, y: 0 };
+  let rightFoot: Point2D = { x: 45, y: 0 };
 
-  if (pose === "walking") {
+  const isWalking = pose === "walking" || walkCycleProgress > 0;
+
+  if (isWalking) {
     const walkData = calculateWalkCycle(hip, walkCycleProgress);
     leftKnee = walkData.leftKnee;
     rightKnee = walkData.rightKnee;
     leftFoot = walkData.leftFoot;
     rightFoot = walkData.rightFoot;
   } else if (pose === "sittingBehindDesk") {
-    leftKnee = { x: -35, y: 45 };
-    rightKnee = { x: 35, y: 45 };
-    leftFoot = { x: -35, y: 190 };
-    rightFoot = { x: 35, y: 190 };
+    // Khi ngồi sau bàn, chân ẩn sau mặt bàn
+    leftKnee = { x: -35, y: -260 };
+    rightKnee = { x: 35, y: -260 };
+    leftFoot = { x: -35, y: -120 };
+    rightFoot = { x: 35, y: -120 };
   }
 
   const leftThighAngle = calculateSegmentAngle(leftHipJoint, leftKnee, "downwards");
@@ -166,21 +181,21 @@ export const StickmanRig: React.FC<StickmanRigProps> = ({
         mouth: { x: x + headCenter.x * scale, y: y + (headCenter.y + 35) * scale },
         neck: { x: x + neck.x * scale, y: y + neck.y * scale },
         hip: { x: x + hip.x * scale, y: y + hip.y * scale },
-        leftShoulder: { x: x + leftShoulder.x * scale, y: y + leftShoulder.y * scale },
-        rightShoulder: { x: x + rightShoulder.x * scale, y: y + rightShoulder.y * scale },
-        leftElbow: { x: x + leftElbow.x * scale, y: y + leftElbow.y * scale },
-        rightElbow: { x: x + rightElbow.x * scale, y: y + rightElbow.y * scale },
-        leftHand: { x: x + leftHand.x * scale, y: y + leftHand.y * scale },
-        rightHand: { x: x + rightHand.x * scale, y: y + rightHand.y * scale },
-        leftHip: { x: x + leftHipJoint.x * scale, y: y },
-        rightHip: { x: x + rightHipJoint.x * scale, y: y },
-        leftKnee: { x: x + leftKnee.x * scale, y: y + leftKnee.y * scale },
-        rightKnee: { x: x + rightKnee.x * scale, y: y + rightKnee.y * scale },
-        leftFoot: { x: x + leftFoot.x * scale, y: y + leftFoot.y * scale },
-        rightFoot: { x: x + rightFoot.x * scale, y: y + rightFoot.y * scale },
+        leftShoulder: { x: x + leftShoulder.x * scale * flipSign, y: y + leftShoulder.y * scale },
+        rightShoulder: { x: x + rightShoulder.x * scale * flipSign, y: y + rightShoulder.y * scale },
+        leftElbow: { x: x + leftElbow.x * scale * flipSign, y: y + leftElbow.y * scale },
+        rightElbow: { x: x + rightElbow.x * scale * flipSign, y: y + rightElbow.y * scale },
+        leftHand: { x: x + leftHand.x * scale * flipSign, y: y + leftHand.y * scale },
+        rightHand: { x: x + rightHand.x * scale * flipSign, y: y + rightHand.y * scale },
+        leftHip: { x: x + leftHipJoint.x * scale * flipSign, y: y + hip.y * scale },
+        rightHip: { x: x + rightHipJoint.x * scale * flipSign, y: y + hip.y * scale },
+        leftKnee: { x: x + leftKnee.x * scale * flipSign, y: y + leftKnee.y * scale },
+        rightKnee: { x: x + rightKnee.x * scale * flipSign, y: y + rightKnee.y * scale },
+        leftFoot: { x: x + leftFoot.x * scale * flipSign, y: y + leftFoot.y * scale },
+        rightFoot: { x: x + rightFoot.x * scale * flipSign, y: y + rightFoot.y * scale },
       });
     }
-  }, [x, y, scale, pose, holdingTarget, pointingTarget, walkCycleProgress, effectiveSpineLength]);
+  }, [x, y, scale, pose, holdingTarget, pointingTarget, walkCycleProgress, effectiveSpineLength, facing]);
 
   const flipTransform = facing === "left" ? "scale(-1, 1)" : "";
 
@@ -191,7 +206,7 @@ export const StickmanRig: React.FC<StickmanRigProps> = ({
       data-character-pose={pose}
     >
       {/* =========================================================================
-          LAYER A: CHÂN (LEGS & FEET)
+          LAYER A: CHÂN (LEGS & FEET) - ẨN HOÀN TOÀN KHI NGỒI SAU BÀN
          ========================================================================= */}
       {(renderPart === "all" || renderPart === "legsOnly") && pose !== "sittingBehindDesk" && (
         <g id="layer-character-legs">
@@ -210,7 +225,7 @@ export const StickmanRig: React.FC<StickmanRigProps> = ({
 
           <g id="bone-left-foot" transform={`translate(${leftFoot.x}, ${leftFoot.y}) rotate(${leftFootAngle})`}>
             {parts?.leftFoot ? parts.leftFoot : (
-              <line x1={0} y1={0} x2={-30} y2={0} stroke="#141414" strokeWidth={14} strokeLinecap="round" strokeLinejoin="round" />
+              <line x1={0} y1={0} x2={-28} y2={0} stroke="#141414" strokeWidth={14} strokeLinecap="round" strokeLinejoin="round" />
             )}
           </g>
 
@@ -229,7 +244,7 @@ export const StickmanRig: React.FC<StickmanRigProps> = ({
 
           <g id="bone-right-foot" transform={`translate(${rightFoot.x}, ${rightFoot.y}) rotate(${rightFootAngle})`}>
             {parts?.rightFoot ? parts.rightFoot : (
-              <line x1={0} y1={0} x2={30} y2={0} stroke="#141414" strokeWidth={14} strokeLinecap="round" strokeLinejoin="round" />
+              <line x1={0} y1={0} x2={28} y2={0} stroke="#141414" strokeWidth={14} strokeLinecap="round" strokeLinejoin="round" />
             )}
           </g>
         </g>
@@ -240,12 +255,23 @@ export const StickmanRig: React.FC<StickmanRigProps> = ({
          ========================================================================= */}
       {(renderPart === "all" || renderPart === "bodyOnly") && (
         <g id="layer-character-torso-head">
-          <g id="bone-torso" transform={`translate(0, 0)`}>
+          {/* CỘT SỐNG (TORSO) - Nối từ hip (y = -350) lên cổ neck (y = -350 - spineLength) */}
+          <g id="bone-torso">
             {parts?.torso ? parts.torso : (
-              <line x1={0} y1={0} x2={0} y2={-effectiveSpineLength} stroke="#141414" strokeWidth={14} strokeLinecap="round" strokeLinejoin="round" />
+              <line
+                x1={0}
+                y1={hip.y}
+                x2={0}
+                y2={neck.y}
+                stroke="#141414"
+                strokeWidth={14}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             )}
           </g>
 
+          {/* ĐẦU & BIỂU CẢM KHUÔN MẶT */}
           <g id="bone-head" transform={`translate(${headCenter.x}, ${headCenter.y})`}>
             {parts?.head ? parts.head : (
               <g id="default-stickman-head">

@@ -114,6 +114,7 @@ export interface PropItem {
   layer: "midgroundBackLayer" | "midgroundFrontLayer" | "characterLayer";
   x: number;
   y: number;
+  slot?: string; // Semantic slot e.g. "desk.topLeft", "floor.left"
   scale?: number;
   rotation?: number;
   visible?: boolean;
