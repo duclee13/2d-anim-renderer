@@ -66,27 +66,29 @@ export function solveTwoBoneIK(
 export function calculateWalkCycle(
   hip: Point2D,
   progress: number,
-  strideWidth: number = 110,
-  stepHeight: number = 40
+  strideWidth: number = 65,
+  stepHeight: number = 22
 ): {
   leftFoot: Point2D;
   rightFoot: Point2D;
   leftKnee: Point2D;
   rightKnee: Point2D;
 } {
-  const phase = progress * Math.PI * 2;
+  const phase = (progress * Math.PI * 2) % (Math.PI * 2);
   const legLength = 350;
   const halfLeg = legLength / 2;
 
-  // Left leg sinusoidal phase
+  // Chu kỳ bước đi tự nhiên 2 pha (Không moonwalk):
+  // Pha vung chân (Swing): Chân nhấc lên không trung (sin > 0) và vung từ sau ra trước (-cos tăng từ -strideWidth sang +strideWidth)
+  // Pha chống chân (Stance): Chân chạm đất (y = 0) và đạp lùi từ trước về sau (-cos giảm từ +strideWidth sang -strideWidth)
   const leftPhase = phase;
-  const leftXOffset = Math.sin(leftPhase) * strideWidth;
-  const leftYOffset = Math.max(0, -Math.cos(leftPhase)) * stepHeight;
+  const leftYOffset = Math.max(0, Math.sin(leftPhase)) * stepHeight;
+  const leftXOffset = -Math.cos(leftPhase) * strideWidth;
 
-  // Right leg opposite phase (180 deg shifted)
-  const rightPhase = phase + Math.PI;
-  const rightXOffset = Math.sin(rightPhase) * strideWidth;
-  const rightYOffset = Math.max(0, -Math.cos(rightPhase)) * stepHeight;
+  // Chân phải lệch pha 180 độ (PI radian)
+  const rightPhase = (phase + Math.PI) % (Math.PI * 2);
+  const rightYOffset = Math.max(0, Math.sin(rightPhase)) * stepHeight;
+  const rightXOffset = -Math.cos(rightPhase) * strideWidth;
 
   const leftFootTarget: Point2D = {
     x: hip.x + leftXOffset,

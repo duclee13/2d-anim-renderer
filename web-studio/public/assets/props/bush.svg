@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-200 -220 400 240" width="400" height="240">
+  <defs>
+    <!-- Soft ground shadow -->
+    <radialGradient id="bushBaseShadow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#0F172A" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#0F172A" stop-opacity="0"/>
+    </radialGradient>
+    <!-- Bush lush green gradient -->
+    <linearGradient id="bushGreenGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#4ADE80"/>
+      <stop offset="60%" stop-color="#22C55E"/>
+      <stop offset="100%" stop-color="#15803D"/>
+    </linearGradient>
+    <linearGradient id="bushHighlight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#86EFAC" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#22C55E" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 1. Ground contact shadow -->
+  <ellipse cx="0" cy="5" rx="170" ry="20" fill="url(#bushBaseShadow)"/>
+
+  <!-- 2. Main Bush Cloud Folliage (Bottom-Center Origin: baseline y = 0) -->
+  <!-- Back darker leaf clusters -->
+  <circle cx="-100" cy="-70" r="65" fill="#15803D" stroke="#141414" stroke-width="12"/>
+  <circle cx="100" cy="-70" r="65" fill="#15803D" stroke="#141414" stroke-width="12"/>
+  <circle cx="0" cy="-115" r="75" fill="#16A34A" stroke="#141414" stroke-width="12"/>
+
+  <!-- Front vibrant leaf clusters -->
+  <circle cx="-65" cy="-60" r="70" fill="url(#bushGreenGrad)" stroke="#141414" stroke-width="12"/>
+  <circle cx="65" cy="-60" r="70" fill="url(#bushGreenGrad)" stroke="#141414" stroke-width="12"/>
+  <circle cx="0" cy="-80" r="75" fill="url(#bushGreenGrad)" stroke="#141414" stroke-width="12"/>
+
+  <!-- 3. Stylized leaf specular highlights -->
+  <path d="M -30 -130 Q 0 -145 30 -130" stroke="#BBF7D0" stroke-width="8" stroke-linecap="round" fill="none"/>
+  <path d="M -90 -105 Q -70 -120 -50 -105" stroke="#BBF7D0" stroke-width="7" stroke-linecap="round" fill="none"/>
+  <path d="M 50 -105 Q 70 -120 90 -105" stroke="#BBF7D0" stroke-width="7" stroke-linecap="round" fill="none"/>
+
+  <!-- 4. Tiny cartoon flowers -->
+  <g id="bush-flowers">
+    <circle cx="-45" cy="-65" r="8" fill="#F43F5E"/>
+    <circle cx="-45" cy="-65" r="3" fill="#FEF08A"/>
+
+    <circle cx="45" cy="-55" r="8" fill="#FB923C"/>
+    <circle cx="45" cy="-55" r="3" fill="#FEF08A"/>
+
+    <circle cx="5" cy="-90" r="9" fill="#EC4899"/>
+    <circle cx="5" cy="-90" r="3.5" fill="#FEF08A"/>
+  </g>
+</svg>

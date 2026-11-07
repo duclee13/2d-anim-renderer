@@ -88,25 +88,66 @@ export const EnvironmentVfxLayer: React.FC<EnvironmentVfxLayerProps> = ({
       )}
 
       {/* =========================================================================
-          2. SUNBEAMS / GOD RAYS (LƯỚI TIA NẮNG CHIẾU CHÉO ĐA TẦNG ALPHA)
+          2. SUNBEAMS & ROTATING TWINKLING SUN (MẶT TRỜI TIA NẮNG XOAY & NHẤP NHÁY NHẸ)
          ========================================================================= */}
       {hasSunbeams && (
-        <g id="vfx-sunbeams" opacity={0.75 + 0.15 * Math.sin(frame * 0.04)}>
-          {/* Chùm tia nắng 1 */}
-          <polygon
-            points="180,0 360,0 1250,1440 850,1440"
-            fill="url(#sunbeamsGradient)"
-          />
-          {/* Chùm tia nắng 2 */}
-          <polygon
-            points="620,0 820,0 1950,1440 1600,1440"
-            fill="url(#sunbeamsGradient)"
-          />
-          {/* Chùm tia nắng 3 */}
-          <polygon
-            points="1150,0 1280,0 2480,1440 2200,1440"
-            fill="url(#sunbeamsGradient)"
-          />
+        <g id="vfx-sunbeams-system">
+          {/* A. MẶT TRỜI HOẠT HỌA 2K (Tâm sáng rực & các tia nắng xoay tròn nhẹ nhàng) */}
+          <g id="vfx-sun-actor" transform={`translate(280, 180)`}>
+            {/* Quầng sáng tỏa rộng */}
+            <circle cx={0} cy={0} r={180} fill="url(#sunGlow)" opacity={0.85 + 0.15 * Math.sin(frame * 0.04)} />
+
+            {/* Các tia nắng hoạt họa xoay quanh tâm (0.22 deg/frame ~13 deg/giây) */}
+            <g
+              id="vfx-sun-rays"
+              transform={`rotate(${frame * 0.22}, 0, 0)`}
+              opacity={0.82 + 0.18 * Math.sin(frame * 0.05)}
+            >
+              {Array.from({ length: 12 }).map((_, i) => {
+                const angle = (i * 360) / 12;
+                return (
+                  <polygon
+                    key={i}
+                    points="-14,-105 14,-105 0,-155"
+                    fill="#FBBF24"
+                    stroke="#F59E0B"
+                    strokeWidth={4}
+                    strokeLinejoin="round"
+                    transform={`rotate(${angle}, 0, 0)`}
+                  />
+                );
+              })}
+            </g>
+
+            {/* Đĩa tròn mặt trời trung tâm */}
+            <circle
+              cx={0}
+              cy={0}
+              r={78}
+              fill="url(#sunCenter)"
+              stroke="#F59E0B"
+              strokeWidth={8}
+            />
+          </g>
+
+          {/* B. CÁC DẢI GOD RAYS CHIẾU CHÉO ĐA TẦNG ALPHA */}
+          <g id="vfx-god-rays" opacity={0.70 + 0.15 * Math.sin(frame * 0.035)}>
+            {/* Chùm tia nắng 1 */}
+            <polygon
+              points="180,0 360,0 1250,1440 850,1440"
+              fill="url(#sunbeamsGradient)"
+            />
+            {/* Chùm tia nắng 2 */}
+            <polygon
+              points="620,0 820,0 1950,1440 1600,1440"
+              fill="url(#sunbeamsGradient)"
+            />
+            {/* Chùm tia nắng 3 */}
+            <polygon
+              points="1150,0 1280,0 2480,1440 2200,1440"
+              fill="url(#sunbeamsGradient)"
+            />
+          </g>
         </g>
       )}
 

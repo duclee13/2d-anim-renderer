@@ -126,9 +126,12 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
   }
 
   // --- Áp dụng keyframe "moveCharacter" hoặc tự động bước đi khi có keyword walk ---
+  // TÍNH TOÁN VẬN TỐC THỰC TẾ & CHỈ BƯỚC ĐI KHI ĐANG DI CHUYỂN
   const moveCharKf = activeKeyframes.find(
     (kf) => kf.action === "moveCharacter" && kf.target === "character"
   );
+  let isCurrentlyTranslating = false;
+
   if (moveCharKf && isCharacterVisible) {
     const { fromX, toX, fromY, toY } = moveCharKf.params;
     const cfg = moveCharKf.springConfig;
@@ -141,6 +144,18 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
         moveCharKf.frame,
         cfg
       );
+      // Tính độ chênh lệch vị trí giữa 2 frame liên tiếp để xác định vận tốc thực
+      const nextX = springMove(
+        sceneLocalFrame + 1,
+        fps,
+        fromX,
+        toX,
+        moveCharKf.frame,
+        cfg
+      );
+      if (Math.abs(nextX - dynamicCharacterState.x) > 0.4) {
+        isCurrentlyTranslating = true;
+      }
     }
     if (fromY !== undefined && toY !== undefined) {
       dynamicCharacterState.y = springMove(
@@ -153,22 +168,29 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
       );
     }
   } else if (hasWalkAction && isCharacterVisible && currentScene.durationInFrames > 60) {
+    const walkDuration = currentScene.durationInFrames * 0.85;
+    if (sceneLocalFrame < walkDuration) {
+      isCurrentlyTranslating = true;
+    }
     const startX = currentScene.character.facing === "left" ? 1700 : 700;
     const endX = currentScene.character.facing === "left" ? 900 : 1700;
-    const walkProgress = Math.min(1, sceneLocalFrame / (currentScene.durationInFrames * 0.85));
+    const walkProgress = Math.min(1, sceneLocalFrame / walkDuration);
     dynamicCharacterState.x = interpolate(walkProgress, [0, 1], [startX, endX]);
   }
 
-  // --- Hiệu ứng bước chân (Walk Cycle Animation) khi di chuyển ---
+  // --- Hiệu ứng bước chân (Walk Cycle Animation) KHI VÀ CHỈ KHI ĐANG DI CHUYỂN ---
   const isWalkingActive =
-    dynamicCharacterState.pose === "walking" ||
-    Boolean(moveCharKf) ||
-    (hasWalkAction && currentScene.durationInFrames > 60);
+    dynamicCharacterState.pose === "walking" || isCurrentlyTranslating;
 
   if (isWalkingActive) {
-    dynamicCharacterState.walkCycleProgress = (sceneLocalFrame * 0.045) % 1;
-    const walkBobY = Math.abs(Math.sin(sceneLocalFrame * 0.045 * Math.PI * 2)) * 14;
+    // Tốc độ bước tự nhiên: ~0.95s cho 1 chu kỳ 2 bước (~57 frames @ 60 FPS = multiplier 0.0175)
+    dynamicCharacterState.walkCycleProgress = (sceneLocalFrame * 0.0175) % 1;
+    // Nhấp nhô hông tự nhiên 5.5px (không nảy 14px thô bạo)
+    const walkBobY = Math.abs(Math.sin(sceneLocalFrame * 0.0175 * Math.PI * 2)) * 5.5;
     dynamicCharacterState.y = (dynamicCharacterState.y || STAGE_CONFIG.floorY) - walkBobY;
+  } else {
+    // Khi đứng yên: CHÂN ĐỨNG IM CHẠM ĐẤT 100%, không đạp chân
+    dynamicCharacterState.walkCycleProgress = 0;
   }
 
   // --- Áp dụng keyframe "changeExpression" ---
@@ -252,7 +274,9 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
       armchair: "chair",
       petcat: "cat",
       kitten: "cat",
-      bush: "potted-plant",
+      bush: "bush",
+      shrub: "bush",
+      hedge: "bush",
     };
 
     return aliasMap[normalized] || aliasMap[type.toLowerCase()] || normalized;
@@ -401,10 +425,13 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
   const spiderOffset = spiderSway(frame, fps);
 
   // =========================================================================
-  // BREATHING & IDLE SWAY CHO NHÂN VẬT
+  // BREATHING & IDLE CHU KỲ CON NGƯỜI (ORIGIN = BOTTOM-MID, SCALE Y TỪ 0.98 ĐẾN 1.03)
+  // Chu kỳ thở: 1.75s (~105 frames @ 60 FPS), chân cố định 100% trên sàn, KHÔNG trượt ngang
   // =========================================================================
-  const breathScale = isCharacterVisible ? breathingOscillation(frame, fps) : 1;
-  const swayX = isCharacterVisible ? idleSway(frame, fps) : 0;
+  const breathPhase = (frame * Math.PI * 2) / 105;
+  const humanBreathScaleY = isCharacterVisible
+    ? 1.005 + Math.sin(breathPhase) * 0.025 // Dao động chuẩn từ 0.98 đến 1.03
+    : 1.0;
 
   // =========================================================================
   // DYNAMIC LINES: Giải quyết anchor refs thành tọa độ
@@ -557,11 +584,11 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
 
           {/* LAYER 30: CHARACTER LOWER LAYER KHI NGỒI SAU BÀN (THÂN & ĐẦU) */}
           {isSitting && isCharacterVisible && (
-            <g id="layer-character-seated-body" transform={`translate(${swayX}, 0)`}>
+            <g id="layer-character-seated-body">
               <StickmanRig
                 state={dynamicCharacterState}
                 renderPart="bodyOnly"
-                breathScale={breathScale}
+                breathScaleY={humanBreathScaleY}
               />
             </g>
           )}
@@ -639,18 +666,18 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
 
           {/* LAYER 45: CHARACTER UPPER LAYER (TAY TỰA MẶT BÀN HOẶC TOÀN THÂN ĐỨNG) */}
           {isCharacterVisible && (
-            <g id="layer-character-front" transform={`translate(${swayX}, 0)`}>
+            <g id="layer-character-front">
               {isSitting ? (
                 <StickmanRig
                   state={dynamicCharacterState}
                   renderPart="armsOnly"
-                  breathScale={breathScale}
+                  breathScaleY={humanBreathScaleY}
                 />
               ) : (
                 <StickmanRig
                   state={dynamicCharacterState}
                   renderPart="all"
-                  breathScale={breathScale}
+                  breathScaleY={humanBreathScaleY}
                 />
               )}
             </g>

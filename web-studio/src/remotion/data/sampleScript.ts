@@ -29,7 +29,7 @@ export const sampleScriptSceneGraph: MasterSceneGraph = {
       background: { preset: "livingRoomDay" },
       camera: { x: 1280, y: 720, zoom: 1.0 },
       lighting: { preset: "sunbeams", sunbeams: true },
-      environmentVfx: ["cloudDrift", "windBreeze", "foliageSway"],
+      environmentVfx: ["cloudDrift", "windBreeze"],
       character: {
         slot: "floor.right",
         x: 1850,

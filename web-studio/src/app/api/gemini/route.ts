@@ -34,7 +34,7 @@ Strict Rules:
      * 'rainLoop': Angled rain streaks with parallax and surface ripples (for sad/thoughtful or stormy scenes).
      * 'cloudDrift': Cartoon clouds drifting across the sky.
      * 'windBreeze': Soft curving wind trails blowing across the scene.
-     * 'foliageSway': Plants and foliage swaying naturally in the room/garden.
+     * 'foliageSway': Outdoor bushes and trees swaying gently in the wind (ONLY for outdoor scenes like gardenDay, NEVER for indoor rooms).
      * 'sunbeams': God rays streaming down from the morning sun.
    - 'lighting':
      * 'warmNightLamp': Cozy evening desk scene with multi-stop volumetric light falloff cone and tabletop glow.
@@ -58,7 +58,7 @@ Strict Rules:
    - When holding or carrying ("cầm", "giữ", "bê", "mang", "xách"): pose MUST be 'holdingObject'.
    - When moving or walking ("mang ra", "bước", "đi", "chạy"): add 'moveCharacter' keyframe in 'keyframes'.
 11. Dynamic Asset Bank:
-   - Standard built-in props: 'glassJar', 'spider', 'sofa', 'desk', 'deskLamp', 'gaugeMeter', 'pottedPlant', 'chair', 'table', 'tv', 'pizza', 'apple', 'guitar', 'cat', 'tree', 'balloon', 'trophy', 'star', 'heart', 'whiteboard', 'laptop', 'coffeeCup', 'phone', 'book', 'clock'.
+   - Standard built-in props: 'glassJar', 'spider', 'sofa', 'desk', 'deskLamp', 'gaugeMeter', 'pottedPlant', 'bush', 'chair', 'table', 'tv', 'pizza', 'apple', 'guitar', 'cat', 'tree', 'balloon', 'trophy', 'star', 'heart', 'whiteboard', 'laptop', 'coffeeCup', 'phone', 'book', 'clock'.
    - Background presets: 'livingRoomDay', 'livingRoomNight', 'gardenDay', 'infographicStripes'.
 12. Output ONLY a valid JSON object matching the MasterSceneGraph schema. No markdown formatting.
 `;
@@ -96,7 +96,9 @@ function getStandardPropFileName(type: string): string {
     armchair: "chair",
     petcat: "cat",
     kitten: "cat",
-    bush: "potted-plant",
+    bush: "bush",
+    shrub: "bush",
+    hedge: "bush",
   };
 
   return aliasMap[normalized] || aliasMap[type.toLowerCase()] || normalized;
@@ -240,7 +242,7 @@ function sanitizeSceneGraph(raw: any): MasterSceneGraph {
       props: Array.isArray(s?.props)
         ? s.props.map((p: any, pIdx: number) => ({
             id: String(p?.id || `prop_${idx}_${pIdx}`),
-            type: String(p?.type || "glassJar"),
+            type: getStandardPropFileName(String(p?.type || "glassJar")),
             slot: p?.slot || undefined,
             layer: p?.layer === "midgroundBackLayer" ? ("midgroundBackLayer" as const) : ("midgroundFrontLayer" as const),
             x: Number(p?.x) || 1280,

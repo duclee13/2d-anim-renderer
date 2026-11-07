@@ -60,6 +60,7 @@ const KNOWN_PROP_DIMENSIONS: Record<string, SvgDimensionInfo> = {
   "star": { width: 240, height: 240 },
   "heart": { width: 240, height: 240 },
   "whiteboard": { width: 600, height: 400 },
+  "bush": { width: 400, height: 240 },
   "environment": { width: 300, height: 300 },
 };
 
@@ -121,9 +122,13 @@ export const DynamicProp: React.FC<DynamicPropProps> = ({
         if (!isMounted) return;
         const dims = extractSvgDimensions(svgText);
         setDimensions(dims);
+        setHasLoadError(false);
       })
       .catch((err) => {
         console.warn(`[DynamicProp] Dùng kích thước mặc định cho prop '${id}':`, err.message);
+        if (isMounted) {
+          setHasLoadError(true);
+        }
       });
 
     return () => {
@@ -202,8 +207,8 @@ export const DynamicProp: React.FC<DynamicPropProps> = ({
     }
   }
 
-  // Đung đưa cây cỏ (Foliage Sway)
-  const isPlant = foliageSway || id === "potted-plant" || id === "tree";
+  // Đung đưa cây cỏ (Foliage Sway) CHỈ KHI CÓ HIỆU ỨNG THỜI TIẾT NGOÀI TRỜI ĐƯỢC BẬT (Vật tĩnh giữ tĩnh 100%)
+  const isPlant = foliageSway && (id === "potted-plant" || id === "tree" || id === "bush");
   const plantSwayDeg = isPlant ? Math.sin(frame * 0.045 + (x % 10)) * 3.5 : 0;
 
   // Vị trí gắn nhãn:

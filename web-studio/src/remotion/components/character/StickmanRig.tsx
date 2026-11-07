@@ -25,6 +25,7 @@ export interface StickmanRigProps {
   renderPart?: "all" | "bodyOnly" | "armsOnly" | "legsOnly";
   parts?: StickmanBodyParts;
   breathScale?: number;
+  breathScaleY?: number;
   onAnchorsComputed?: (anchors: StickmanAnchors) => void;
 }
 
@@ -45,6 +46,7 @@ export const StickmanRig: React.FC<StickmanRigProps> = ({
   renderPart = "all",
   parts,
   breathScale = 1.0,
+  breathScaleY = 1.0,
   onAnchorsComputed,
 }) => {
   const {
@@ -202,7 +204,7 @@ export const StickmanRig: React.FC<StickmanRigProps> = ({
   return (
     <g
       id="stickman-rig-wrapper"
-      transform={`translate(${x}, ${y}) scale(${scale}) ${flipTransform}`}
+      transform={`translate(${x}, ${y}) scale(${scale}) ${flipTransform} scale(1, ${breathScaleY})`}
       data-character-pose={pose}
     >
       {/* =========================================================================
