@@ -16,6 +16,7 @@ export interface DynamicPropProps {
   alphaConfig?: AlphaConfig;
   frame?: number;
   sceneDurationInFrames?: number;
+  anchorPoint?: "bottomCenter" | "center" | "topCenter";
   pivotPoint?: "center" | "bottomCenter" | "topCenter" | "topLeft" | "custom";
   pivotX?: number;
   pivotY?: number;
@@ -83,6 +84,7 @@ export const DynamicProp: React.FC<DynamicPropProps> = ({
   alphaConfig,
   frame = 0,
   sceneDurationInFrames = 120,
+  anchorPoint,
   pivotPoint = "bottomCenter",
   pivotX,
   pivotY,
@@ -136,6 +138,8 @@ export const DynamicProp: React.FC<DynamicPropProps> = ({
     };
   }, [id, customSvgContent, assetUrl]);
 
+  const effectiveAnchor = anchorPoint || (pivotPoint === "center" ? "center" : "bottomCenter");
+
   useEffect(() => {
     if (onAnchorsComputed) {
       const anchors = computeAutoAnchorPorts(dimensions, {
@@ -143,36 +147,81 @@ export const DynamicProp: React.FC<DynamicPropProps> = ({
         y,
         scale,
         rotationDeg: rotation,
+        anchorPoint: effectiveAnchor === "center" ? "center" : "bottomCenter",
       });
       onAnchorsComputed(anchors);
     }
-  }, [dimensions, x, y, scale, rotation]);
+  }, [dimensions, x, y, scale, rotation, effectiveAnchor]);
 
   const { width, height } = dimensions;
-
-  // Tính toán vị trí Y của ảnh dựa trên cấu trúc viewBox của từng loại đạo cụ
   const isGauge = id === "gauge-meter";
-  const imageY = isGauge ? -240 : -height;
+  const isSpider = id === "spider";
 
-  // Điểm neo Pivot Point
+  // Vị trí Y của ảnh và các phần tử con theo Anchor/Origin:
+  // "center" (Mid-Center): Tâm hình học của vật thể đặt tại (x, y) - dùng cho Cảnh cận, Màn hình, Infographics
+  // "bottomCenter": Đáy vật thể đặt tại y = 0 - dùng khi đặt trên sàn hoặc mặt bàn
+  let imageY = -height;
+  let needleCenterY = 0;
+  let childrenY = -Math.round(height * 0.22);
+  let labelY = -Math.round(height * 0.5);
+
+  if (effectiveAnchor === "center") {
+    if (isGauge) {
+      // Mặt đồng hồ: vòm bán nguyệt từ -220 đến 0, viewBox -240 đến +40 (chiều cao 280)
+      // Tâm hình học nằm tại khoảng y = -90 trong viewBox.
+      // Căn tâm: đẩy toàn bộ xuống 90px để tâm vòm nằm chính xác tại y = 0.
+      imageY = -150;
+      needleCenterY = 90;
+      labelY = 165;
+    } else if (isSpider) {
+      // Con nhện: viewBox -160 -120 320 240, tâm tại 0, 0
+      imageY = -height / 2;
+      childrenY = 0;
+      labelY = 0;
+    } else {
+      // Các vật thể chuẩn (như lọ thủy tinh glass-jar, sofa, đèn bàn, v.v.)
+      imageY = -height / 2;
+      // Nhện nằm trong thân lọ thủy tinh tại vị trí cân đối
+      childrenY = id === "glass-jar" ? Math.round(height * 0.12) : 0;
+      // Nhãn dán "TÁM" nằm ở 1/3 phía trên thân lọ, trên đầu con nhện
+      labelY = id === "glass-jar" ? -Math.round(height * 0.22) : -Math.round(height * 0.25);
+    }
+  } else {
+    // bottomCenter
+    if (isGauge) {
+      imageY = -240;
+      needleCenterY = 0;
+      labelY = 75;
+    } else if (isSpider) {
+      imageY = -height / 2;
+      childrenY = 0;
+      labelY = 0;
+    } else {
+      imageY = -height;
+      childrenY = -Math.round(height * 0.22);
+      labelY = id === "glass-jar" ? -Math.round(height * 0.72) : -Math.round(height * 0.5);
+    }
+  }
+
+  // Điểm neo Pivot Point (Dùng cho phép xoay rotate quanh khớp tùy chọn)
   let px = 0;
   let py = 0;
   switch (pivotPoint) {
     case "bottomCenter":
       px = 0;
-      py = 0;
+      py = effectiveAnchor === "center" ? height / 2 : 0;
       break;
     case "center":
       px = 0;
-      py = isGauge ? 0 : -height / 2;
+      py = effectiveAnchor === "center" ? 0 : (isGauge ? 0 : -height / 2);
       break;
     case "topCenter":
       px = 0;
-      py = -height;
+      py = effectiveAnchor === "center" ? -height / 2 : -height;
       break;
     case "topLeft":
       px = -width / 2;
-      py = -height;
+      py = effectiveAnchor === "center" ? -height / 2 : -height;
       break;
     case "custom":
       px = pivotX ?? 0;
@@ -211,13 +260,6 @@ export const DynamicProp: React.FC<DynamicPropProps> = ({
   const isPlant = foliageSway && (id === "potted-plant" || id === "tree" || id === "bush");
   const plantSwayDeg = isPlant ? Math.sin(frame * 0.045 + (x % 10)) * 3.5 : 0;
 
-  // Vị trí gắn nhãn:
-  const labelY = isGauge
-    ? 75
-    : id === "glass-jar"
-      ? -Math.round(height * 0.72)
-      : -Math.round(height * 0.5);
-
   const labelBoxWidth = isGauge ? 280 : 150;
   const labelBoxHeight = isGauge ? 60 : 56;
 
@@ -250,7 +292,7 @@ export const DynamicProp: React.FC<DynamicPropProps> = ({
           <g id={`fallback-badge-${id}`}>
             <rect
               x={-width / 2}
-              y={-height}
+              y={effectiveAnchor === "center" ? -height / 2 : -height}
               width={width}
               height={height}
               rx={24}
@@ -260,7 +302,7 @@ export const DynamicProp: React.FC<DynamicPropProps> = ({
             />
             <rect
               x={-width / 2 + 16}
-              y={-height + 16}
+              y={(effectiveAnchor === "center" ? -height / 2 : -height) + 16}
               width={width - 32}
               height={height - 32}
               rx={16}
@@ -270,7 +312,7 @@ export const DynamicProp: React.FC<DynamicPropProps> = ({
             />
             <text
               x={0}
-              y={-height / 2 + 10}
+              y={effectiveAnchor === "center" ? 10 : -height / 2 + 10}
               textAnchor="middle"
               fill="#141414"
               fontSize={24}
@@ -285,7 +327,7 @@ export const DynamicProp: React.FC<DynamicPropProps> = ({
 
       {/* 1.5. KIM ĐỒNG HỒ ĐỘNG QUAY QUANH TRỤC (NẾU LÀ GAUGE-METER VÀ CÓ KIM XOAY) */}
       {isGauge && needleAngle !== undefined && (
-        <g transform={`rotate(${needleAngle}, 0, 0)`}>
+        <g transform={`translate(0, ${needleCenterY}) rotate(${needleAngle}, 0, 0)`}>
           <polygon points="-5,0 0,-185 5,0" fill="#141414" />
           <circle cx={0} cy={0} r={16} fill="#141414" />
           <circle cx={0} cy={0} r={5} fill="#FFFFFF" />
@@ -294,7 +336,7 @@ export const DynamicProp: React.FC<DynamicPropProps> = ({
 
       {/* 2. VẬT THỂ CON BÊN TRONG */}
       {children && (
-        <g id={`prop-children-${id}`} transform={`translate(0, ${-Math.round(height * 0.22)})`}>
+        <g id={`prop-children-${id}`} transform={`translate(0, ${childrenY})`}>
           {children}
         </g>
       )}

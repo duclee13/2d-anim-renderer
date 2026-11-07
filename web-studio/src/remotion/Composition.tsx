@@ -525,6 +525,9 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
               .map((prop) => {
                 const t = computePropTransform(prop);
                 const opacity = computeEntranceOpacity(prop);
+                const isScreenSlot = Boolean(prop.slot && prop.slot.startsWith("screen."));
+                const isExplicitCenter = prop.anchorPoint === "center" || prop.pivotPoint === "center" || isScreenSlot;
+                const propAnchor = isExplicitCenter ? "center" : "bottomCenter";
                 return (
                   <g key={prop.id} opacity={opacity}>
                     <DynamicProp
@@ -539,6 +542,7 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
                       alphaConfig={prop.alphaConfig}
                       frame={sceneLocalFrame}
                       sceneDurationInFrames={currentScene.durationInFrames}
+                      anchorPoint={propAnchor}
                       pivotPoint={prop.pivotPoint}
                       pivotX={prop.pivotX}
                       pivotY={prop.pivotY}
@@ -615,6 +619,9 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
                 const opacity = computeEntranceOpacity(prop);
                 const assetId = resolvePropAssetId(prop.type);
                 const hasSpider = prop.properties?.hasSpiderInside;
+                const isScreenSlot = Boolean(prop.slot && prop.slot.startsWith("screen."));
+                const isExplicitCenter = prop.anchorPoint === "center" || prop.pivotPoint === "center" || isScreenSlot;
+                const propAnchor = isExplicitCenter ? "center" : "bottomCenter";
 
                 return (
                   <g key={prop.id} opacity={opacity}>
@@ -631,6 +638,7 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
                         alphaConfig={prop.alphaConfig}
                         frame={sceneLocalFrame}
                         sceneDurationInFrames={currentScene.durationInFrames}
+                        anchorPoint={propAnchor}
                         pivotPoint={prop.pivotPoint}
                         pivotX={prop.pivotX}
                         pivotY={prop.pivotY}
@@ -653,6 +661,7 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
                               x={0}
                               y={0}
                               scale={0.8}
+                              anchorPoint="center"
                               defaultDimensions={{ width: 320, height: 240 }}
                             />
                           </g>

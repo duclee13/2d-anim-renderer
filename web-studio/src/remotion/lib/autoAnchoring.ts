@@ -48,16 +48,17 @@ export function extractSvgDimensions(svgText: string): SvgDimensionInfo {
  */
 export function computeAutoAnchorPorts(
   dimensions: SvgDimensionInfo,
-  transform: { x: number; y: number; scale?: number; rotationDeg?: number }
+  transform: { x: number; y: number; scale?: number; rotationDeg?: number; anchorPoint?: "bottomCenter" | "center" }
 ): PropAnchorPorts {
   const { width, height } = dimensions;
   const scale = transform.scale ?? 1;
   const rotationDeg = transform.rotationDeg ?? 0;
+  const isCentered = transform.anchorPoint === "center";
   const rad = (rotationDeg * Math.PI) / 180;
   const cos = Math.cos(rad);
   const sin = Math.sin(rad);
 
-  // Helper xoay điểm cục bộ quanh đáy chính giữa (0, 0) và cộng offset toàn cục (x, y)
+  // Helper xoay điểm cục bộ và cộng offset toàn cục (x, y)
   const toGlobal = (localX: number, localY: number): Point2D => {
     const scaledX = localX * scale;
     const scaledY = localY * scale;
@@ -66,6 +67,16 @@ export function computeAutoAnchorPorts(
       y: transform.y + (scaledX * sin + scaledY * cos),
     };
   };
+
+  if (isCentered) {
+    return {
+      leftGrip: toGlobal(-width * 0.42, 0),
+      rightGrip: toGlobal(width * 0.42, 0),
+      surfaceDecal: toGlobal(0, -height * 0.22),
+      lidCenter: toGlobal(0, -height / 2),
+      baseCenter: toGlobal(0, height / 2),
+    };
+  }
 
   return {
     leftGrip: toGlobal(-width * 0.42, -height * 0.45),

@@ -119,6 +119,7 @@ export interface PropItem {
   rotation?: number;
   opacity?: number;
   alphaConfig?: AlphaConfig;
+  anchorPoint?: "bottomCenter" | "center" | "topCenter";
   pivotPoint?: "center" | "bottomCenter" | "topCenter" | "topLeft" | "custom";
   pivotX?: number;
   pivotY?: number;

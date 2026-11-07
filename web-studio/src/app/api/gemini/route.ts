@@ -49,9 +49,9 @@ Strict Rules:
    - Prop Alpha & Custom Pivots:
      * 'pivotPoint': 'bottomCenter' | 'center' | 'topCenter' | 'topLeft' | 'custom'
      * 'alphaConfig': { fadeInFrames: 20, pulseAlpha: true }
-8. 2K Viewport Scale Standards (Origin = Bottom-Center):
-   - Stickman standing baseline: y = 1120. Total height ~750px-850px.
-   - GlassJar: Full shot scale = 1.0 (slot: 'floor.left'). Close-up shot scale = 2.15 (slot: 'screen.centerCloseUp', height ~900px).
+8. 2K Viewport Scale & Origin Standards:
+   - Floor & desk surface objects (Origin = Bottom-Center): Stickman baseline y = 1120. Props on floor or desk (sofa, deskLamp, pottedPlant) touch the floor or desk at y.
+   - Screen close-ups & Infographics (Origin = Mid-Center / 'center'): Objects at 'screen.center' or 'screen.centerCloseUp' (GlassJar close-up, GaugeMeter) MUST use 'anchorPoint': 'center' and 'pivotPoint': 'center' so their geometric center is at (1280, 720). This keeps the whole jar/gauge perfectly centered in the 2K viewport without cutting off the top or bottom!
    - In close-up shots, DO NOT use scale from 0 to prevent white flash. Use pop or direct transition.
 9. Character Poses: 'standing', 'sittingBehindDesk', 'holdingObject', 'walking', 'pointing', 'shrugging'.
 10. ACTION & MOTION RULES (NEVER LEAVE CHARACTER STATIC):
@@ -253,6 +253,7 @@ function sanitizeSceneGraph(raw: any): MasterSceneGraph {
             rotation: Number(p?.rotation) || 0,
             opacity: p?.opacity !== undefined ? Number(p.opacity) : 1,
             alphaConfig: p?.alphaConfig || undefined,
+            anchorPoint: p?.anchorPoint || (p?.slot && String(p.slot).startsWith("screen.") ? ("center" as const) : undefined),
             pivotPoint: p?.pivotPoint || undefined,
             pivotX: p?.pivotX !== undefined ? Number(p.pivotX) : undefined,
             pivotY: p?.pivotY !== undefined ? Number(p.pivotY) : undefined,

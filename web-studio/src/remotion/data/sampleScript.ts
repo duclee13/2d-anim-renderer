@@ -134,7 +134,7 @@ export const sampleScriptSceneGraph: MasterSceneGraph = {
       background: { preset: "infographicStripes" },
       camera: {
         zoomFrom: 1.0,
-        zoomTo: 1.45,
+        zoomTo: 1.25,
         focusSlot: "screen.centerCloseUp",
         panDurationFrames: 50,
       },
@@ -150,8 +150,10 @@ export const sampleScriptSceneGraph: MasterSceneGraph = {
           slot: "screen.centerCloseUp",
           layer: "midgroundFrontLayer",
           x: 1280,
-          y: 1150,
-          scale: 2.15,
+          y: 720,
+          scale: 2.1,
+          anchorPoint: "center",
+          pivotPoint: "center",
           properties: {
             hasSpiderInside: true,
             label: "TÁM",
@@ -169,7 +171,7 @@ export const sampleScriptSceneGraph: MasterSceneGraph = {
           targetId: "jar_closeup",
           type: "scaleBounce",
           fromScale: 1.85,
-          toScale: 2.15,
+          toScale: 2.1,
         },
       ],
       subtitles: [
@@ -220,6 +222,8 @@ export const sampleScriptSceneGraph: MasterSceneGraph = {
           x: 1280,
           y: 720,
           scale: 1.6,
+          anchorPoint: "center",
+          pivotPoint: "center",
           entrance: {
             type: "pop",
             delay: 0,
