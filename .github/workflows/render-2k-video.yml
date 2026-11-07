@@ -92,21 +92,41 @@ jobs:
         working-directory: web-studio
         run: npm ci --prefer-offline || npm install --prefer-offline
 
+      - name: Prepare Scene Payload & Props File
+        working-directory: web-studio
+        env:
+          RAW_PAYLOAD: ${{ github.event.inputs.scenePayloadUrl }}
+          TOTAL_FRAMES: ${{ github.event.inputs.totalFrames }}
+        run: |
+          mkdir -p ../dist/chunks
+          node -e "
+            const fs = require('fs');
+            const raw = process.env.RAW_PAYLOAD || '';
+            const total = parseInt(process.env.TOTAL_FRAMES || '480', 10);
+            let payload = { totalFrames: total };
+            if (raw.trim().startsWith('{')) {
+              try {
+                payload = { ...JSON.parse(raw), totalFrames: total };
+              } catch (e) {
+                console.warn('Fallback to default props:', e.message);
+              }
+            }
+            fs.writeFileSync('../dist/props.json', JSON.stringify(payload));
+          "
+
       - name: Render Video Chunk via Remotion & FFmpeg In-Memory Pipe
         working-directory: web-studio
         env:
           START_FRAME: ${{ matrix.chunk.startFrame }}
           END_FRAME: ${{ matrix.chunk.endFrame }}
           CHUNK_INDEX: ${{ matrix.chunk.paddedIndex }}
-          SCENE_PAYLOAD_URL: ${{ github.event.inputs.scenePayloadUrl }}
         run: |
-          mkdir -p ../dist/chunks
           echo "Rendering frames $START_FRAME to $END_FRAME (Chunk $CHUNK_INDEX)..."
           
           # Render chunk using Remotion with libx264 animation profile
           npx remotion render src/remotion/index.ts MainScene ../dist/chunks/chunk_${CHUNK_INDEX}.mp4 \
             --frames=${START_FRAME}-${END_FRAME} \
-            --props="{\"scenePayloadUrl\":\"${SCENE_PAYLOAD_URL}\"}" \
+            --props=../dist/props.json \
             --pixel-format=yuv420p \
             --codec=h264 \
             --crf=18 \

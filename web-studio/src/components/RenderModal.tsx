@@ -128,6 +128,7 @@ export const RenderModal: React.FC<RenderModalProps> = ({
           scriptId,
           totalFrames,
           chunkCount,
+          sceneGraph,
         }),
       });
 

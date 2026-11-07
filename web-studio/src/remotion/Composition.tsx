@@ -28,16 +28,20 @@ import { sampleScriptSceneGraph } from "./data/sampleScript";
 
 export interface MainCompositionProps {
   sceneGraph?: MasterSceneGraph;
+  scenes?: any[];
+  totalFrames?: number;
 }
 
 // Re-export để tương thích ngược
 export const defaultMockSceneGraph = sampleScriptSceneGraph;
 
-export const MainScene: React.FC<MainCompositionProps> = ({
-  sceneGraph = sampleScriptSceneGraph,
-}) => {
+export const MainScene: React.FC<MainCompositionProps> = (props) => {
   const frame = useCurrentFrame();
   const { fps, width, height } = useVideoConfig();
+
+  // Xác định Scene Graph linh hoạt (hỗ trợ cả props.sceneGraph lẫn root props)
+  const effectiveGraph: MasterSceneGraph =
+    props.sceneGraph || (props.scenes ? (props as unknown as MasterSceneGraph) : defaultMockSceneGraph);
 
   // Lưu trữ cổng neo của đạo cụ được active để phục vụ Auto-Anchoring IK
   const [activePropAnchors, setActivePropAnchors] = useState<
@@ -47,8 +51,8 @@ export const MainScene: React.FC<MainCompositionProps> = ({
   // =========================================================================
   // TÌM SCENE HIỆN TẠI (Đảm bảo an toàn 100% không bị undefined/NaN)
   // =========================================================================
-  const safeScenes = Array.isArray(sceneGraph?.scenes) && sceneGraph.scenes.length > 0
-    ? sceneGraph.scenes
+  const safeScenes = Array.isArray(effectiveGraph?.scenes) && effectiveGraph.scenes.length > 0
+    ? effectiveGraph.scenes
     : sampleScriptSceneGraph.scenes;
 
   const currentScene: SceneGraphScene =
@@ -56,7 +60,7 @@ export const MainScene: React.FC<MainCompositionProps> = ({
       const sStart = Number(s?.startFrame) || 0;
       const sDur = Number(s?.durationInFrames) || 120;
       return frame >= sStart && frame < sStart + sDur;
-    }) || safeScenes[0];
+    }) || safeScenes[safeScenes.length - 1];
 
   const sceneStartFrame = Number(currentScene?.startFrame) || 0;
   const sceneLocalFrame = frame - sceneStartFrame;

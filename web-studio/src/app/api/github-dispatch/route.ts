@@ -11,6 +11,7 @@ export async function POST(req: NextRequest) {
       scriptId = "story_001",
       totalFrames = 3600,
       chunkCount = 10,
+      sceneGraph,
       runId,
     } = await req.json();
 
@@ -77,6 +78,8 @@ export async function POST(req: NextRequest) {
       }
 
       try {
+        const payloadString = sceneGraph ? JSON.stringify(sceneGraph) : "";
+
         await octokit.actions.createWorkflowDispatch({
           owner,
           repo,
@@ -86,6 +89,7 @@ export async function POST(req: NextRequest) {
             scriptId: String(scriptId),
             totalFrames: String(totalFrames),
             chunkCount: String(chunkCount),
+            scenePayloadUrl: payloadString.length < 60000 ? payloadString : "",
           },
         });
 
