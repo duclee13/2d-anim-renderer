@@ -24,6 +24,7 @@ export default function StudioPage() {
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isRenderModalOpen, setIsRenderModalOpen] = useState(false);
+  const playerRef = React.useRef<any>(null);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -36,6 +37,13 @@ export default function StudioPage() {
 
   const handleSceneGraphGenerated = (newGraph: MasterSceneGraph) => {
     setSceneGraph(newGraph);
+  };
+
+  const handleSelectScene = (scene: SceneGraphScene) => {
+    if (playerRef.current) {
+      const targetFrame = Number(scene.startFrame) || 0;
+      playerRef.current.seekTo(targetFrame);
+    }
   };
 
   return (
@@ -52,8 +60,8 @@ export default function StudioPage() {
         <div className="mx-auto grid max-w-[1780px] grid-cols-1 gap-6 lg:grid-cols-12">
           {/* Left Column: 2K 60FPS Live Preview Player (7 Cols) */}
           <div className="flex flex-col space-y-6 lg:col-span-7">
-            <PreviewPlayer sceneGraph={sceneGraph} />
-            <TimelineViewer sceneGraph={sceneGraph} />
+            <PreviewPlayer sceneGraph={sceneGraph} playerRefProp={playerRef} />
+            <TimelineViewer sceneGraph={sceneGraph} onSelectScene={handleSelectScene} />
           </div>
 
           {/* Right Column: AI Scriptwriting, TTS & Scene Parameters (5 Cols) */}

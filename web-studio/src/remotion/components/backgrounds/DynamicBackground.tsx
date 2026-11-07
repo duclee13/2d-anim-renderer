@@ -24,12 +24,14 @@ export const DynamicBackground: React.FC<DynamicBackgroundProps> = ({
   };
 
   const assetFileName = customAssetFileName || fileNameMap[preset] || preset;
-  const assetUrl = staticFile(`assets/backgrounds/${assetFileName}.svg`);
+  // Thêm cache-busting v=20261107_2k để ép trình duyệt luôn nạp đúng file SVG mới nhất
+  const assetUrl = staticFile(`assets/backgrounds/${assetFileName}.svg?v=20261107_2k`);
 
   return (
     <g id={`dynamic-background-${preset}`} data-preset={preset}>
       <image
         href={assetUrl}
+        xlinkHref={assetUrl}
         x={0}
         y={0}
         width={2560}

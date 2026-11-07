@@ -17,6 +17,18 @@ export interface DynamicPropProps {
   children?: React.ReactNode;
 }
 
+const KNOWN_PROP_DIMENSIONS: Record<string, SvgDimensionInfo> = {
+  "glass-jar": { width: 320, height: 420 },
+  "spider": { width: 320, height: 240 },
+  "sofa": { width: 720, height: 500 },
+  "desk": { width: 1100, height: 400 },
+  "desk-front": { width: 1100, height: 400 },
+  "desk-back": { width: 1100, height: 400 },
+  "gauge-meter": { width: 520, height: 280 },
+  "desk-lamp": { width: 390, height: 150 },
+  "potted-plant": { width: 280, height: 350 },
+};
+
 /**
  * DynamicProp: Bộ Nạp Tài Nguyên Động & Tự Động Gắn Neo (100% Automation)
  * 
@@ -40,10 +52,14 @@ export const DynamicProp: React.FC<DynamicPropProps> = ({
   onAnchorsComputed,
   children,
 }) => {
-  const [dimensions, setDimensions] = useState<SvgDimensionInfo>(defaultDimensions);
+  const initialDims = customSvgContent
+    ? defaultDimensions
+    : KNOWN_PROP_DIMENSIONS[id] || defaultDimensions;
+  const [dimensions, setDimensions] = useState<SvgDimensionInfo>(initialDims);
   const [svgXml, setSvgXml] = useState<string | null>(customSvgContent || null);
 
-  const assetUrl = staticFile(`assets/props/${id}.svg`);
+  // Thêm query hash cache-busting để trình duyệt luôn tải đúng phiên bản 2K mới nhất
+  const assetUrl = staticFile(`assets/props/${id}.svg?v=20261107_2k`);
 
   // Tự động tải SVG để bóc tách kích thước thực tế (Bounding Box)
   useEffect(() => {
@@ -102,27 +118,15 @@ export const DynamicProp: React.FC<DynamicPropProps> = ({
           1. NẠP HÌNH ẢNH SVG ĐỘNG (Render vector bằng thẻ <image> hoặc nội suy XML)
          ========================================================================= */}
       <g id={`artwork-container-${id}`}>
-        {svgXml ? (
-          // Đặt SVG đối xứng tâm (0, 0)
-          <image
-            href={assetUrl}
-            x={-width / 2}
-            y={-height / 2}
-            width={width}
-            height={height}
-            preserveAspectRatio="xMidYMid meet"
-          />
-        ) : (
-          /* BẠN HÃY PASTE MÃ SVG TỪ FIGMA VÀO ĐÂY HOẶC NÉM FILE VÀO public/assets/props/ */
-          <image
-            href={assetUrl}
-            x={-width / 2}
-            y={-height / 2}
-            width={width}
-            height={height}
-            preserveAspectRatio="xMidYMid meet"
-          />
-        )}
+        <image
+          href={assetUrl}
+          xlinkHref={assetUrl}
+          x={-width / 2}
+          y={-height / 2}
+          width={width}
+          height={height}
+          preserveAspectRatio="xMidYMid meet"
+        />
       </g>
 
       {/* =========================================================================

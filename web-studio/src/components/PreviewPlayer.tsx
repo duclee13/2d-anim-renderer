@@ -14,10 +14,12 @@ const Player = dynamic(
 
 interface PreviewPlayerProps {
   sceneGraph: MasterSceneGraph;
+  playerRefProp?: React.RefObject<any>;
 }
 
-export const PreviewPlayer: React.FC<PreviewPlayerProps> = ({ sceneGraph }) => {
-  const playerRef = useRef<any>(null);
+export const PreviewPlayer: React.FC<PreviewPlayerProps> = ({ sceneGraph, playerRefProp }) => {
+  const localRef = useRef<any>(null);
+  const activeRef = playerRefProp || localRef;
 
   // Tính toán an toàn tuyệt đối tổng số frame, không bao giờ để bị NaN
   const safeScenes = Array.isArray(sceneGraph?.scenes) ? sceneGraph.scenes : [];
@@ -25,17 +27,18 @@ export const PreviewPlayer: React.FC<PreviewPlayerProps> = ({ sceneGraph }) => {
     const start = Number(s?.startFrame) || 0;
     const dur = Number(s?.durationInFrames) || 120;
     return Math.max(acc, start + dur);
-  }, 360);
+  }, 480);
 
   const rawTotal = Number(sceneGraph?.totalDurationInFrames) || calculatedTotal;
-  const totalFrames = Math.max(60, isNaN(rawTotal) ? 360 : Math.round(rawTotal));
+  const totalFrames = Math.max(60, isNaN(rawTotal) ? 480 : Math.round(rawTotal));
 
   return (
     <div className="relative flex flex-col items-center justify-center rounded-2xl border border-[#232326] bg-[#121215] p-3 shadow-2xl">
       {/* 2K Preview Monitor Frame */}
       <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-[#09090B] border border-[#1E1E22] shadow-inner">
         <Player
-          ref={playerRef}
+          key={`remotion-player-${sceneGraph?.title || 'preview'}-${totalFrames}`}
+          ref={activeRef}
           component={MainScene}
           inputProps={{ sceneGraph }}
           durationInFrames={totalFrames}
