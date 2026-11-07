@@ -1,10 +1,23 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="-190 -140 390 150" width="390" height="150">
-  <!-- Light cone -->
-  <polygon points="20,-115 -180,0 200,0" fill="rgba(254, 240, 138, 0.38)" stroke="none" />
-  <!-- Stand & Shade -->
+  <defs>
+    <!-- Multi-stop light falloff inside SVG standalone -->
+    <linearGradient id="lampConeLocal" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFE066" stop-opacity="0.85"/>
+      <stop offset="25%" stop-color="#FDE047" stop-opacity="0.55"/>
+      <stop offset="60%" stop-color="#FACC15" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#EAB308" stop-opacity="0.0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Volumetric Light cone with smooth alpha falloff -->
+  <polygon points="20,-115 -180,0 200,0" fill="url(#lightConeGradient)" stroke="none" fallback-fill="url(#lampConeLocal)" />
+  
+  <!-- Stand & Lamp Shade -->
   <g stroke="#141414" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
     <ellipse cx="0" cy="-4" rx="32" ry="8" fill="#27272A" />
     <polyline points="0,-4 0,-70 20,-100" fill="none" />
     <polygon points="-20,-125 55,-110 40,-80 -30,-90" fill="#FACC15" />
+    <!-- Light bulb inside shade -->
+    <circle cx="15" cy="-95" r="7" fill="#FEF08A" stroke="none" />
   </g>
 </svg>

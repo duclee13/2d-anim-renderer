@@ -92,17 +92,20 @@ export default function StudioPage() {
             {/* Architecture Explainer Card */}
             <div className="rounded-2xl border border-[#232326] bg-[#121215] p-5 text-xs text-zinc-400 shadow-lg">
               <h3 className="mb-2 text-sm font-semibold text-zinc-200">
-                🛡️ Cơ chế Chống Lỗi Đồ Họa Tự Động (Physics Rules Active)
+                🎬 Cinema VFX & Physics Engine (Active)
               </h3>
               <ul className="space-y-1.5 list-disc pl-4 text-[11px] leading-relaxed text-zinc-400">
                 <li>
-                  <strong className="text-zinc-200">Z-Index 6 Lớp:</strong> Tự động đẩy mặt bàn và chân trước của bàn ra phía trước ngực và chân nhân vật khi ở trạng thái <code className="text-blue-400">sittingBehindDesk</code>.
+                  <strong className="text-zinc-200">CameraRig 2K:</strong> Zoom-in/zoom-out điện ảnh mượt mà kèm tự động bắt nét theo tiêu điểm <code className="text-blue-400">focusSlot</code>.
                 </li>
                 <li>
-                  <strong className="text-zinc-200">2-Bone IK Snapping:</strong> Khi cầm đồ vật, hai bàn tay tự động khóa cứng vào <code className="text-blue-400">target.leftGrip</code> và <code className="text-blue-400">target.rightGrip</code>, không bao giờ bị tay lơ lửng.
+                  <strong className="text-zinc-200">Volumetric Falloff:</strong> Ánh đèn bàn đa tầng alpha <code className="text-amber-400">0.85 → 0.00</code> và tia nắng god rays chân thực, không viền cứng.
                 </li>
                 <li>
-                  <strong className="text-zinc-200">Subtitle Be Vietnam Pro:</strong> Nét viền kép 12px đen và đổ bóng mềm đảm bảo rõ nét 100% trên mọi nền màu.
+                  <strong className="text-zinc-200">Procedural Loops:</strong> Mây trôi <code className="text-cyan-400">cloudDrift</code>, gió lượn <code className="text-teal-400">windBreeze</code>, mưa <code className="text-blue-400">rainLoop</code> và cây rung rinh 60 FPS toán học.
+                </li>
+                <li>
+                  <strong className="text-zinc-200">Z-Index 3 Lớp Bàn:</strong> Tự động giấu chân và hông phía sau mặt bàn gỗ khi nhân vật ngồi <code className="text-purple-400">sittingBehindDesk</code>.
                 </li>
               </ul>
             </div>

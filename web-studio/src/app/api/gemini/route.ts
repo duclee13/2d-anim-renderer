@@ -24,33 +24,43 @@ Strict Rules:
      * Desk slots: 'desk.seat' (character sitting at desk), 'desk.topLeft' (desk lamp), 'desk.topCenter' (laptop), 'desk.topRight' (glass jar / coffee cup)
      * Close-up slots: 'screen.center', 'screen.centerCloseUp'
      * Living room slots: 'sofa.seat', 'sofa.left', 'sofa.right'
-5. 2K Viewport Scale Standards (Origin = Bottom-Center):
+5. CINEMATIC CAMERA ENGINE (CameraRig):
+   - For dramatic close-ups or reveals, configure 'camera':
+     * Smooth Zoom: 'camera: { zoomFrom: 1.0, zoomTo: 2.15, focusSlot: "screen.centerCloseUp" }'
+     * Desk/Prop Focus: 'camera: { zoomFrom: 1.0, zoomTo: 1.4, focusSlot: "desk.seat" }'
+     * Normal Shot: 'camera: { zoom: 1.0, x: 1280, y: 720 }'
+6. PROCEDURAL ENVIRONMENT VFX & VOLUMETRIC LIGHTING:
+   - 'environmentVfx': Array of visual effects to run automatically at 60 FPS:
+     * 'rainLoop': Angled rain streaks with parallax and surface ripples (for sad/thoughtful or stormy scenes).
+     * 'cloudDrift': Cartoon clouds drifting across the sky.
+     * 'windBreeze': Soft curving wind trails blowing across the scene.
+     * 'foliageSway': Plants and foliage swaying naturally in the room/garden.
+     * 'sunbeams': God rays streaming down from the morning sun.
+   - 'lighting':
+     * 'warmNightLamp': Cozy evening desk scene with multi-stop volumetric light falloff cone and tabletop glow.
+     * 'sunbeams': Bright morning garden with sun rays.
+     * 'moonlight': Cool night atmosphere.
+     * 'neutral': Clean lighting for infographics.
+7. PROP ANIMATIONS & SHADERS:
+   - 'propAnimations':
+     * 'rotateNeedle': Animate gauge needle smoothly (e.g. { targetId: "gauge_meter", type: "rotateNeedle", fromDeg: -70, toDeg: 35 }).
+     * 'scaleBounce': Elastic pop-in when appearing.
+     * 'squashStretch': Impact squash when landing.
+   - Prop Alpha & Custom Pivots:
+     * 'pivotPoint': 'bottomCenter' | 'center' | 'topCenter' | 'topLeft' | 'custom'
+     * 'alphaConfig': { fadeInFrames: 20, pulseAlpha: true }
+8. 2K Viewport Scale Standards (Origin = Bottom-Center):
    - Stickman standing baseline: y = 1120. Total height ~750px-850px.
    - GlassJar: Full shot scale = 1.0 (slot: 'floor.left'). Close-up shot scale = 2.15 (slot: 'screen.centerCloseUp', height ~900px).
    - In close-up shots, DO NOT use scale from 0 to prevent white flash. Use pop or direct transition.
-6. Character Poses: 'standing', 'sittingBehindDesk', 'holdingObject', 'walking', 'pointing', 'shrugging'.
-7. ACTION & MOTION RULES (NEVER LEAVE CHARACTER STATIC):
-   - When the script mentions holding, carrying, holding in hands ("cầm", "giữ", "bê", "mang", "xách"):
-     * Character pose MUST be 'holdingObject'.
-     * Position the held prop near the character.
-   - When the script mentions moving, walking, bringing outside ("mang ra", "bước", "đi", "chạy"):
-     * MUST add a 'moveCharacter' keyframe in 'keyframes':
-       { "frame": 0, "action": "moveCharacter", "target": "character", "params": { "fromX": 600, "toX": 1600 } }
-     * Character facing MUST match direction of motion (e.g. 'right').
-   - Avoid motionless scenes: use keyframes ('moveCharacter', 'changeExpression') so characters feel alive.
-8. Facial Expressions:
-   - eyes: 'neutral' | 'wide' | 'surprised' | 'happy' | 'closed' | 'curious'
-   - eyebrows: 'neutral' | 'raised' | 'inquisitive' | 'worried' | 'furrowed'
-   - mouth: 'smile' | 'circleOpen' | 'line' | 'talking' | 'gasp'
-9. Anti-Clash & Physics Rules:
-   - If the character is sitting behind a desk:
-     * Character slot MUST be 'desk.seat' and pose MUST be 'sittingBehindDesk'.
-     * Desk front and back are automatically layered by the engine.
-   - Z-Index layering: assign background furniture to 'midgroundBackLayer' and front props to 'midgroundFrontLayer'.
-10. Dynamic Asset Bank:
+9. Character Poses: 'standing', 'sittingBehindDesk', 'holdingObject', 'walking', 'pointing', 'shrugging'.
+10. ACTION & MOTION RULES (NEVER LEAVE CHARACTER STATIC):
+   - When holding or carrying ("cầm", "giữ", "bê", "mang", "xách"): pose MUST be 'holdingObject'.
+   - When moving or walking ("mang ra", "bước", "đi", "chạy"): add 'moveCharacter' keyframe in 'keyframes'.
+11. Dynamic Asset Bank:
    - Standard built-in props: 'glassJar', 'spider', 'sofa', 'desk', 'deskLamp', 'gaugeMeter', 'pottedPlant', 'chair', 'table', 'tv', 'pizza', 'apple', 'guitar', 'cat', 'tree', 'balloon', 'trophy', 'star', 'heart', 'whiteboard', 'laptop', 'coffeeCup', 'phone', 'book', 'clock'.
    - Background presets: 'livingRoomDay', 'livingRoomNight', 'gardenDay', 'infographicStripes'.
-11. Output ONLY a valid JSON object matching the MasterSceneGraph schema. No markdown formatting.
+12. Output ONLY a valid JSON object matching the MasterSceneGraph schema. No markdown formatting.
 `;
 
 function getStandardPropFileName(type: string): string {
@@ -144,7 +154,7 @@ async function fetchAccountModels(apiKey: string): Promise<string[]> {
 
 /**
  * Chuẩn hóa và làm sạch 100% dữ liệu SceneGraph từ LLM
- * Đảm bảo timeline liên tục, thời lượng đồng bộ audio và không bị đơ hình cuối video.
+ * Đảm bảo timeline liên tục, thời lượng đồng bộ audio và tích hợp đầy đủ VFX.
  */
 function sanitizeSceneGraph(raw: any): MasterSceneGraph {
   const scenesRaw = Array.isArray(raw?.scenes) ? raw.scenes : [];
@@ -158,7 +168,6 @@ function sanitizeSceneGraph(raw: any): MasterSceneGraph {
     const estDialogueFrames = wordCount > 0 ? Math.round((wordCount / 2.8) * 60) + 30 : 120;
 
     let dur = Math.max(60, Math.round(Number(s?.durationInFrames || s?.duration || estDialogueFrames)));
-    // Triệt tiêu khoảng lặng chết ở cuối: nếu thời lượng quá dài so với độ dài câu thoại, giới hạn lại
     if (wordCount > 0 && dur > estDialogueFrames + 60) {
       dur = estDialogueFrames + 30;
     }
@@ -166,7 +175,6 @@ function sanitizeSceneGraph(raw: any): MasterSceneGraph {
     const start = currentStart;
     currentStart = start + dur;
 
-    // Tự động suy luận tư thế nhân vật nếu mô tả kịch bản có hành động cụ thể
     let characterPose = s?.character?.pose || "standing";
     const sceneCombinedText = `${s?.name || ""} ${subTexts}`.toLowerCase();
 
@@ -174,7 +182,6 @@ function sanitizeSceneGraph(raw: any): MasterSceneGraph {
       characterPose = "holdingObject";
     }
 
-    // Tự động sinh keyframe di chuyển nếu kịch bản có hành động bước đi / mang ra vườn
     let finalKeyframes = Array.isArray(s?.keyframes) ? s.keyframes : [];
     if (finalKeyframes.length === 0 && /mang ra|bước|đi bộ|chạy|di chuyển|walk|ra vườn/i.test(sceneCombinedText)) {
       finalKeyframes = [
@@ -190,7 +197,6 @@ function sanitizeSceneGraph(raw: any): MasterSceneGraph {
       ];
     }
 
-    // Gán slot thông minh nếu chưa có
     let charSlot = s?.character?.slot;
     if (!charSlot) {
       if (characterPose === "sittingBehindDesk") {
@@ -214,6 +220,10 @@ function sanitizeSceneGraph(raw: any): MasterSceneGraph {
         x: Number(s?.camera?.x) || 1280,
         y: Number(s?.camera?.y) || 720,
         zoom: Number(s?.camera?.zoom) || 1.0,
+        zoomFrom: s?.camera?.zoomFrom !== undefined ? Number(s.camera.zoomFrom) : undefined,
+        zoomTo: s?.camera?.zoomTo !== undefined ? Number(s.camera.zoomTo) : undefined,
+        focusSlot: s?.camera?.focusSlot || undefined,
+        focusTarget: s?.camera?.focusTarget || undefined,
       },
       character: {
         slot: charSlot,
@@ -236,8 +246,16 @@ function sanitizeSceneGraph(raw: any): MasterSceneGraph {
             x: Number(p?.x) || 1280,
             y: Number(p?.y) || 1120,
             scale: Number(p?.scale) || 1.0,
+            scaleX: p?.scaleX !== undefined ? Number(p.scaleX) : 1,
+            scaleY: p?.scaleY !== undefined ? Number(p.scaleY) : 1,
             rotation: Number(p?.rotation) || 0,
+            opacity: p?.opacity !== undefined ? Number(p.opacity) : 1,
+            alphaConfig: p?.alphaConfig || undefined,
+            pivotPoint: p?.pivotPoint || undefined,
+            pivotX: p?.pivotX !== undefined ? Number(p.pivotX) : undefined,
+            pivotY: p?.pivotY !== undefined ? Number(p.pivotY) : undefined,
             properties: p?.properties || {},
+            entrance: p?.entrance || undefined,
           }))
         : [],
       subtitles: Array.isArray(s?.subtitles)
@@ -252,6 +270,9 @@ function sanitizeSceneGraph(raw: any): MasterSceneGraph {
       speechBubbles: Array.isArray(s?.speechBubbles) ? s.speechBubbles : [],
       keyframes: finalKeyframes,
       lines: Array.isArray(s?.lines) ? s.lines : [],
+      environmentVfx: Array.isArray(s?.environmentVfx) ? s.environmentVfx : undefined,
+      lighting: s?.lighting || undefined,
+      propAnimations: Array.isArray(s?.propAnimations) ? s.propAnimations : undefined,
     };
   });
 
@@ -261,7 +282,7 @@ function sanitizeSceneGraph(raw: any): MasterSceneGraph {
   );
 
   return {
-    version: "3.0.0",
+    version: "3.1.0",
     title: String(raw?.title || "Stickman 2D Explainer Video"),
     width: 2560,
     height: 1440,
@@ -349,7 +370,6 @@ export async function POST(req: NextRequest) {
 
     const parsedGraph = sanitizeSceneGraph(rawParsed);
 
-    // ĐẢM BẢO TẤT CẢ PROPS CÓ FILE SVG CHUẨN HOẠT HỌA 2K (TỰ ĐỘNG NẠP TỪ KHO HOẶC SINH BẰNG GEMINI)
     const assetsDir = path.join(process.cwd(), "public", "assets", "props");
     if (!fs.existsSync(assetsDir)) {
       fs.mkdirSync(assetsDir, { recursive: true });

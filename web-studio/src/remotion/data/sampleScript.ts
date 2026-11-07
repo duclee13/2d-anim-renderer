@@ -3,15 +3,15 @@ import { MasterSceneGraph } from "../types/sceneGraph";
 /**
  * Kịch bản chuẩn 4 Scene — "Chuyện Con Nhện Tám" (Chuẩn đồ họa 2K 2560x1440 @ 60 FPS)
  *
- * Tổng thời lượng: 480 frames = 8 giây @ 60 FPS
- * - Scene 1 (0→120f / 0s→2s): Cảnh toàn phòng khách ban ngày — Nhân vật phát hiện lọ nhện trên sàn
- * - Scene 2 (120→240f / 2s→4s): Cảnh cận chiếc lọ khổng lồ 900px — Nhện to rõ mắt miệng, nhãn "TÁM" sắc nét
- * - Scene 3 (240→360f / 4s→6s): Infographic đồng hồ trao đổi chất của nhện
- * - Scene 4 (360→480f / 6s→8s): Cảnh đêm — Nhân vật ngồi bên bàn làm việc có đèn bàn và cửa sổ trăng sao
+ * Tích hợp Phân hệ VFX & Cinematography Engine:
+ * - Scene 1: Bối cảnh ngày có mây trôi (cloudDrift), tia nắng chéo (sunbeams) và ngọn gió thoảng (windBreeze)
+ * - Scene 2: Camera Cinematic Zoom-In từ xa vào cận cảnh chiếc lọ khổng lồ 900px, nhãn "TÁM" sắc nét
+ * - Scene 3: Infographic đồng hồ đo trao đổi chất với kim đồng hồ quay động mượt mà từ -70deg lên -25deg
+ * - Scene 4: Cảnh đêm ấm cúng với đèn bàn tỏa nón sáng Volumetric Falloff và vệt sáng vàng trên mặt bàn
  */
 export const sampleScriptSceneGraph: MasterSceneGraph = {
-  version: "3.0.0",
-  title: "Chuyện Con Nhện Tám — Chuẩn 2K 60FPS",
+  version: "3.1.0",
+  title: "Chuyện Con Nhện Tám — Chuẩn 2K 60FPS Cinema VFX",
   width: 2560,
   height: 1440,
   fps: 60,
@@ -19,7 +19,7 @@ export const sampleScriptSceneGraph: MasterSceneGraph = {
   scenes: [
     // =====================================================================
     // SCENE 1 (0→120 frames / 0s→2s)
-    // Cảnh toàn phòng khách: Nhân vật bước vào, phát hiện lọ thủy tinh nhốt nhện
+    // Cảnh toàn phòng khách: Tia nắng sunbeams + mây trôi + gió thoảng + cây rung rinh
     // =====================================================================
     {
       id: "scene_01",
@@ -28,6 +28,8 @@ export const sampleScriptSceneGraph: MasterSceneGraph = {
       durationInFrames: 120,
       background: { preset: "livingRoomDay" },
       camera: { x: 1280, y: 720, zoom: 1.0 },
+      lighting: { preset: "sunbeams", sunbeams: true },
+      environmentVfx: ["cloudDrift", "windBreeze", "foliageSway"],
       character: {
         slot: "floor.right",
         x: 1850,
@@ -63,6 +65,15 @@ export const sampleScriptSceneGraph: MasterSceneGraph = {
           slot: "floor.farRight",
           layer: "midgroundBackLayer",
           x: 2200,
+          y: 1120,
+          scale: 1.0,
+        },
+        {
+          id: "plant_s1",
+          type: "pottedPlant",
+          slot: "floor.farLeft",
+          layer: "midgroundBackLayer",
+          x: 350,
           y: 1120,
           scale: 1.0,
         },
@@ -113,7 +124,7 @@ export const sampleScriptSceneGraph: MasterSceneGraph = {
 
     // =====================================================================
     // SCENE 2 (120→240 frames / 2s→4s)
-    // Cận cảnh chiếc lọ khổng lồ 900px, nhện to 70% lòng lọ, nhãn dán "TÁM" ở 1/3 trên
+    // Cận cảnh chiếc lọ khổng lồ 900px, camera zoom điện ảnh mượt mà
     // =====================================================================
     {
       id: "scene_02",
@@ -121,7 +132,12 @@ export const sampleScriptSceneGraph: MasterSceneGraph = {
       startFrame: 120,
       durationInFrames: 120,
       background: { preset: "infographicStripes" },
-      camera: { x: 1280, y: 720, zoom: 1.0 },
+      camera: {
+        zoomFrom: 1.0,
+        zoomTo: 1.45,
+        focusSlot: "screen.centerCloseUp",
+        panDurationFrames: 50,
+      },
       character: {
         x: -9999,
         y: 0,
@@ -135,7 +151,7 @@ export const sampleScriptSceneGraph: MasterSceneGraph = {
           layer: "midgroundFrontLayer",
           x: 1280,
           y: 1150,
-          scale: 2.15, // Chiều cao ~903px chuẩn 2K
+          scale: 2.15,
           properties: {
             hasSpiderInside: true,
             label: "TÁM",
@@ -146,6 +162,14 @@ export const sampleScriptSceneGraph: MasterSceneGraph = {
             delay: 0,
             springConfig: { damping: 12, stiffness: 140, mass: 0.5 },
           },
+        },
+      ],
+      propAnimations: [
+        {
+          targetId: "jar_closeup",
+          type: "scaleBounce",
+          fromScale: 1.85,
+          toScale: 2.15,
         },
       ],
       subtitles: [
@@ -173,7 +197,7 @@ export const sampleScriptSceneGraph: MasterSceneGraph = {
 
     // =====================================================================
     // SCENE 3 (240→360 frames / 4s→6s)
-    // Infographic đồng hồ đo trao đổi chất của nhện (Nhãn đặt dưới trục quay kim)
+    // Infographic đồng hồ đo trao đổi chất với kim xoay động từ -70deg lên -25deg
     // =====================================================================
     {
       id: "scene_03",
@@ -181,7 +205,7 @@ export const sampleScriptSceneGraph: MasterSceneGraph = {
       startFrame: 240,
       durationInFrames: 120,
       background: { preset: "infographicStripes" },
-      camera: { x: 1280, y: 720, zoom: 1.0 },
+      camera: { x: 1280, y: 720, zoom: 1.2 },
       character: {
         x: -9999,
         y: 0,
@@ -204,6 +228,14 @@ export const sampleScriptSceneGraph: MasterSceneGraph = {
           properties: {
             label: "NĂNG LƯỢNG: 30%",
           },
+        },
+      ],
+      propAnimations: [
+        {
+          targetId: "gauge_meter",
+          type: "rotateNeedle",
+          fromDeg: -70,
+          toDeg: -25,
         },
       ],
       subtitles: [
@@ -232,7 +264,7 @@ export const sampleScriptSceneGraph: MasterSceneGraph = {
 
     // =====================================================================
     // SCENE 4 (360→480 frames / 6s→8s)
-    // Cảnh đêm phòng làm việc: Nhân vật ngồi sau bàn làm việc, đèn bàn & lọ trên bàn
+    // Cảnh đêm phòng làm việc: Nón ánh sáng vàng Volumetric + Vệt sáng bàn + Camera Focus
     // =====================================================================
     {
       id: "scene_04",
@@ -240,7 +272,14 @@ export const sampleScriptSceneGraph: MasterSceneGraph = {
       startFrame: 360,
       durationInFrames: 120,
       background: { preset: "livingRoomNight" },
-      camera: { x: 1280, y: 720, zoom: 1.0 },
+      camera: {
+        zoomFrom: 1.0,
+        zoomTo: 1.15,
+        focusSlot: "desk.seat",
+        panDurationFrames: 50,
+      },
+      lighting: { preset: "warmNightLamp" },
+      environmentVfx: ["windBreeze"],
       character: {
         slot: "desk.seat",
         x: 1150,

@@ -73,27 +73,25 @@ export type DynamicLineStyle = "silk" | "light" | "pointer" | "dashed" | "glow";
 export interface DynamicLineItem {
   id: string;
   style: DynamicLineStyle;
-  /**
-   * Đầu mút gốc — có thể là tọa độ cố định hoặc tham chiếu anchor.
-   * Nếu dùng anchorRef: "prop:{propId}:{port}" hoặc "character:{anchorName}" hoặc "ceiling" hoặc "fixed"
-   */
   startAnchorRef?: string;
   startFixed?: Point2D;
-  /**
-   * Đầu mút đích — tương tự.
-   */
   endAnchorRef?: string;
   endFixed?: Point2D;
   startFrame: number;
   endFrame: number;
   color?: string;
   strokeWidth?: number;
-  animated?: boolean; // spring dangle cho dây tơ
-  /**
-   * Cho kiểu "light": góc mở hình chóp (degrees)
-   */
+  animated?: boolean;
   coneAngle?: number;
   coneLength?: number;
+}
+
+export interface AlphaConfig {
+  fadeInFrames?: number;
+  fadeOutFrames?: number;
+  pulseAlpha?: boolean;
+  minAlpha?: number;
+  maxAlpha?: number;
 }
 
 export interface PropItem {
@@ -110,16 +108,63 @@ export interface PropItem {
     | "bush"
     | "cloud"
     | "sun"
-    | string; // cho phép type tùy ý từ AI
+    | string;
   layer: "midgroundBackLayer" | "midgroundFrontLayer" | "characterLayer";
   x: number;
   y: number;
   slot?: string; // Semantic slot e.g. "desk.topLeft", "floor.left"
   scale?: number;
+  scaleX?: number;
+  scaleY?: number;
   rotation?: number;
+  opacity?: number;
+  alphaConfig?: AlphaConfig;
+  pivotPoint?: "center" | "bottomCenter" | "topCenter" | "topLeft" | "custom";
+  pivotX?: number;
+  pivotY?: number;
   visible?: boolean;
   properties?: Record<string, any>;
   entrance?: EntranceConfig;
+}
+
+export type EnvironmentVfxType =
+  | "rainLoop"
+  | "windBreeze"
+  | "cloudDrift"
+  | "foliageSway"
+  | "sunbeams";
+
+export interface LightingConfig {
+  preset?: "warmNightLamp" | "sunbeams" | "moonlight" | "neutral" | string;
+  intensity?: number;
+  sunbeams?: boolean;
+  color?: string;
+}
+
+export interface CameraConfig {
+  x?: number;
+  y?: number;
+  zoom?: number;
+  zoomFrom?: number;
+  zoomTo?: number;
+  focusSlot?: string;
+  focusTarget?: string;
+  easing?: "bezier" | "spring" | "linear";
+  panDurationFrames?: number;
+}
+
+export interface PropAnimation {
+  targetId: string;
+  type: "scaleBounce" | "squashStretch" | "idlePulse" | "fadeIn" | "fadeOut" | "rotateNeedle";
+  fadeInFrames?: number;
+  fadeOutFrames?: number;
+  fromScale?: number;
+  toScale?: number;
+  fromDeg?: number;
+  toDeg?: number;
+  pivotPoint?: "center" | "bottomCenter" | "topCenter" | "custom";
+  pivotX?: number;
+  pivotY?: number;
 }
 
 export interface SceneGraphScene {
@@ -131,23 +176,16 @@ export interface SceneGraphScene {
     preset: BackgroundPreset;
     customColors?: Record<string, string>;
   };
-  camera: {
-    x: number;
-    y: number;
-    zoom: number; // 1.0 = normal, 2.5 = close-up
-  };
+  camera: CameraConfig;
   character: StickmanState;
   props: PropItem[];
   subtitles: SubtitleItem[];
   speechBubbles?: SpeechBubbleItem[];
-  /**
-   * Keyframes — hành động diễn ra tại frame cụ thể trong scene.
-   */
   keyframes?: SceneKeyframe[];
-  /**
-   * Dynamic Lines — dây tơ, tia sáng, đường chỉ dẫn.
-   */
   lines?: DynamicLineItem[];
+  environmentVfx?: EnvironmentVfxType[];
+  lighting?: LightingConfig;
+  propAnimations?: PropAnimation[];
 }
 
 export interface MasterSceneGraph {
