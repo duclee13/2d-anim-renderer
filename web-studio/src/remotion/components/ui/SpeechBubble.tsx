@@ -18,12 +18,12 @@ export const SpeechBubble: React.FC<SpeechBubbleProps> = ({
   y,
   text,
   hasMusicNote = false,
-  tailAnchor = { x: -30, y: 80 },
+  tailAnchor = { x: -40, y: 90 },
   bubbleArtwork,
 }) => {
-  const width = Math.max(220, text.length * 36 + 60);
-  const height = 110;
-  const radius = 55;
+  const width = Math.max(260, text.length * 44 + 80);
+  const height = 130;
+  const radius = 65;
 
   return (
     <g id="speech-bubble-wrapper" transform={`translate(${x}, ${y})`}>
@@ -36,10 +36,10 @@ export const SpeechBubble: React.FC<SpeechBubbleProps> = ({
         /* Mặc định vector bubble capsule */
         <g id="default-bubble-vector">
           <polygon
-            points={`-25,${height / 2 - 10} 25,${height / 2 - 10} ${tailAnchor.x},${tailAnchor.y}`}
+            points={`-30,${height / 2 - 10} 30,${height / 2 - 10} ${tailAnchor.x},${tailAnchor.y}`}
             fill="#FFFFFF"
             stroke="#141414"
-            strokeWidth={10}
+            strokeWidth={12}
             strokeLinejoin="round"
           />
           <rect
@@ -51,18 +51,18 @@ export const SpeechBubble: React.FC<SpeechBubbleProps> = ({
             ry={radius}
             fill="#FFFFFF"
             stroke="#141414"
-            strokeWidth={10}
+            strokeWidth={12}
             strokeLinejoin="round"
           />
         </g>
       )}
 
-      {/* Bubble text content */}
+      {/* Bubble text content (>= 48px standard) */}
       <text
         x={0}
-        y={15}
+        y={18}
         textAnchor="middle"
-        fontSize={46}
+        fontSize={52}
         fontWeight="900"
         fontFamily="var(--font-be-vietnam-pro), sans-serif"
         fill="#141414"
@@ -73,9 +73,9 @@ export const SpeechBubble: React.FC<SpeechBubbleProps> = ({
       {/* Musical note decoration */}
       {hasMusicNote && (
         <text
-          x={tailAnchor.x + 25}
-          y={tailAnchor.y - 10}
-          fontSize={38}
+          x={tailAnchor.x + 30}
+          y={tailAnchor.y - 12}
+          fontSize={44}
           fill="#666666"
         >
           ♪

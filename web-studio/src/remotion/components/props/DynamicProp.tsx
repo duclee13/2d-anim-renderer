@@ -135,26 +135,26 @@ export const DynamicProp: React.FC<DynamicPropProps> = ({
       )}
 
       {/* =========================================================================
-          3. TỰ ĐỘNG GẮN NHÃN DÁN (Tự động neo vào surfaceDecal)
+          3. TỰ ĐỘNG GẮN NHÃN DÁN (Tự động neo vào surfaceDecal - Sạch sẽ, không lệch)
          ========================================================================= */}
       {label && !showPointerCallout && (
-        <g id={`prop-label-decal-${id}`} transform="translate(0, 35)">
+        <g id={`prop-label-decal-${id}`} transform="translate(0, 30)">
           <rect
-            x={-60}
-            y={-22}
-            width={120}
-            height={44}
-            rx={8}
+            x={-75}
+            y={-28}
+            width={150}
+            height={56}
+            rx={14}
             fill="#FFFFFF"
             stroke="#141414"
-            strokeWidth={4}
+            strokeWidth={5}
           />
           <text
             x={0}
-            y={8}
+            y={12}
             textAnchor="middle"
             fill="#E11D48"
-            fontSize={26}
+            fontSize={36}
             fontWeight="900"
             fontFamily="var(--font-be-vietnam-pro), sans-serif"
           >
@@ -163,26 +163,26 @@ export const DynamicProp: React.FC<DynamicPropProps> = ({
         </g>
       )}
 
-      {/* 4. THANH CALLOUT TRỎ (Cận cảnh 1.2) */}
+      {/* 4. THANH CALLOUT TRỎ (Neo khít vào thành lọ, không lơ lửng) */}
       {label && showPointerCallout && (
-        <g id={`prop-pointer-callout-${id}`} transform={`translate(${width / 2}, 20)`}>
-          <line x1={0} y1={0} x2={45} y2={0} stroke="#141414" strokeWidth={5} strokeLinecap="round" />
-          <circle cx={48} cy={0} r={7} fill="#FFFFFF" stroke="#141414" strokeWidth={4} />
-          <line x1={55} y1={0} x2={95} y2={8} stroke="#141414" strokeWidth={5} strokeLinecap="round" />
+        <g id={`prop-pointer-callout-${id}`} transform={`translate(${Math.round(width * 0.44)}, 20)`}>
+          {/* Đầu mút tròn chạm khít đường viền lọ */}
+          <circle cx={0} cy={0} r={7} fill="#141414" />
+          <line x1={0} y1={0} x2={55} y2={-10} stroke="#141414" strokeWidth={5} strokeLinecap="round" />
 
-          <g transform="translate(95, -30)">
+          <g transform="translate(55, -45)">
             <rect
               x={0}
               y={0}
-              width={140}
+              width={150}
               height={64}
-              rx={12}
+              rx={14}
               fill="#FFFFFF"
               stroke="#141414"
               strokeWidth={6}
             />
             <text
-              x={70}
+              x={75}
               y={44}
               textAnchor="middle"
               fill="#E11D48"

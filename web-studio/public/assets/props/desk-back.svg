@@ -1,8 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="-370 -260 740 280" width="740" height="280">
-  <g stroke="#141414" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-550 -380 1100 400" width="1100" height="400">
+  <!-- Desk Base Shadow -->
+  <ellipse cx="0" cy="15" rx="510" ry="20" fill="#000000" opacity="0.25" />
+  <g stroke="#141414" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
     <!-- Back Left Leg -->
-    <rect x="-325" y="-210" width="24" height="210" fill="#B4773A" />
+    <rect x="-470" y="-310" width="34" height="310" fill="#9A5B27" />
     <!-- Back Right Leg -->
-    <rect x="301" y="-210" width="24" height="210" fill="#B4773A" />
+    <rect x="436" y="-310" width="34" height="310" fill="#9A5B27" />
+    <!-- Back Apron Beam -->
+    <rect x="-470" y="-310" width="940" height="36" fill="#9A5B27" />
   </g>
 </svg>

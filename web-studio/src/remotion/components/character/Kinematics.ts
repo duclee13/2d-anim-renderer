@@ -61,12 +61,13 @@ export function solveTwoBoneIK(
 
 /**
  * Procedural walk cycle calculator returning leg angles and foot positions.
+ * Connected topology: Both legs branch from the exact same hip pivot (0, 0).
  */
 export function calculateWalkCycle(
   hip: Point2D,
   progress: number,
-  strideWidth: number = 70,
-  stepHeight: number = 25
+  strideWidth: number = 110,
+  stepHeight: number = 40
 ): {
   leftFoot: Point2D;
   rightFoot: Point2D;
@@ -74,7 +75,7 @@ export function calculateWalkCycle(
   rightKnee: Point2D;
 } {
   const phase = progress * Math.PI * 2;
-  const legLength = 220;
+  const legLength = 350;
   const halfLeg = legLength / 2;
 
   // Left leg sinusoidal phase
@@ -88,17 +89,18 @@ export function calculateWalkCycle(
   const rightYOffset = Math.max(0, -Math.cos(rightPhase)) * stepHeight;
 
   const leftFootTarget: Point2D = {
-    x: hip.x - 20 + leftXOffset,
+    x: hip.x + leftXOffset,
     y: hip.y + legLength - leftYOffset,
   };
 
   const rightFootTarget: Point2D = {
-    x: hip.x + 20 + rightXOffset,
+    x: hip.x + rightXOffset,
     y: hip.y + legLength - rightYOffset,
   };
 
+  // Connected topology: both leg IK roots converge at single hip pivot
   const leftIK = solveTwoBoneIK(
-    { x: hip.x - 15, y: hip.y },
+    hip,
     leftFootTarget,
     halfLeg,
     halfLeg,
@@ -106,7 +108,7 @@ export function calculateWalkCycle(
   );
 
   const rightIK = solveTwoBoneIK(
-    { x: hip.x + 15, y: hip.y },
+    hip,
     rightFootTarget,
     halfLeg,
     halfLeg,

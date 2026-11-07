@@ -1,29 +1,75 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="-90 -70 180 140" width="180" height="140">
-  <!-- Legs -->
-  <g stroke="#141414" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none">
-    <polyline points="-25,0 -45,-35 -70,25" />
-    <polyline points="-20,5 -38,-45 -55,28" />
-    <polyline points="-15,10 -25,-40 -35,30" />
-    <polyline points="-10,12 -15,-30 -20,25" />
-    <polyline points="25,0 45,-35 70,25" />
-    <polyline points="20,5 38,-45 55,28" />
-    <polyline points="15,10 25,-40 35,30" />
-    <polyline points="10,12 15,-30 20,25" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-160 -120 320 240" width="320" height="240">
+  <defs>
+    <!-- Soft shadow under the spider -->
+    <radialGradient id="spiderDropShadow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#000000" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+    <!-- Crescent shading on abdomen -->
+    <linearGradient id="spiderAbdomenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#C08457"/>
+      <stop offset="45%" stop-color="#A0693E"/>
+      <stop offset="100%" stop-color="#6E4423"/>
+    </linearGradient>
+    <linearGradient id="spiderHeadGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#A56E43"/>
+      <stop offset="100%" stop-color="#734621"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Ground contact shadow -->
+  <ellipse cx="0" cy="85" rx="130" ry="18" fill="url(#spiderDropShadow)" />
+
+  <!-- 8 M-Jointed Legs (4 left, 4 right) with 10px bold cartoon joints -->
+  <g stroke="#141414" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <!-- Left legs (M-shape: hip -> high knee -> floor) -->
+    <polyline points="-30,-5 -80,-65 -135,75" />
+    <polyline points="-25,10 -85,-45 -145,80" />
+    <polyline points="-20,25 -75,-25 -130,85" />
+    <polyline points="-15,35 -60,-5 -115,88" />
+
+    <!-- Right legs (M-shape: hip -> high knee -> floor) -->
+    <polyline points="30,-5 80,-65 135,75" />
+    <polyline points="25,10 85,-45 145,80" />
+    <polyline points="20,25 75,-25 130,85" />
+    <polyline points="15,35 60,-5 115,88" />
   </g>
-  <!-- Body -->
-  <ellipse cx="12" cy="0" rx="32" ry="26" fill="#A0724C" stroke="#141414" stroke-width="5" />
-  <!-- Head -->
-  <circle cx="-18" cy="3" r="20" fill="#8C5E39" stroke="#141414" stroke-width="5" />
-  <!-- Blush -->
-  <ellipse cx="-28" cy="10" rx="4" ry="2.5" fill="#FF8BA7" opacity="0.8" />
-  <ellipse cx="-8" cy="10" rx="4" ry="2.5" fill="#FF8BA7" opacity="0.8" />
-  <!-- Eyes -->
-  <circle cx="-22" cy="0" r="6" fill="#FFFFFF" stroke="#141414" stroke-width="2.5" />
-  <circle cx="-11" cy="0" r="6" fill="#FFFFFF" stroke="#141414" stroke-width="2.5" />
-  <circle cx="-22" cy="0" r="3.5" fill="#141414" />
-  <circle cx="-11" cy="0" r="3.5" fill="#141414" />
-  <circle cx="-23" cy="-1.5" r="1.2" fill="#FFFFFF" />
-  <circle cx="-12" cy="-1.5" r="1.2" fill="#FFFFFF" />
-  <!-- Smile -->
-  <path d="M -18 8 Q -16 13 -14 8" stroke="#141414" stroke-width="2.5" stroke-linecap="round" fill="none" />
+
+  <!-- Abdomen (Plump rounded body with crescent 3D shading) -->
+  <g id="spider-abdomen">
+    <ellipse cx="25" cy="5" rx="65" ry="54" fill="url(#spiderAbdomenGrad)" stroke="#141414" stroke-width="10" />
+    <!-- Crescent shadow line -->
+    <path d="M -15,40 C 25,65 75,50 85,5 C 75,35 25,50 -15,40 Z" fill="#4A2810" opacity="0.45" />
+    <!-- Back highlights -->
+    <ellipse cx="40" cy="-25" rx="20" ry="9" transform="rotate(-15, 40, -25)" fill="#E2A676" opacity="0.6" />
+  </g>
+
+  <!-- Head (Front round head overlapping abdomen) -->
+  <g id="spider-head">
+    <circle cx="-35" cy="15" r="42" fill="url(#spiderHeadGrad)" stroke="#141414" stroke-width="10" />
+
+    <!-- Rosy Blush on cheeks -->
+    <ellipse cx="-58" cy="30" rx="9" ry="5.5" fill="#FF8BA7" opacity="0.85" />
+    <ellipse cx="-12" cy="30" rx="9" ry="5.5" fill="#FF8BA7" opacity="0.85" />
+
+    <!-- Cute Big Anime Eyes (Outer white + bold stroke) -->
+    <g id="spider-eyes">
+      <!-- Left Eye -->
+      <circle cx="-48" cy="8" r="16" fill="#FFFFFF" stroke="#141414" stroke-width="5" />
+      <circle cx="-47" cy="9" r="10" fill="#141414" />
+      <!-- Specular shiny reflection dots -->
+      <circle cx="-51" cy="5" r="4.5" fill="#FFFFFF" />
+      <circle cx="-44" cy="12" r="2" fill="#FFFFFF" />
+
+      <!-- Right Eye -->
+      <circle cx="-22" cy="8" r="16" fill="#FFFFFF" stroke="#141414" stroke-width="5" />
+      <circle cx="-23" cy="9" r="10" fill="#141414" />
+      <!-- Specular shiny reflection dots -->
+      <circle cx="-27" cy="5" r="4.5" fill="#FFFFFF" />
+      <circle cx="-20" cy="12" r="2" fill="#FFFFFF" />
+    </g>
+
+    <!-- Adorable little smiling mouth -->
+    <path d="M -40,32 Q -35,42 -30,32" stroke="#141414" stroke-width="6" stroke-linecap="round" fill="none" />
+  </g>
 </svg>

@@ -1,93 +1,88 @@
 import { MasterSceneGraph } from "../types/sceneGraph";
 
 /**
- * Kịch bản mẫu 3 scene — "Chuyện Con Nhện Tám" (phiên bản Motion Engine đầy đủ)
+ * Kịch bản chuẩn 4 Scene — "Chuyện Con Nhện Tám" (Chuẩn đồ họa 2K 2560x1440 @ 60 FPS)
  *
- * Tổng: 360 frames = 6 giây @ 60 FPS
- * - Scene 1 (0→120f / 0s→2s): Nhân vật bước vào + dây tơ nhện thả xuống từ trần nhà
- * - Scene 2 (120→240f / 2s→4s): Lọ rơi úp lên nhện + squash/stretch va chạm
- * - Scene 3 (240→360f / 4s→6s): Nhãn "TÁM" bay vào + pointer line bám mặt lọ
- *
- * Mỗi scene có word-level karaoke timestamps cho phụ đề.
+ * Tổng thời lượng: 480 frames = 8 giây @ 60 FPS
+ * - Scene 1 (0→120f / 0s→2s): Cảnh toàn phòng khách ban ngày — Nhân vật phát hiện lọ nhện trên sàn
+ * - Scene 2 (120→240f / 2s→4s): Cảnh cận chiếc lọ khổng lồ 900px — Nhện to rõ mắt miệng, nhãn "TÁM" sắc nét
+ * - Scene 3 (240→360f / 4s→6s): Infographic đồng hồ trao đổi chất của nhện
+ * - Scene 4 (360→480f / 6s→8s): Cảnh đêm — Nhân vật ngồi bên bàn làm việc có đèn bàn và cửa sổ trăng sao
  */
 export const sampleScriptSceneGraph: MasterSceneGraph = {
   version: "3.0.0",
-  title: "Chuyện Con Nhện Tám — Motion Engine Demo",
+  title: "Chuyện Con Nhện Tám — Chuẩn 2K 60FPS",
   width: 2560,
   height: 1440,
   fps: 60,
-  totalDurationInFrames: 360,
+  totalDurationInFrames: 480,
   scenes: [
     // =====================================================================
     // SCENE 1 (0→120 frames / 0s→2s)
-    // Nhân vật spring-enter từ phải, nhện treo lủng lẳng từ trần nhà
+    // Cảnh toàn phòng khách: Nhân vật bước vào, phát hiện lọ thủy tinh nhốt nhện
     // =====================================================================
     {
       id: "scene_01",
-      name: "Phát hiện con nhện treo tơ",
+      name: "Phát hiện con nhện trong lọ",
       startFrame: 0,
       durationInFrames: 120,
       background: { preset: "livingRoomDay" },
       camera: { x: 1280, y: 720, zoom: 1.0 },
       character: {
-        x: 1560,
-        y: 1040,
+        x: 1600,
+        y: 1120,
         scale: 1.0,
         facing: "left",
         pose: "standing",
         eyes: "surprised",
         eyebrows: "raised",
         mouth: "gasp",
-        pupilGaze: { x: -0.9, y: -0.3 },
+        pupilGaze: { x: -0.9, y: 0.2 },
       },
       props: [
         {
-          id: "spider_hanging",
-          type: "spider",
+          id: "jar_s1",
+          type: "glassJar",
           layer: "midgroundFrontLayer",
-          x: 750,
-          y: 600,
-          scale: 0.7,
+          x: 780,
+          y: 960,
+          scale: 1.0,
+          properties: {
+            hasSpiderInside: true,
+          },
           entrance: {
-            type: "drop",
-            delay: 20,
-            from: "top",
-            springConfig: { damping: 6, stiffness: 40, mass: 1.2 },
+            type: "fadeIn",
+            delay: 0,
           },
         },
         {
           id: "sofa_bg",
           type: "sofa",
           layer: "midgroundBackLayer",
-          x: 2320,
-          y: 1040,
+          x: 2300,
+          y: 1120,
           scale: 1.0,
-        },
-        {
-          id: "desk_bg",
-          type: "desk",
-          layer: "midgroundBackLayer",
-          x: 400,
-          y: 1040,
-          scale: 0.85,
         },
       ],
       subtitles: [
         {
           id: "sub_s1",
-          text: "Một hôm tôi thấy con nhện treo lơ lửng.",
+          text: "Một hôm tôi phát hiện một con nhện ở trong góc phòng.",
           startFrame: 5,
           endFrame: 115,
           words: [
             { word: "Một", startMs: 83, endMs: 250 },
             { word: "hôm", startMs: 250, endMs: 450 },
-            { word: "tôi", startMs: 450, endMs: 600 },
-            { word: "thấy", startMs: 600, endMs: 820 },
-            { word: "con", startMs: 820, endMs: 960 },
-            { word: "nhện", startMs: 960, endMs: 1180 },
-            { word: "treo", startMs: 1180, endMs: 1380 },
-            { word: "lơ", startMs: 1380, endMs: 1530 },
-            { word: "lửng.", startMs: 1530, endMs: 1850 },
+            { word: "tôi", startMs: 450, endMs: 650 },
+            { word: "phát", startMs: 650, endMs: 850 },
+            { word: "hiện", startMs: 850, endMs: 1050 },
+            { word: "một", startMs: 1050, endMs: 1250 },
+            { word: "con", startMs: 1250, endMs: 1400 },
+            { word: "nhện", startMs: 1400, endMs: 1600 },
+            { word: "ở", startMs: 1600, endMs: 1720 },
+            { word: "trong", startMs: 1720, endMs: 1850 },
+            { word: "góc", startMs: 1850, endMs: 1950 },
+            { word: "phòng.", startMs: 1950, endMs: 2200 },
           ],
         },
       ],
@@ -96,140 +91,31 @@ export const sampleScriptSceneGraph: MasterSceneGraph = {
           id: "bubble_s1",
           text: "Ơ kìa!",
           hasMusicNote: false,
-          position: { x: 1780, y: 450 },
-          tailAnchor: { x: -70, y: 65 },
-          startFrame: 40,
+          position: { x: 1820, y: 560 },
+          tailAnchor: { x: -50, y: 80 },
+          startFrame: 25,
           endFrame: 110,
         },
       ],
-      // Keyframes — hành động timeline chính xác
       keyframes: [
         {
           frame: 0,
           action: "moveCharacter",
           target: "character",
-          params: { fromX: 2800, toX: 1560, fromY: 1040, toY: 1040 },
-          springConfig: { damping: 14, stiffness: 80, mass: 0.8 },
-        },
-        {
-          frame: 20,
-          action: "showLine",
-          target: "silk_01",
-          params: {},
-        },
-        {
-          frame: 60,
-          action: "changeExpression",
-          target: "character",
-          params: { eyes: "wide", mouth: "gasp", eyebrows: "raised" },
-        },
-      ],
-      // Dynamic Lines
-      lines: [
-        {
-          id: "silk_01",
-          style: "silk",
-          startFixed: { x: 750, y: 0 },
-          endFixed: { x: 750, y: 600 },
-          startFrame: 20,
-          endFrame: 120,
-          color: "#999999",
-          strokeWidth: 3,
-          animated: true,
+          params: { fromX: 2300, toX: 1600, fromY: 1120, toY: 1120 },
+          springConfig: { damping: 14, stiffness: 75, mass: 0.8 },
         },
       ],
     },
 
     // =====================================================================
     // SCENE 2 (120→240 frames / 2s→4s)
-    // Lọ thủy tinh rơi úp lên nhện — Squash & Stretch impact
+    // Cận cảnh chiếc lọ khổng lồ 900px, nhện to 70% lòng lọ, nhãn dán "TÁM"
     // =====================================================================
     {
       id: "scene_02",
-      name: "Úp lọ bắt nhện",
-      startFrame: 120,
-      durationInFrames: 120,
-      background: { preset: "livingRoomDay" },
-      camera: { x: 1280, y: 720, zoom: 1.3 },
-      character: {
-        x: 1560,
-        y: 1040,
-        scale: 1.0,
-        facing: "left",
-        pose: "standing",
-        eyes: "happy",
-        eyebrows: "neutral",
-        mouth: "smile",
-        pupilGaze: { x: -0.8, y: 0.5 },
-      },
-      props: [
-        {
-          id: "jar_drop",
-          type: "glassJar",
-          layer: "midgroundFrontLayer",
-          x: 750,
-          y: 970,
-          scale: 0.95,
-          entrance: {
-            type: "drop",
-            delay: 10,
-            from: "top",
-            springConfig: { damping: 8, stiffness: 180, mass: 0.5 },
-          },
-          properties: {
-            hasSpiderInside: true,
-          },
-        },
-      ],
-      subtitles: [
-        {
-          id: "sub_s2",
-          text: "Tôi lấy cái lọ úp lên nó luôn!",
-          startFrame: 125,
-          endFrame: 235,
-          words: [
-            { word: "Tôi", startMs: 2083, endMs: 2250 },
-            { word: "lấy", startMs: 2250, endMs: 2430 },
-            { word: "cái", startMs: 2430, endMs: 2580 },
-            { word: "lọ", startMs: 2580, endMs: 2750 },
-            { word: "úp", startMs: 2750, endMs: 2930 },
-            { word: "lên", startMs: 2930, endMs: 3100 },
-            { word: "nó", startMs: 3100, endMs: 3260 },
-            { word: "luôn!", startMs: 3260, endMs: 3600 },
-          ],
-        },
-      ],
-      keyframes: [
-        {
-          frame: 10,
-          action: "moveProp",
-          target: "jar_drop",
-          params: { fromY: 400, toY: 970 },
-          springConfig: { damping: 8, stiffness: 180, mass: 0.5 },
-        },
-        {
-          frame: 45,
-          action: "squashImpact",
-          target: "jar_drop",
-          params: { impactFrame: 45 },
-        },
-        {
-          frame: 50,
-          action: "changeExpression",
-          target: "character",
-          params: { eyes: "happy", mouth: "smile" },
-        },
-      ],
-    },
-
-    // =====================================================================
-    // SCENE 3 (240→360 frames / 4s→6s)
-    // Cận cảnh lọ + nhãn "TÁM" bay vào + pointer line bám bề mặt lọ
-    // =====================================================================
-    {
-      id: "scene_03",
       name: "Đặt tên cho nhện: TÁM",
-      startFrame: 240,
+      startFrame: 120,
       durationInFrames: 120,
       background: { preset: "infographicStripes" },
       camera: { x: 1280, y: 720, zoom: 1.0 },
@@ -243,65 +129,173 @@ export const sampleScriptSceneGraph: MasterSceneGraph = {
           id: "jar_closeup",
           type: "glassJar",
           layer: "midgroundFrontLayer",
-          x: 1100,
-          y: 680,
-          scale: 2.2,
+          x: 1280,
+          y: 720,
+          scale: 2.15, // Đạt chiều cao ~903px, rộng ~688px chuẩn 2K
+          properties: {
+            hasSpiderInside: true,
+            label: "TÁM",
+            showPointerCallout: false, // Dán decal trực tiếp lên thân lọ, triệt tiêu lỗi đường chỉ trôi lơ lửng
+          },
+          entrance: {
+            type: "pop",
+            delay: 0,
+            springConfig: { damping: 12, stiffness: 140, mass: 0.5 },
+          },
+        },
+      ],
+      subtitles: [
+        {
+          id: "sub_s2",
+          text: "Tôi quyết định đặt tên cho chú nhện này là Tám.",
+          startFrame: 125,
+          endFrame: 235,
+          words: [
+            { word: "Tôi", startMs: 2083, endMs: 2280 },
+            { word: "quyết", startMs: 2280, endMs: 2480 },
+            { word: "định", startMs: 2480, endMs: 2680 },
+            { word: "đặt", startMs: 2680, endMs: 2880 },
+            { word: "tên", startMs: 2880, endMs: 3080 },
+            { word: "cho", startMs: 3080, endMs: 3250 },
+            { word: "chú", startMs: 3250, endMs: 3420 },
+            { word: "nhện", startMs: 3420, endMs: 3620 },
+            { word: "này", startMs: 3620, endMs: 3780 },
+            { word: "là", startMs: 3780, endMs: 3900 },
+            { word: "Tám.", startMs: 3900, endMs: 4200 },
+          ],
+        },
+      ],
+    },
+
+    // =====================================================================
+    // SCENE 3 (240→360 frames / 4s→6s)
+    // Infographic đồng hồ đo trao đổi chất của nhện
+    // =====================================================================
+    {
+      id: "scene_03",
+      name: "Tốc độ trao đổi chất",
+      startFrame: 240,
+      durationInFrames: 120,
+      background: { preset: "infographicStripes" },
+      camera: { x: 1280, y: 720, zoom: 1.0 },
+      character: {
+        x: -9999,
+        y: 0,
+        pose: "standing",
+      },
+      props: [
+        {
+          id: "gauge_meter",
+          type: "gaugeMeter",
+          layer: "midgroundFrontLayer",
+          x: 1280,
+          y: 720,
+          scale: 1.6,
           entrance: {
             type: "pop",
             delay: 0,
             springConfig: { damping: 10, stiffness: 120, mass: 0.6 },
           },
           properties: {
-            hasSpiderInside: true,
-            label: "TÁM",
-            showPointerCallout: true,
+            label: "NĂNG LƯỢNG: 30%",
           },
         },
       ],
       subtitles: [
         {
           id: "sub_s3",
-          text: "Tôi còn đặt tên cho nó là Tám.",
+          text: "Loài nhện có tốc độ trao đổi chất cực kỳ chậm rãi.",
           startFrame: 245,
           endFrame: 355,
           words: [
-            { word: "Tôi", startMs: 4083, endMs: 4250 },
-            { word: "còn", startMs: 4250, endMs: 4420 },
-            { word: "đặt", startMs: 4420, endMs: 4600 },
-            { word: "tên", startMs: 4600, endMs: 4780 },
-            { word: "cho", startMs: 4780, endMs: 4930 },
-            { word: "nó", startMs: 4930, endMs: 5080 },
-            { word: "là", startMs: 5080, endMs: 5210 },
-            { word: "Tám.", startMs: 5210, endMs: 5700 },
+            { word: "Loài", startMs: 4083, endMs: 4280 },
+            { word: "nhện", startMs: 4280, endMs: 4500 },
+            { word: "có", startMs: 4500, endMs: 4680 },
+            { word: "tốc", startMs: 4680, endMs: 4880 },
+            { word: "độ", startMs: 4880, endMs: 5050 },
+            { word: "trao", startMs: 5050, endMs: 5250 },
+            { word: "đổi", startMs: 5250, endMs: 5450 },
+            { word: "chất", startMs: 5450, endMs: 5650 },
+            { word: "cực", startMs: 5650, endMs: 5800 },
+            { word: "kỳ", startMs: 5800, endMs: 5950 },
+            { word: "chậm", startMs: 5950, endMs: 6150 },
+            { word: "rãi.", startMs: 6150, endMs: 6400 },
           ],
         },
       ],
-      keyframes: [
+    },
+
+    // =====================================================================
+    // SCENE 4 (360→480 frames / 6s→8s)
+    // Cảnh đêm phòng làm việc: Nhân vật ngồi sau bàn làm việc, có đèn bàn và trăng sao
+    // =====================================================================
+    {
+      id: "scene_04",
+      name: "Buổi tối bên bàn làm việc",
+      startFrame: 360,
+      durationInFrames: 120,
+      background: { preset: "livingRoomNight" },
+      camera: { x: 1280, y: 720, zoom: 1.0 },
+      character: {
+        x: 1150,
+        y: 1120,
+        scale: 1.0,
+        facing: "right",
+        pose: "sittingBehindDesk",
+        eyes: "happy",
+        eyebrows: "neutral",
+        mouth: "smile",
+        pupilGaze: { x: 0.6, y: 0.4 },
+      },
+      props: [
         {
-          frame: 0,
-          action: "scaleProp",
-          target: "jar_closeup",
-          params: { fromScale: 0, toScale: 2.2 },
-          springConfig: { damping: 10, stiffness: 120, mass: 0.6 },
+          id: "desk_lamp_s4",
+          type: "deskLamp",
+          layer: "midgroundFrontLayer",
+          x: 820,
+          y: 780,
+          scale: 1.3,
         },
         {
-          frame: 30,
-          action: "showLine",
-          target: "label_pointer",
-          params: {},
+          id: "jar_s4",
+          type: "glassJar",
+          layer: "midgroundFrontLayer",
+          x: 1520,
+          y: 830,
+          scale: 0.65,
+          properties: {
+            hasSpiderInside: true,
+          },
+        },
+        {
+          id: "sofa_bg_night",
+          type: "sofa",
+          layer: "midgroundBackLayer",
+          x: 2300,
+          y: 1120,
+          scale: 1.0,
         },
       ],
-      lines: [
+      subtitles: [
         {
-          id: "label_pointer",
-          style: "pointer",
-          startAnchorRef: "prop:jar_closeup:rightGrip",
-          endFixed: { x: 1650, y: 580 },
-          startFrame: 270,
-          endFrame: 360,
-          color: "#141414",
-          strokeWidth: 5,
-          animated: true,
+          id: "sub_s4",
+          text: "Tối đến, Tám vẫn ngoan ngoãn đồng hành cùng tôi làm việc.",
+          startFrame: 365,
+          endFrame: 475,
+          words: [
+            { word: "Tối", startMs: 6083, endMs: 6280 },
+            { word: "đến,", startMs: 6280, endMs: 6500 },
+            { word: "Tám", startMs: 6500, endMs: 6750 },
+            { word: "vẫn", startMs: 6750, endMs: 6950 },
+            { word: "ngoan", startMs: 6950, endMs: 7150 },
+            { word: "ngoãn", startMs: 7150, endMs: 7350 },
+            { word: "đồng", startMs: 7350, endMs: 7550 },
+            { word: "hành", startMs: 7550, endMs: 7750 },
+            { word: "cùng", startMs: 7750, endMs: 7920 },
+            { word: "tôi", startMs: 7920, endMs: 8100 },
+            { word: "làm", startMs: 8100, endMs: 8300 },
+            { word: "việc.", startMs: 8300, endMs: 8600 },
+          ],
         },
       ],
     },

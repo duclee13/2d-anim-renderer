@@ -364,10 +364,10 @@ export const MainScene: React.FC<MainCompositionProps> = ({
         {isSitting && (
           <DynamicProp
             id="desk-back"
-            x={1010}
-            y={1040}
+            x={1150}
+            y={1120}
             scale={1.0}
-            defaultDimensions={{ width: 740, height: 280 }}
+            defaultDimensions={{ width: 1100, height: 400 }}
           />
         )}
       </g>
@@ -432,10 +432,10 @@ export const MainScene: React.FC<MainCompositionProps> = ({
         {isSitting && (
           <DynamicProp
             id="desk-front"
-            x={1010}
-            y={1040}
+            x={1150}
+            y={1120}
             scale={1.0}
-            defaultDimensions={{ width: 740, height: 280 }}
+            defaultDimensions={{ width: 1100, height: 400 }}
           />
         )}
 
@@ -465,15 +465,15 @@ export const MainScene: React.FC<MainCompositionProps> = ({
                       }));
                     }}
                   >
-                    {/* Nhện bên trong lọ thủy tinh — áp dụng spider sway */}
+                    {/* Nhện bên trong lọ thủy tinh — kích thước chiếm 65-75% lòng lọ chuẩn 2K */}
                     {hasSpider && (
                       <g transform={`translate(${spiderOffset.offsetX}, ${spiderOffset.offsetY}) rotate(${spiderOffset.rotation})`}>
                         <DynamicProp
                           id="spider"
                           x={0}
-                          y={30}
-                          scale={0.9}
-                          defaultDimensions={{ width: 180, height: 140 }}
+                          y={40}
+                          scale={0.8}
+                          defaultDimensions={{ width: 320, height: 240 }}
                         />
                       </g>
                     )}

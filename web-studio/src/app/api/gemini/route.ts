@@ -11,20 +11,24 @@ Your job is to transform a story script into a precise, valid MasterSceneGraph J
 
 Strict Rules:
 1. Target resolution: 2560x1440 at 60 FPS.
-2. durationInFrames MUST be an integer number of frames (e.g. 120 for 2 seconds at 60fps).
-3. startFrame MUST be an integer frame offset (0, 120, 240...).
-4. Character Poses: 'standing', 'sittingBehindDesk', 'holdingObject', 'walking', 'pointing', 'shrugging'.
-5. Facial Expressions:
+2. Contiguous Timeline: durationInFrames MUST be an integer number of frames (e.g. 120 for 2s at 60fps). startFrame MUST be contiguous (0, 120, 240, 360...).
+3. FULL SCENE FIDELITY: You MUST generate EVERY scene described or implied in the user's prompt. If the user provides 4 scenes (Cảnh 1 -> Cảnh 4), output EXACTLY 4 scenes in the 'scenes' array. NEVER truncate, omit, or merge them!
+4. 2K Viewport Scale Standards:
+   - Stickman standing floor baseline: y = 1120. Total character height ~750px-800px.
+   - GlassJar: Full shot scale = 1.0 (x = 780, y = 960). Close-up shot scale = 2.15 (x = 1280, y = 720, height ~900px).
+   - In close-up shots, DO NOT use scale from 0 to prevent white flash. Use pop or direct transition.
+5. Character Poses: 'standing', 'sittingBehindDesk', 'holdingObject', 'walking', 'pointing', 'shrugging'.
+6. Facial Expressions:
    - eyes: 'neutral' | 'wide' | 'surprised' | 'happy' | 'closed' | 'curious'
    - eyebrows: 'neutral' | 'raised' | 'inquisitive' | 'worried' | 'furrowed'
    - mouth: 'smile' | 'circleOpen' | 'line' | 'talking' | 'gasp'
-6. Anti-Clash & Physics Rules:
-   - If the character is sitting behind a desk, pose MUST be 'sittingBehindDesk'. Never use 'standing' behind a desk.
+7. Anti-Clash & Physics Rules:
+   - If the character is sitting behind a desk, pose MUST be 'sittingBehindDesk' at y = 1120. Never use 'standing' behind a desk.
    - If holding an object (e.g. glassJar), character pose MUST be 'holdingObject' with holdingTarget set to prop grip points.
    - Z-Index layering must assign props to 'midgroundBackLayer' or 'midgroundFrontLayer'.
-7. Dynamic Asset Bank Awareness:
+8. Dynamic Asset Bank Awareness:
    - Standard built-in props: 'glassJar', 'spider', 'sofa', 'desk', 'deskLamp', 'gaugeMeter', 'pottedPlant'.
-8. Output ONLY a valid JSON object matching the MasterSceneGraph schema. No markdown formatting.
+9. Output ONLY a valid JSON object matching the MasterSceneGraph schema. No markdown formatting.
 `;
 
 /**

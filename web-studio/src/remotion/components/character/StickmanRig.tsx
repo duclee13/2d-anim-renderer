@@ -57,33 +57,35 @@ export const StickmanRig: React.FC<StickmanRigProps> = ({
     walkCycleProgress = 0,
   } = state;
 
-  // Kích thước chuẩn xương que (2K Standard Canvas)
-  const spineLength = 220;
-  const shoulderWidth = 70;
-  const upperArmLength = 95;
-  const forearmLength = 95;
-  const thighLength = 125;
-  const calfLength = 125;
-  const headRadius = 65;
+  // Kích thước chuẩn xương que 2K (Canvas 2560x1440, nhân vật cao ~750px-800px)
+  const spineLength = 310;
+  const upperArmLength = 145;
+  const forearmLength = 145;
+  const thighLength = 175;
+  const calfLength = 175;
+  const headRadius = 95;
 
   // Hơi thở tác động nhẹ lên chiều dài sống lưng
   const effectiveSpineLength = spineLength * breathScale;
 
-  // Khớp gốc
+  // Khớp gốc: Cổ và Hông (Connected Topology: 100% hội tụ tại trục thân 0, không có thanh đinh ba ngang)
   const hip: Point2D = { x: 0, y: 0 };
   const neck: Point2D = { x: 0, y: -effectiveSpineLength };
   const headCenter: Point2D = { x: 0, y: -effectiveSpineLength - headRadius };
 
-  const leftShoulder: Point2D = { x: -shoulderWidth / 2, y: neck.y + 15 };
-  const rightShoulder: Point2D = { x: shoulderWidth / 2, y: neck.y + 15 };
-  const leftHipJoint: Point2D = { x: -20, y: hip.y };
-  const rightHipJoint: Point2D = { x: 20, y: hip.y };
+  // Cả hai vai hội tụ chính xác tại 1 điểm duy nhất trên đốt sống cổ
+  const leftShoulder: Point2D = { x: 0, y: neck.y };
+  const rightShoulder: Point2D = { x: 0, y: neck.y };
 
-  // 1. TÍNH TOÁN IK CÁNH TAY
-  let leftHand: Point2D = { x: -40, y: -35 };
-  let rightHand: Point2D = { x: 40, y: -35 };
-  let leftElbow: Point2D = { x: -45, y: -115 };
-  let rightElbow: Point2D = { x: 45, y: -115 };
+  // Cả hai hông hội tụ chính xác tại 1 điểm duy nhất tại đáy cột sống
+  const leftHipJoint: Point2D = { x: 0, y: hip.y };
+  const rightHipJoint: Point2D = { x: 0, y: hip.y };
+
+  // 1. TÍNH TOÁN CÁNH TAY (Tư thế đứng A-pose tự nhiên: mở 28 độ so với thân, cong nhẹ khuỷu)
+  let leftElbow: Point2D = { x: -70, y: neck.y + 130 };
+  let leftHand: Point2D = { x: -100, y: neck.y + 265 };
+  let rightElbow: Point2D = { x: 70, y: neck.y + 130 };
+  let rightHand: Point2D = { x: 100, y: neck.y + 265 };
 
   if (pose === "holdingObject" && holdingTarget) {
     const targetLeftLocal: Point2D = {
@@ -103,15 +105,15 @@ export const StickmanRig: React.FC<StickmanRigProps> = ({
     rightElbow = rightArmIK.joint;
     rightHand = rightArmIK.reachedTarget;
   } else if (pose === "holdingObject") {
-    leftHand = { x: -35, y: -100 };
-    rightHand = { x: 35, y: -100 };
-    leftElbow = { x: -75, y: -135 };
-    rightElbow = { x: 75, y: -135 };
+    leftHand = { x: -50, y: -130 };
+    rightHand = { x: 50, y: -130 };
+    leftElbow = { x: -105, y: -180 };
+    rightElbow = { x: 105, y: -180 };
   } else if (pose === "sittingBehindDesk") {
-    leftHand = { x: -50, y: -45 };
-    rightHand = { x: 50, y: -45 };
-    leftElbow = { x: -70, y: -110 };
-    rightElbow = { x: 70, y: -110 };
+    leftHand = { x: -70, y: -60 };
+    rightHand = { x: 70, y: -60 };
+    leftElbow = { x: -100, y: -150 };
+    rightElbow = { x: 100, y: -150 };
   } else if (pose === "pointing" && pointingTarget) {
     const targetLocal: Point2D = {
       x: (pointingTarget.x - x) / scale,
@@ -130,11 +132,11 @@ export const StickmanRig: React.FC<StickmanRigProps> = ({
   const rightLowerArmAngle = calculateSegmentAngle(rightElbow, rightHand, "downwards");
   const rightHandAngle = rightLowerArmAngle;
 
-  // 2. TÍNH TOÁN IK CHÂN
-  let leftKnee: Point2D = { x: -30, y: thighLength };
-  let rightKnee: Point2D = { x: 30, y: thighLength };
-  let leftFoot: Point2D = { x: -45, y: thighLength + calfLength };
-  let rightFoot: Point2D = { x: 45, y: thighLength + calfLength };
+  // 2. TÍNH TOÁN CHÂN (Tư thế đứng thẳng tự nhiên chữ V nhẹ: mở góc nhẹ)
+  let leftKnee: Point2D = { x: -35, y: thighLength };
+  let rightKnee: Point2D = { x: 35, y: thighLength };
+  let leftFoot: Point2D = { x: -50, y: thighLength + calfLength };
+  let rightFoot: Point2D = { x: 50, y: thighLength + calfLength };
 
   if (pose === "walking") {
     const walkData = calculateWalkCycle(hip, walkCycleProgress);
@@ -143,10 +145,10 @@ export const StickmanRig: React.FC<StickmanRigProps> = ({
     leftFoot = walkData.leftFoot;
     rightFoot = walkData.rightFoot;
   } else if (pose === "sittingBehindDesk") {
-    leftKnee = { x: -25, y: 35 };
-    rightKnee = { x: 25, y: 35 };
-    leftFoot = { x: -25, y: 140 };
-    rightFoot = { x: 25, y: 140 };
+    leftKnee = { x: -35, y: 45 };
+    rightKnee = { x: 35, y: 45 };
+    leftFoot = { x: -35, y: 190 };
+    rightFoot = { x: 35, y: 190 };
   }
 
   const leftThighAngle = calculateSegmentAngle(leftHipJoint, leftKnee, "downwards");
@@ -196,38 +198,38 @@ export const StickmanRig: React.FC<StickmanRigProps> = ({
           {/* CHÂN TRÁI */}
           <g id="bone-left-thigh" transform={`translate(${leftHipJoint.x}, ${leftHipJoint.y}) rotate(${leftThighAngle})`}>
             {parts?.leftThigh ? parts.leftThigh : (
-              <line x1={0} y1={0} x2={0} y2={thighLength} stroke="#141414" strokeWidth={10} strokeLinecap="round" />
+              <line x1={0} y1={0} x2={0} y2={thighLength} stroke="#141414" strokeWidth={14} strokeLinecap="round" strokeLinejoin="round" />
             )}
           </g>
 
           <g id="bone-left-calf" transform={`translate(${leftKnee.x}, ${leftKnee.y}) rotate(${leftCalfAngle})`}>
             {parts?.leftCalf ? parts.leftCalf : (
-              <line x1={0} y1={0} x2={0} y2={calfLength} stroke="#141414" strokeWidth={10} strokeLinecap="round" />
+              <line x1={0} y1={0} x2={0} y2={calfLength} stroke="#141414" strokeWidth={14} strokeLinecap="round" strokeLinejoin="round" />
             )}
           </g>
 
           <g id="bone-left-foot" transform={`translate(${leftFoot.x}, ${leftFoot.y}) rotate(${leftFootAngle})`}>
             {parts?.leftFoot ? parts.leftFoot : (
-              <line x1={0} y1={0} x2={-20} y2={0} stroke="#141414" strokeWidth={10} strokeLinecap="round" />
+              <line x1={0} y1={0} x2={-30} y2={0} stroke="#141414" strokeWidth={14} strokeLinecap="round" strokeLinejoin="round" />
             )}
           </g>
 
           {/* CHÂN PHẢI */}
           <g id="bone-right-thigh" transform={`translate(${rightHipJoint.x}, ${rightHipJoint.y}) rotate(${rightThighAngle})`}>
             {parts?.rightThigh ? parts.rightThigh : (
-              <line x1={0} y1={0} x2={0} y2={thighLength} stroke="#141414" strokeWidth={10} strokeLinecap="round" />
+              <line x1={0} y1={0} x2={0} y2={thighLength} stroke="#141414" strokeWidth={14} strokeLinecap="round" strokeLinejoin="round" />
             )}
           </g>
 
           <g id="bone-right-calf" transform={`translate(${rightKnee.x}, ${rightKnee.y}) rotate(${rightCalfAngle})`}>
             {parts?.rightCalf ? parts.rightCalf : (
-              <line x1={0} y1={0} x2={0} y2={calfLength} stroke="#141414" strokeWidth={10} strokeLinecap="round" />
+              <line x1={0} y1={0} x2={0} y2={calfLength} stroke="#141414" strokeWidth={14} strokeLinecap="round" strokeLinejoin="round" />
             )}
           </g>
 
           <g id="bone-right-foot" transform={`translate(${rightFoot.x}, ${rightFoot.y}) rotate(${rightFootAngle})`}>
             {parts?.rightFoot ? parts.rightFoot : (
-              <line x1={0} y1={0} x2={20} y2={0} stroke="#141414" strokeWidth={10} strokeLinecap="round" />
+              <line x1={0} y1={0} x2={30} y2={0} stroke="#141414" strokeWidth={14} strokeLinecap="round" strokeLinejoin="round" />
             )}
           </g>
         </g>
@@ -240,14 +242,14 @@ export const StickmanRig: React.FC<StickmanRigProps> = ({
         <g id="layer-character-torso-head">
           <g id="bone-torso" transform={`translate(0, 0)`}>
             {parts?.torso ? parts.torso : (
-              <line x1={0} y1={0} x2={0} y2={-effectiveSpineLength} stroke="#141414" strokeWidth={10} strokeLinecap="round" />
+              <line x1={0} y1={0} x2={0} y2={-effectiveSpineLength} stroke="#141414" strokeWidth={14} strokeLinecap="round" strokeLinejoin="round" />
             )}
           </g>
 
           <g id="bone-head" transform={`translate(${headCenter.x}, ${headCenter.y})`}>
             {parts?.head ? parts.head : (
               <g id="default-stickman-head">
-                <circle cx={0} cy={0} r={headRadius} fill="#FFFFFF" stroke="#141414" strokeWidth={10} />
+                <circle cx={0} cy={0} r={headRadius} fill="#FFFFFF" stroke="#141414" strokeWidth={14} />
                 <FacialExpressions
                   headRadius={headRadius}
                   eyes={state.eyes}
@@ -271,38 +273,38 @@ export const StickmanRig: React.FC<StickmanRigProps> = ({
           {/* TAY TRÁI */}
           <g id="bone-left-upper-arm" transform={`translate(${leftShoulder.x}, ${leftShoulder.y}) rotate(${leftUpperArmAngle})`}>
             {parts?.leftUpperArm ? parts.leftUpperArm : (
-              <line x1={0} y1={0} x2={0} y2={upperArmLength} stroke="#141414" strokeWidth={10} strokeLinecap="round" />
+              <line x1={0} y1={0} x2={0} y2={upperArmLength} stroke="#141414" strokeWidth={14} strokeLinecap="round" strokeLinejoin="round" />
             )}
           </g>
 
           <g id="bone-left-lower-arm" transform={`translate(${leftElbow.x}, ${leftElbow.y}) rotate(${leftLowerArmAngle})`}>
             {parts?.leftLowerArm ? parts.leftLowerArm : (
-              <line x1={0} y1={0} x2={0} y2={forearmLength} stroke="#141414" strokeWidth={10} strokeLinecap="round" />
+              <line x1={0} y1={0} x2={0} y2={forearmLength} stroke="#141414" strokeWidth={14} strokeLinecap="round" strokeLinejoin="round" />
             )}
           </g>
 
           <g id="bone-left-hand" transform={`translate(${leftHand.x}, ${leftHand.y}) rotate(${leftHandAngle})`}>
             {parts?.leftHand ? parts.leftHand : (
-              <circle cx={0} cy={0} r={7} fill="#141414" />
+              <circle cx={0} cy={0} r={10} fill="#141414" />
             )}
           </g>
 
           {/* TAY PHẢI */}
           <g id="bone-right-upper-arm" transform={`translate(${rightShoulder.x}, ${rightShoulder.y}) rotate(${rightUpperArmAngle})`}>
             {parts?.rightUpperArm ? parts.rightUpperArm : (
-              <line x1={0} y1={0} x2={0} y2={upperArmLength} stroke="#141414" strokeWidth={10} strokeLinecap="round" />
+              <line x1={0} y1={0} x2={0} y2={upperArmLength} stroke="#141414" strokeWidth={14} strokeLinecap="round" strokeLinejoin="round" />
             )}
           </g>
 
           <g id="bone-right-lower-arm" transform={`translate(${rightElbow.x}, ${rightElbow.y}) rotate(${rightLowerArmAngle})`}>
             {parts?.rightLowerArm ? parts.rightLowerArm : (
-              <line x1={0} y1={0} x2={0} y2={forearmLength} stroke="#141414" strokeWidth={10} strokeLinecap="round" />
+              <line x1={0} y1={0} x2={0} y2={forearmLength} stroke="#141414" strokeWidth={14} strokeLinecap="round" strokeLinejoin="round" />
             )}
           </g>
 
           <g id="bone-right-hand" transform={`translate(${rightHand.x}, ${rightHand.y}) rotate(${rightHandAngle})`}>
             {parts?.rightHand ? parts.rightHand : (
-              <circle cx={0} cy={0} r={7} fill="#141414" />
+              <circle cx={0} cy={0} r={10} fill="#141414" />
             )}
           </g>
         </g>

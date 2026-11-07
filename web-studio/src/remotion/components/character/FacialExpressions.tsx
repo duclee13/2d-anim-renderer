@@ -22,14 +22,14 @@ export const FacialExpressions: React.FC<FacialExpressionsProps> = ({
   sweatDrop = false,
   strokeColor = "#141414",
 }) => {
-  // Eye geometry
-  const eyeRadius = 14;
-  const pupilRadius = 9;
-  const eyeDistance = 32;
-  const eyeY = -12;
+  // Eye geometry (2K Proportions for headRadius 95)
+  const eyeRadius = 20;
+  const pupilRadius = 13;
+  const eyeDistance = 44;
+  const eyeY = -16;
 
   // Pupil offset from gaze
-  const maxGazeOffset = 4.5;
+  const maxGazeOffset = 6;
   const gazeX = (pupilGaze.x || 0) * maxGazeOffset;
   const gazeY = (pupilGaze.y || 0) * maxGazeOffset;
 
@@ -40,89 +40,89 @@ export const FacialExpressions: React.FC<FacialExpressionsProps> = ({
     <g className="stickman-face">
       {/* Blush cheeks */}
       {blush && (
-        <g opacity={0.6}>
-          <ellipse cx={-eyeDistance - 8} cy={eyeY + 28} rx={14} ry={8} fill="#FF8BA7" />
-          <ellipse cx={eyeDistance + 8} cy={eyeY + 28} rx={14} ry={8} fill="#FF8BA7" />
+        <g opacity={0.65}>
+          <ellipse cx={-eyeDistance - 12} cy={eyeY + 38} rx={18} ry={10} fill="#FF8BA7" />
+          <ellipse cx={eyeDistance + 12} cy={eyeY + 38} rx={18} ry={10} fill="#FF8BA7" />
         </g>
       )}
 
       {/* Eyebrows */}
-      <g stroke={strokeColor} strokeWidth={6} strokeLinecap="round" fill="none">
+      <g stroke={strokeColor} strokeWidth={8} strokeLinecap="round" strokeLinejoin="round" fill="none">
         {eyebrows === "neutral" && (
           <>
-            <path d={`M ${-eyeDistance - 18} ${eyeY - 22} Q ${-eyeDistance} ${eyeY - 26} ${-eyeDistance + 18} ${eyeY - 22}`} />
-            <path d={`M ${eyeDistance - 18} ${eyeY - 22} Q ${eyeDistance} ${eyeY - 26} ${eyeDistance + 18} ${eyeY - 22}`} />
+            <path d={`M ${-eyeDistance - 22} ${eyeY - 26} Q ${-eyeDistance} ${eyeY - 32} ${-eyeDistance + 22} ${eyeY - 26}`} />
+            <path d={`M ${eyeDistance - 22} ${eyeY - 26} Q ${eyeDistance} ${eyeY - 32} ${eyeDistance + 22} ${eyeY - 26}`} />
           </>
         )}
         {eyebrows === "raised" && (
           <>
-            <path d={`M ${-eyeDistance - 18} ${eyeY - 30} Q ${-eyeDistance} ${eyeY - 36} ${-eyeDistance + 18} ${eyeY - 28}`} />
-            <path d={`M ${eyeDistance - 18} ${eyeY - 28} Q ${eyeDistance} ${eyeY - 36} ${eyeDistance + 18} ${eyeY - 30}`} />
+            <path d={`M ${-eyeDistance - 22} ${eyeY - 36} Q ${-eyeDistance} ${eyeY - 44} ${-eyeDistance + 22} ${eyeY - 34}`} />
+            <path d={`M ${eyeDistance - 22} ${eyeY - 34} Q ${eyeDistance} ${eyeY - 44} ${eyeDistance + 22} ${eyeY - 36}`} />
           </>
         )}
         {eyebrows === "inquisitive" && (
           <>
-            <path d={`M ${-eyeDistance - 18} ${eyeY - 24} Q ${-eyeDistance} ${eyeY - 28} ${-eyeDistance + 18} ${eyeY - 22}`} />
-            <path d={`M ${eyeDistance - 18} ${eyeY - 34} Q ${eyeDistance} ${eyeY - 40} ${eyeDistance + 18} ${eyeY - 30}`} />
+            <path d={`M ${-eyeDistance - 22} ${eyeY - 28} Q ${-eyeDistance} ${eyeY - 34} ${-eyeDistance + 22} ${eyeY - 26}`} />
+            <path d={`M ${eyeDistance - 22} ${eyeY - 42} Q ${eyeDistance} ${eyeY - 50} ${eyeDistance + 22} ${eyeY - 36}`} />
           </>
         )}
         {eyebrows === "worried" && (
           <>
-            <path d={`M ${-eyeDistance - 18} ${eyeY - 28} Q ${-eyeDistance} ${eyeY - 22} ${-eyeDistance + 18} ${eyeY - 20}`} />
-            <path d={`M ${eyeDistance - 18} ${eyeY - 20} Q ${eyeDistance} ${eyeY - 22} ${eyeDistance + 18} ${eyeY - 28}`} />
+            <path d={`M ${-eyeDistance - 22} ${eyeY - 34} Q ${-eyeDistance} ${eyeY - 26} ${-eyeDistance + 22} ${eyeY - 24}`} />
+            <path d={`M ${eyeDistance - 22} ${eyeY - 24} Q ${eyeDistance} ${eyeY - 26} ${eyeDistance + 22} ${eyeY - 34}`} />
           </>
         )}
         {eyebrows === "furrowed" && (
           <>
-            <path d={`M ${-eyeDistance - 18} ${eyeY - 20} L ${-eyeDistance + 18} ${eyeY - 27}`} />
-            <path d={`M ${eyeDistance - 18} ${eyeY - 27} L ${eyeDistance + 18} ${eyeY - 20}`} />
+            <path d={`M ${-eyeDistance - 22} ${eyeY - 24} L ${-eyeDistance + 22} ${eyeY - 32}`} />
+            <path d={`M ${eyeDistance - 22} ${eyeY - 32} L ${eyeDistance + 22} ${eyeY - 24}`} />
           </>
         )}
       </g>
 
       {/* Eyes */}
       {eyes === "closed" ? (
-        <g stroke={strokeColor} strokeWidth={6} strokeLinecap="round" fill="none">
-          <path d={`M ${-eyeDistance - 14} ${eyeY} Q ${-eyeDistance} ${eyeY + 12} ${-eyeDistance + 14} ${eyeY}`} />
-          <path d={`M ${eyeDistance - 14} ${eyeY} Q ${eyeDistance} ${eyeY + 12} ${eyeDistance + 14} ${eyeY}`} />
+        <g stroke={strokeColor} strokeWidth={8} strokeLinecap="round" strokeLinejoin="round" fill="none">
+          <path d={`M ${-eyeDistance - 18} ${eyeY} Q ${-eyeDistance} ${eyeY + 16} ${-eyeDistance + 18} ${eyeY}`} />
+          <path d={`M ${eyeDistance - 18} ${eyeY} Q ${eyeDistance} ${eyeY + 16} ${eyeDistance + 18} ${eyeY}`} />
         </g>
       ) : eyes === "happy" ? (
-        <g stroke={strokeColor} strokeWidth={6} strokeLinecap="round" fill="none">
-          <path d={`M ${-eyeDistance - 14} ${eyeY + 6} Q ${-eyeDistance} ${eyeY - 10} ${-eyeDistance + 14} ${eyeY + 6}`} />
-          <path d={`M ${eyeDistance - 14} ${eyeY + 6} Q ${eyeDistance} ${eyeY - 10} ${eyeDistance + 14} ${eyeY + 6}`} />
+        <g stroke={strokeColor} strokeWidth={8} strokeLinecap="round" strokeLinejoin="round" fill="none">
+          <path d={`M ${-eyeDistance - 18} ${eyeY + 8} Q ${-eyeDistance} ${eyeY - 14} ${-eyeDistance + 18} ${eyeY + 8}`} />
+          <path d={`M ${eyeDistance - 18} ${eyeY + 8} Q ${eyeDistance} ${eyeY - 14} ${eyeDistance + 18} ${eyeY + 8}`} />
         </g>
       ) : (
         <g>
           {/* Eye whites */}
-          <circle cx={-eyeDistance} cy={eyeY} r={eyeRadius} fill="#FFFFFF" stroke={strokeColor} strokeWidth={5} />
-          <circle cx={eyeDistance} cy={eyeY} r={eyeRadius} fill="#FFFFFF" stroke={strokeColor} strokeWidth={5} />
+          <circle cx={-eyeDistance} cy={eyeY} r={eyeRadius} fill="#FFFFFF" stroke={strokeColor} strokeWidth={7} />
+          <circle cx={eyeDistance} cy={eyeY} r={eyeRadius} fill="#FFFFFF" stroke={strokeColor} strokeWidth={7} />
 
           {/* Pupils */}
           <circle cx={leftEyeCenter.x} cy={leftEyeCenter.y} r={pupilRadius} fill={strokeColor} />
           <circle cx={rightEyeCenter.x} cy={rightEyeCenter.y} r={pupilRadius} fill={strokeColor} />
 
-          {/* Specular highlights for life/shine */}
-          <circle cx={leftEyeCenter.x - 3} cy={leftEyeCenter.y - 3} r={3} fill="#FFFFFF" />
-          <circle cx={rightEyeCenter.x - 3} cy={rightEyeCenter.y - 3} r={3} fill="#FFFFFF" />
+          {/* Specular highlights for cute shiny eyes */}
+          <circle cx={leftEyeCenter.x - 4} cy={leftEyeCenter.y - 4} r={4.5} fill="#FFFFFF" />
+          <circle cx={rightEyeCenter.x - 4} cy={rightEyeCenter.y - 4} r={4.5} fill="#FFFFFF" />
         </g>
       )}
 
       {/* Mouth */}
-      <g stroke={strokeColor} strokeWidth={6} strokeLinecap="round" fill="none">
+      <g stroke={strokeColor} strokeWidth={8} strokeLinecap="round" strokeLinejoin="round" fill="none">
         {mouth === "smile" && (
-          <path d="M -18 28 Q 0 46 18 28" />
+          <path d="M -24 38 Q 0 62 24 38" />
         )}
         {mouth === "circleOpen" && (
-          <circle cx={0} cy={34} r={10} fill={strokeColor} />
+          <circle cx={0} cy={44} r={14} fill={strokeColor} />
         )}
         {mouth === "line" && (
-          <line x1={-16} y1={34} x2={16} y2={34} />
+          <line x1={-22} y1={44} x2={22} y2={44} />
         )}
         {mouth === "talking" && (
-          <path d="M -16 28 Q 0 50 16 28 Z" fill="#751A1A" strokeWidth={5} />
+          <path d="M -22 36 Q 0 66 22 36 Z" fill="#881337" strokeWidth={7} />
         )}
         {mouth === "gasp" && (
-          <ellipse cx={0} cy={36} rx={14} ry={20} fill="#141414" />
+          <ellipse cx={0} cy={46} rx={18} ry={26} fill="#141414" />
         )}
       </g>
 

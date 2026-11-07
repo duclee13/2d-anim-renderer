@@ -18,7 +18,7 @@ export const SubtitleBox: React.FC<SubtitleBoxProps> = ({
   fps = 60,
   x = 1280, // Centered on 2K canvas
   y = 1340, // 100px from bottom of 1440 canvas
-  fontSize = 54,
+  fontSize = 72,
 }) => {
   if (!text) return null;
 
@@ -28,7 +28,7 @@ export const SubtitleBox: React.FC<SubtitleBoxProps> = ({
     <g
       transform={`translate(${x}, ${y})`}
       style={{
-        filter: "drop-shadow(0px 6px 14px rgba(0, 0, 0, 0.65))",
+        filter: "drop-shadow(0px 8px 18px rgba(0, 0, 0, 0.75))",
       }}
     >
       {/* If word-level timing is available, render interactive karaoke highlight */}
@@ -44,10 +44,10 @@ export const SubtitleBox: React.FC<SubtitleBoxProps> = ({
             return (
               <tspan
                 key={index}
-                dx={index === 0 ? 0 : 14}
+                dx={index === 0 ? 0 : 16}
                 fill={isActive ? "#FFD13B" : "#FFFFFF"}
                 stroke="#141414"
-                strokeWidth={isActive ? 14 : 12}
+                strokeWidth={isActive ? 18 : 16}
                 strokeLinejoin="round"
                 strokeLinecap="round"
                 style={{
@@ -69,7 +69,7 @@ export const SubtitleBox: React.FC<SubtitleBoxProps> = ({
           fontFamily="var(--font-be-vietnam-pro), sans-serif"
           fill="#FFFFFF"
           stroke="#141414"
-          strokeWidth={12}
+          strokeWidth={16}
           strokeLinejoin="round"
           strokeLinecap="round"
           style={{

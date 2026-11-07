@@ -1,14 +1,108 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="-220 -340 440 360" width="440" height="360">
-  <!-- Wooden peg legs -->
-  <g stroke="#141414" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
-    <polygon points="-160,0 -150,-35 -130,-35 -145,0" fill="#B4773A" />
-    <polygon points="145,0 130,-35 150,-35 160,0" fill="#B4773A" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-360 -480 720 500" width="720" height="500">
+  <defs>
+    <radialGradient id="sofaShadow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#000000" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Ground Shadow -->
+  <ellipse cx="0" cy="15" rx="330" ry="22" fill="url(#sofaShadow)" />
+
+  <!-- Wooden Peg Legs -->
+  <g stroke="#141414" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
+    <polygon points="-260,10 -245,-45 -215,-45 -235,10" fill="#B4773A" />
+    <polygon points="235,10 215,-45 245,-45 260,10" fill="#B4773A" />
+    <polygon points="-80,10 -75,-45 -55,-45 -65,10" fill="#935A25" />
+    <polygon points="65,10 55,-45 75,-45 80,10" fill="#935A25" />
   </g>
-  <!-- Backrest -->
-  <rect x="-170" y="-320" width="340" height="220" rx="40" ry="40" fill="#1D70E2" stroke="#141414" stroke-width="10" stroke-linejoin="round"/>
-  <!-- Seat Cushion -->
-  <rect x="-180" y="-170" width="360" height="140" rx="30" ry="30" fill="#2563EB" stroke="#141414" stroke-width="10" stroke-linejoin="round"/>
-  <!-- Armrest -->
-  <rect x="-205" y="-220" width="70" height="180" rx="35" ry="35" fill="#3B82F6" stroke="#141414" stroke-width="10" stroke-linejoin="round"/>
-  <line x1="-135" y1="-80" x2="160" y2="-80" stroke="#1D4ED8" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- Sofa Backrest Cushion -->
+  <rect
+    x="-280"
+    y="-440"
+    width="560"
+    height="320"
+    rx="56"
+    ry="56"
+    fill="#1D4ED8"
+    stroke="#141414"
+    stroke-width="14"
+    stroke-linejoin="round"
+  />
+
+  <!-- Backrest Tufting / Button creases -->
+  <g stroke="#1E40AF" stroke-width="8" stroke-linecap="round">
+    <line x1="-140" y1="-380" x2="-140" y2="-260" />
+    <line x1="0" y1="-380" x2="0" y2="-260" />
+    <line x1="140" y1="-380" x2="140" y2="-260" />
+  </g>
+
+  <!-- Seat Cushion Base -->
+  <rect
+    x="-310"
+    y="-240"
+    width="620"
+    height="200"
+    rx="42"
+    ry="42"
+    fill="#2563EB"
+    stroke="#141414"
+    stroke-width="14"
+    stroke-linejoin="round"
+  />
+
+  <!-- Armrest Left -->
+  <rect
+    x="-345"
+    y="-320"
+    width="110"
+    height="270"
+    rx="50"
+    ry="50"
+    fill="#3B82F6"
+    stroke="#141414"
+    stroke-width="14"
+    stroke-linejoin="round"
+  />
+
+  <!-- Armrest Right -->
+  <rect
+    x="235"
+    y="-320"
+    width="110"
+    height="270"
+    rx="50"
+    ry="50"
+    fill="#3B82F6"
+    stroke="#141414"
+    stroke-width="14"
+    stroke-linejoin="round"
+  />
+
+  <!-- Decorative Accent Pillows -->
+  <rect
+    x="-245"
+    y="-260"
+    width="120"
+    height="120"
+    rx="28"
+    transform="rotate(-12, -245, -260)"
+    fill="#F59E0B"
+    stroke="#141414"
+    stroke-width="10"
+    stroke-linejoin="round"
+  />
+  <rect
+    x="150"
+    y="-230"
+    width="110"
+    height="110"
+    rx="26"
+    transform="rotate(15, 150, -230)"
+    fill="#10B981"
+    stroke="#141414"
+    stroke-width="10"
+    stroke-linejoin="round"
+  />
 </svg>

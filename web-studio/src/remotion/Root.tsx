@@ -8,7 +8,7 @@ export const RemotionRoot: React.FC = () => {
       <Composition
         id="MainScene"
         component={MainScene}
-        durationInFrames={360}
+        durationInFrames={defaultMockSceneGraph.totalDurationInFrames || 480}
         fps={60}
         width={2560}
         height={1440}
