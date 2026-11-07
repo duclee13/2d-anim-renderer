@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-120 -120 240 240" width="240" height="240">
+  <path d="M0 85 C-120 0 -110 -100 0 -35 C110 -100 120 0 0 85 Z" fill="#EF4444" stroke="#141414" stroke-width="12" stroke-linejoin="round"/>
+  <!-- Shiny reflection -->
+  <path d="M-45 -45 Q-20 -70 -5 -50" stroke="#FCA5A5" stroke-width="10" fill="none" stroke-linecap="round"/>
+</svg>

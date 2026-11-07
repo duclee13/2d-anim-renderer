@@ -13,6 +13,7 @@ export async function POST(req: NextRequest) {
       chunkCount = 10,
       sceneGraph,
       runId,
+      dispatchedAt,
     } = await req.json();
 
     const token = githubToken || process.env.GITHUB_TOKEN;
@@ -113,15 +114,58 @@ export async function POST(req: NextRequest) {
     // 2. STATUS ACTION: Kiểm tra tiến độ chi tiết từng máy ảo, % và ETA
     if (action === "status") {
       try {
-        const runs = await octokit.actions.listWorkflowRunsForRepo({
-          owner,
-          repo,
-          per_page: 5,
-        });
+        let latestRun: any = null;
 
-        const latestRun = runs.data.workflow_runs[0];
+        if (runId) {
+          try {
+            const runRes = await octokit.actions.getWorkflowRun({
+              owner,
+              repo,
+              run_id: Number(runId),
+            });
+            latestRun = runRes.data;
+          } catch (err: any) {
+            console.warn(`[GitHub Dispatch] Không tìm thấy run ${runId}:`, err.message);
+          }
+        }
+
         if (!latestRun) {
-          return NextResponse.json({ success: true, run: null });
+          const runs = await octokit.actions.listWorkflowRunsForRepo({
+            owner,
+            repo,
+            per_page: 10,
+          });
+
+          // Chỉ lấy run được tạo sau thời điểm dispatchedAt (cho phép lệch tối đa 15s)
+          const cutoff = (dispatchedAt ? Number(dispatchedAt) : Date.now()) - 15000;
+          latestRun = (runs.data.workflow_runs || []).find(
+            (r) => new Date(r.created_at).getTime() >= cutoff
+          );
+
+          // Nếu GitHub chưa tạo run mới (đang trong quá trình dispatching/queuing 2-6s)
+          if (!latestRun) {
+            return NextResponse.json({
+              success: true,
+              run: {
+                id: null,
+                status: "queued",
+                conclusion: null,
+                pendingCreation: true,
+                jobsSummary: {
+                  total: Number(chunkCount) || 15,
+                  completed: 0,
+                  inProgress: 0,
+                  queued: Number(chunkCount) || 15,
+                  totalChunks: Number(chunkCount) || 15,
+                  completedChunks: 0,
+                  inProgressChunks: 0,
+                  isStitching: false,
+                  progressPercent: 5,
+                  chunks: [],
+                },
+              },
+            });
+          }
         }
 
         // Truy vấn danh sách chi tiết các máy ảo (Jobs)

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-130 -250 260 500" width="260" height="500">
+  <!-- Neck -->
+  <rect x="-14" y="-230" width="28" height="230" fill="#78350F" stroke="#141414" stroke-width="10"/>
+  <!-- Headstock -->
+  <path d="M-22 -230 L-26 -270 L26 -270 L22 -230 Z" fill="#B45309" stroke="#141414" stroke-width="10"/>
+  <!-- Tuning pegs -->
+  <circle cx="-35" cy="-260" r="7" fill="#FCD34D" stroke="#141414" stroke-width="5"/>
+  <circle cx="-35" cy="-245" r="7" fill="#FCD34D" stroke="#141414" stroke-width="5"/>
+  <circle cx="35" cy="-260" r="7" fill="#FCD34D" stroke="#141414" stroke-width="5"/>
+  <circle cx="35" cy="-245" r="7" fill="#FCD34D" stroke="#141414" stroke-width="5"/>
+  <!-- Body (Hourglass) -->
+  <path d="M-45 -20 C-95 -20 -90 70 -50 90 C-115 130 -105 210 0 210 C105 210 115 130 50 90 C90 70 95 -20 45 -20 Z" fill="#F59E0B" stroke="#141414" stroke-width="14" stroke-linejoin="round"/>
+  <!-- Sound hole -->
+  <circle cx="0" cy="50" r="32" fill="#1E293B" stroke="#141414" stroke-width="8"/>
+  <!-- Bridge -->
+  <rect x="-35" y="145" width="70" height="18" rx="4" fill="#78350F" stroke="#141414" stroke-width="6"/>
+  <!-- Strings -->
+  <line x1="-8" y1="-230" x2="-8" y2="150" stroke="#FEF08A" stroke-width="3"/>
+  <line x1="-3" y1="-230" x2="-3" y2="150" stroke="#FEF08A" stroke-width="3"/>
+  <line x1="3" y1="-230" x2="3" y2="150" stroke="#FEF08A" stroke-width="3"/>
+  <line x1="8" y1="-230" x2="8" y2="150" stroke="#FEF08A" stroke-width="3"/>
+</svg>

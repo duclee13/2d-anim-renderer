@@ -1,5 +1,65 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="-120 -140 240 280" width="240" height="280">
-                <rect x="-80" y="-80" width="160" height="160" rx="24" fill="#F1F5F9" stroke="#141414" stroke-width="8" />
-                <circle cx="0" cy="0" r="40" fill="#E2E8F0" stroke="#141414" stroke-width="6" />
-                <text x="0" y="8" text-anchor="middle" font-size="20" font-weight="900" fill="#141414" font-family="sans-serif">laptop</text>
-              </svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-140 -120 280 220" width="280" height="220">
+  <defs>
+    <!-- Screen glow -->
+    <linearGradient id="laptopScreenGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8"/>
+      <stop offset="100%" stop-color="#0284C7"/>
+    </linearGradient>
+    <radialGradient id="laptopShadow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#000000" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Ground contact shadow -->
+  <ellipse cx="0" cy="85" rx="120" ry="14" fill="url(#laptopShadow)" />
+
+  <!-- Laptop Base Chassis (Lower keyboard body) -->
+  <polygon
+    points="-110,40 110,40 125,80 -125,80"
+    fill="#94A3B8"
+    stroke="#141414"
+    stroke-width="10"
+    stroke-linejoin="round"
+  />
+  <!-- Trackpad -->
+  <rect x="-24" y="62" width="48" height="14" rx="3" fill="#64748B" stroke="#141414" stroke-width="3" />
+
+  <!-- Laptop Screen Lid (Angled up) -->
+  <g id="laptop-screen">
+    <!-- Outer screen frame -->
+    <rect
+      x="-95"
+      y="-95"
+      width="190"
+      height="135"
+      rx="12"
+      fill="#475569"
+      stroke="#141414"
+      stroke-width="10"
+      stroke-linejoin="round"
+    />
+    <!-- Glowing Display -->
+    <rect
+      x="-82"
+      y="-85"
+      width="164"
+      height="115"
+      rx="6"
+      fill="url(#laptopScreenGrad)"
+      stroke="#141414"
+      stroke-width="4"
+    />
+    <!-- Code Editor UI / Wave lines on display -->
+    <g stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" opacity="0.85">
+      <line x1="-65" y1="-65" x2="-20" y2="-65" />
+      <line x1="-10" y1="-65" x2="30" y2="-65" stroke="#FDE047" />
+      <line x1="-65" y1="-45" x2="10" y2="-45" stroke="#A7F3D0" />
+      <line x1="-65" y1="-25" x2="-35" y2="-25" stroke="#F472B6" />
+      <line x1="-25" y1="-25" x2="45" y2="-25" />
+      <line x1="-65" y1="-5" x2="-5" y2="-5" stroke="#FDE047" />
+    </g>
+    <!-- Web camera dot -->
+    <circle cx="0" cy="-90" r="2.5" fill="#141414" />
+  </g>
+</svg>

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-250 -175 500 350" width="500" height="350">
+  <defs>
+    <radialGradient id="tableShadow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#0F172A" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#0F172A" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="0" cy="155" rx="220" ry="24" fill="url(#tableShadow)"/>
+  <!-- Legs -->
+  <path d="M-190 -20 L-205 150" stroke="#141414" stroke-width="14" stroke-linecap="round"/>
+  <path d="M190 -20 L205 150" stroke="#141414" stroke-width="14" stroke-linecap="round"/>
+  <path d="M-130 -20 L-135 130" stroke="#334155" stroke-width="12" stroke-linecap="round"/>
+  <path d="M130 -20 L135 130" stroke="#334155" stroke-width="12" stroke-linecap="round"/>
+  <!-- Apron -->
+  <rect x="-195" y="-30" width="390" height="30" rx="6" fill="#B45309" stroke="#141414" stroke-width="12"/>
+  <!-- Tabletop -->
+  <rect x="-230" y="-70" width="460" height="48" rx="18" fill="#F59E0B" stroke="#141414" stroke-width="14"/>
+  <!-- Wood grain / highlight -->
+  <path d="M-190 -52 L170 -52" stroke="#FDE68A" stroke-width="8" stroke-linecap="round"/>
+</svg>

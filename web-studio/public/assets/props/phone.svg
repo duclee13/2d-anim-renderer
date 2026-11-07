@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-60 -100 120 200" width="120" height="200">
+  <ellipse cx="0" cy="90" rx="45" ry="8" fill="#000000" opacity="0.25" />
+  <!-- Phone Body -->
+  <rect x="-45" y="-85" width="90" height="170" rx="18" fill="#18181B" stroke="#141414" stroke-width="8" stroke-linejoin="round" />
+  <!-- Screen -->
+  <rect x="-38" y="-76" width="76" height="152" rx="12" fill="#0284C7" stroke="#141414" stroke-width="4" />
+  <!-- Speaker notch -->
+  <rect x="-14" y="-72" width="28" height="6" rx="3" fill="#141414" />
+  <!-- Chat bubble notification on screen -->
+  <rect x="-26" y="-45" width="52" height="26" rx="6" fill="#FFFFFF" stroke="#141414" stroke-width="3" />
+  <line x1="-18" y1="-32" x2="18" y2="-32" stroke="#0284C7" stroke-width="4" stroke-linecap="round" />
+</svg>

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-240 -180 480 360" width="480" height="360">
+  <defs>
+    <radialGradient id="tvGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#38BDF8" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#0284C7" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <!-- Stand -->
+  <ellipse cx="0" cy="150" rx="100" ry="16" fill="#141414"/>
+  <rect x="-24" y="90" width="48" height="65" rx="6" fill="#334155" stroke="#141414" stroke-width="10"/>
+  <!-- TV Frame -->
+  <rect x="-210" y="-150" width="420" height="250" rx="20" fill="#1E293B" stroke="#141414" stroke-width="14"/>
+  <!-- Screen -->
+  <rect x="-185" y="-130" width="370" height="205" rx="12" fill="#0F172A"/>
+  <rect x="-185" y="-130" width="370" height="205" rx="12" fill="url(#tvGlow)"/>
+  <!-- Cartoon Antenna (Retro) -->
+  <path d="M-60 -150 L-130 -220" stroke="#141414" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="-130" cy="-220" r="10" fill="#EF4444" stroke="#141414" stroke-width="6"/>
+  <path d="M60 -150 L130 -220" stroke="#141414" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="130" cy="-220" r="10" fill="#EF4444" stroke="#141414" stroke-width="6"/>
+  <!-- Screen Reflection Streak -->
+  <path d="M-150 -110 L-60 -110 L-110 50 L-160 50 Z" fill="#FFFFFF" fill-opacity="0.12"/>
+</svg>

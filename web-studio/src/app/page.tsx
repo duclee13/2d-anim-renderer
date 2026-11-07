@@ -22,6 +22,7 @@ export default function StudioPage() {
   const [githubOwner, setGithubOwner] = useState("");
   const [githubRepo, setGithubRepo] = useState("");
 
+  const [sceneVersion, setSceneVersion] = useState<number>(Date.now());
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isRenderModalOpen, setIsRenderModalOpen] = useState(false);
   const playerRef = React.useRef<any>(null);
@@ -37,6 +38,16 @@ export default function StudioPage() {
 
   const handleSceneGraphGenerated = (newGraph: MasterSceneGraph) => {
     setSceneGraph(newGraph);
+    setSceneVersion(Date.now());
+    setTimeout(() => {
+      if (playerRef.current) {
+        playerRef.current.seekTo(0);
+      }
+    }, 100);
+  };
+
+  const handleRefreshPreview = () => {
+    setSceneVersion(Date.now());
   };
 
   const handleSelectScene = (scene: SceneGraphScene) => {
@@ -60,7 +71,12 @@ export default function StudioPage() {
         <div className="mx-auto grid max-w-[1780px] grid-cols-1 gap-6 lg:grid-cols-12">
           {/* Left Column: 2K 60FPS Live Preview Player (7 Cols) */}
           <div className="flex flex-col space-y-6 lg:col-span-7">
-            <PreviewPlayer sceneGraph={sceneGraph} playerRefProp={playerRef} />
+            <PreviewPlayer
+              sceneGraph={sceneGraph}
+              playerRefProp={playerRef}
+              version={sceneVersion}
+              onRefresh={handleRefreshPreview}
+            />
             <TimelineViewer sceneGraph={sceneGraph} onSelectScene={handleSelectScene} />
           </div>
 

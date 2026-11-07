@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-90 -70 180 140" width="180" height="140">
+  <ellipse cx="0" cy="55" rx="75" ry="10" fill="#000000" opacity="0.25" />
+  <!-- Book Cover Lower -->
+  <polygon points="-75,40 40,55 75,25 -40,10" fill="#0D9488" stroke="#141414" stroke-width="8" stroke-linejoin="round" />
+  <!-- Book Pages Stack -->
+  <polygon points="-70,25 45,40 70,12 -45,-3" fill="#F8FAFC" stroke="#141414" stroke-width="6" stroke-linejoin="round" />
+  <!-- Book Cover Top -->
+  <polygon points="-75,10 40,25 75,-5 -40,-20" fill="#14B8A6" stroke="#141414" stroke-width="8" stroke-linejoin="round" />
+  <!-- Gold Bookmark Ribbon -->
+  <path d="M 0,21 L 18,38 L 8,46 L -2,38 Z" fill="#F59E0B" stroke="#141414" stroke-width="3" />
+</svg>

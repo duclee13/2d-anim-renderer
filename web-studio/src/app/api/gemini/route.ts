@@ -4,6 +4,7 @@ import fs from "fs";
 import path from "path";
 import { MasterSceneGraph } from "@/remotion/types/sceneGraph";
 import { sampleScriptSceneGraph } from "@/remotion/data/sampleScript";
+import { generateVectorAsset } from "@/lib/vectorAssetGenerator";
 
 const SYSTEM_PROMPT = `
 You are the Lead 2D Animation Director and Spatial Scene Graph Architect for a 2K 60FPS Stickman Explainer Video Engine.
@@ -253,43 +254,26 @@ export async function POST(req: NextRequest) {
     // 4. Chuẩn hóa schema, tính toán lại frame an toàn 100% không bao giờ có NaN
     const parsedGraph = sanitizeSceneGraph(rawParsed);
 
-    // 5. ĐẢM BẢO TẤT CẢ PROPS CÓ FILE SVG TRONG 0MS
+    // 5. ĐẢM BẢO TẤT CẢ PROPS CÓ FILE SVG CHUẨN HOẠT HỌA 2K (TỰ ĐỘNG SINH BẰNG AI HOẶC PROCEDURAL)
     const assetsDir = path.join(process.cwd(), "public", "assets", "props");
     if (!fs.existsSync(assetsDir)) {
       fs.mkdirSync(assetsDir, { recursive: true });
     }
-    const existingAssets = fs.readdirSync(assetsDir);
 
     const generatedAssets: string[] = [];
 
     for (const scene of parsedGraph.scenes) {
       for (const prop of scene.props) {
-        const normalizedId = prop.type.replace(/([A-Z])/g, "-$1").toLowerCase();
+        const normalizedId = prop.type.replace(/([A-Z])/g, "-$1").toLowerCase().replace(/^-/, "");
         const fileName = `${normalizedId}.svg`;
 
-        const isStandardBuiltin = [
-          "glass-jar.svg",
-          "desk-front.svg",
-          "desk-back.svg",
-          "desk.svg",
-          "desk-lamp.svg",
-          "sofa.svg",
-          "spider.svg",
-          "gauge-meter.svg",
-          "potted-plant.svg",
-        ].includes(fileName);
-
-        if (!existingAssets.includes(fileName) && !isStandardBuiltin) {
-          const placeholderSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-120 -140 240 280" width="240" height="280">
-            <rect x="-80" y="-80" width="160" height="160" rx="24" fill="#F1F5F9" stroke="#141414" stroke-width="8" />
-            <circle cx="0" cy="0" r="40" fill="#E2E8F0" stroke="#141414" stroke-width="6" />
-            <text x="0" y="8" text-anchor="middle" font-size="20" font-weight="900" fill="#141414" font-family="sans-serif">${normalizedId}</text>
-          </svg>`;
+        if (!fs.existsSync(path.join(assetsDir, fileName))) {
           try {
-            fs.writeFileSync(path.join(assetsDir, fileName), placeholderSvg, "utf8");
+            console.log(`[AssetGenerator] Đang tự động vẽ vector hoạt họa cho đạo cụ: '${normalizedId}'...`);
+            await generateVectorAsset(prop.type, normalizedId, "gemini", activeApiKey);
             generatedAssets.push(normalizedId);
-          } catch (writeErr) {
-            console.warn(`[AssetWriter] Không thể tạo placeholder cho ${fileName}`);
+          } catch (genErr: any) {
+            console.warn(`[AssetGenerator] Lỗi khi tạo asset cho ${normalizedId}:`, genErr.message);
           }
         }
       }

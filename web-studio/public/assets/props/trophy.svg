@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-140 -170 280 340" width="280" height="340">
+  <!-- Base -->
+  <rect x="-80" y="100" width="160" height="50" rx="10" fill="#78350F" stroke="#141414" stroke-width="12"/>
+  <rect x="-60" y="70" width="120" height="30" rx="6" fill="#F59E0B" stroke="#141414" stroke-width="10"/>
+  <!-- Plaque -->
+  <rect x="-45" y="112" width="90" height="26" rx="4" fill="#FDE68A" stroke="#141414" stroke-width="4"/>
+  <!-- Cup Handles -->
+  <path d="M-65 -40 C-130 -40 -120 50 -55 50" stroke="#141414" stroke-width="16" fill="none" stroke-linecap="round"/>
+  <path d="M-65 -40 C-130 -40 -120 50 -55 50" stroke="#F59E0B" stroke-width="10" fill="none" stroke-linecap="round"/>
+  <path d="M65 -40 C130 -40 120 50 55 50" stroke="#141414" stroke-width="16" fill="none" stroke-linecap="round"/>
+  <path d="M65 -40 C130 -40 120 50 55 50" stroke="#F59E0B" stroke-width="10" fill="none" stroke-linecap="round"/>
+  <!-- Cup Body -->
+  <path d="M-70 -120 L70 -120 L55 0 C45 60 -45 60 -55 0 Z" fill="#FBBF24" stroke="#141414" stroke-width="14" stroke-linejoin="round"/>
+  <!-- Star on Cup -->
+  <polygon points="0,-75 6,-58 24,-58 10,-46 15,-29 0,-40 -15,-29 -10,-46 -24,-58 -6,-58" fill="#F59E0B" stroke="#141414" stroke-width="4"/>
+  <!-- Highlight -->
+  <path d="M-45 -105 L-35 -10" stroke="#FEF08A" stroke-width="8" stroke-linecap="round"/>
+</svg>

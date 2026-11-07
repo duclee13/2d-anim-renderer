@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-100 -160 200 320" width="200" height="320">
+  <!-- String -->
+  <path d="M0 70 Q-30 110 20 160" stroke="#94A3B8" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <!-- Balloon Body -->
+  <path d="M0 -140 C-80 -140 -85 -30 0 65 C85 -30 80 -140 0 -140 Z" fill="#EF4444" stroke="#141414" stroke-width="12" stroke-linejoin="round"/>
+  <!-- Knot -->
+  <polygon points="-12,65 12,65 0,78" fill="#B91C1C" stroke="#141414" stroke-width="5"/>
+  <!-- Specular highlight streak -->
+  <path d="M-35 -110 C-55 -80 -55 -40 -40 -10" stroke="#FCA5A5" stroke-width="10" fill="none" stroke-linecap="round"/>
+</svg>

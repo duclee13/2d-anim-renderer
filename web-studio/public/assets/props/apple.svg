@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-120 -120 240 240" width="240" height="240">
+  <!-- Stem -->
+  <path d="M0 -65 Q15 -95 30 -100" stroke="#78350F" stroke-width="10" stroke-linecap="round" fill="none"/>
+  <!-- Leaf -->
+  <path d="M10 -80 Q45 -95 40 -70 Q25 -65 10 -80 Z" fill="#22C55E" stroke="#141414" stroke-width="6"/>
+  <!-- Apple Body -->
+  <path d="M0 -55 C-50 -75 -100 -20 -90 40 C-80 90 -25 105 0 85 C25 105 80 90 90 40 C100 -20 50 -75 0 -55 Z" fill="#EF4444" stroke="#141414" stroke-width="12" stroke-linejoin="round"/>
+  <!-- Specular Reflection Highlight -->
+  <ellipse cx="-45" cy="-20" rx="14" ry="26" transform="rotate(-25 -45 -20)" fill="#FCA5A5" opacity="0.8"/>
+  <circle cx="-32" cy="15" r="7" fill="#FCA5A5" opacity="0.8"/>
+</svg>

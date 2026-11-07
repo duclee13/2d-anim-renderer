@@ -68,6 +68,7 @@ export const RenderModal: React.FC<RenderModalProps> = ({
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number | null>(null);
+  const activeRunIdRef = useRef<number | null>(null);
 
   // Clear intervals on unmount
   useEffect(() => {
@@ -103,6 +104,7 @@ export const RenderModal: React.FC<RenderModalProps> = ({
     setElapsedSeconds(0);
     setEtaSeconds(45); // Benchmark ban đầu ~45-60s cho 15 máy ảo
     setJobsData(null);
+    activeRunIdRef.current = null;
 
     const scriptId = `story_${Date.now()}`;
     const startTime = Date.now();
@@ -137,7 +139,7 @@ export const RenderModal: React.FC<RenderModalProps> = ({
         throw new Error(data.error || "Không thể dispatch GitHub Actions");
       }
 
-      setWorkflowStatus(`Đã kích hoạt thành công! Đang khởi tạo ${chunkCount} máy ảo Ubuntu (16GB RAM)...`);
+      setWorkflowStatus(`Đã gửi lệnh thành công! Đang chờ GitHub khởi tạo ${chunkCount} máy ảo Ubuntu (16GB RAM)...`);
 
       // 2. Start polling for run status every 3.5s
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
@@ -151,11 +153,23 @@ export const RenderModal: React.FC<RenderModalProps> = ({
               githubToken,
               owner: githubOwner,
               repo: githubRepo,
+              dispatchedAt: startTime,
+              runId: activeRunIdRef.current,
+              chunkCount,
             }),
           });
           const statusData = await statusRes.json();
 
           if (statusData.run) {
+            if (statusData.run.id && !activeRunIdRef.current) {
+              activeRunIdRef.current = statusData.run.id;
+            }
+
+            if (statusData.run.pendingCreation) {
+              setWorkflowStatus(`Đang chờ GitHub Actions khởi tạo ${chunkCount} máy ảo Ubuntu (16GB RAM)...`);
+              return;
+            }
+
             setRunUrl(statusData.run.html_url);
 
             const summary: JobsSummary | undefined = statusData.run.jobsSummary;

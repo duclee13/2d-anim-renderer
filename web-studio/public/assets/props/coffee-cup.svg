@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-80 -90 160 170" width="160" height="170">
+  <!-- Ground contact shadow -->
+  <ellipse cx="0" cy="72" rx="45" ry="8" fill="#000000" opacity="0.25" />
+
+  <!-- Cup Handle (Side loop) -->
+  <path
+    d="M 32,-15 C 65,-15 65,35 32,35"
+    fill="none"
+    stroke="#141414"
+    stroke-width="10"
+    stroke-linecap="round"
+  />
+
+  <!-- Cup Body (Ceramic mug) -->
+  <path
+    d="M -36,-35 L 36,-35 C 38,20 28,65 -28,65 C -38,65 -38,20 -36,-35 Z"
+    fill="#F43F5E"
+    stroke="#141414"
+    stroke-width="10"
+    stroke-linejoin="round"
+  />
+
+  <!-- Specular shine on mug -->
+  <path
+    d="M -22,-20 C -22,10 -15,45 -12,50"
+    stroke="#FFFFFF"
+    stroke-width="5"
+    stroke-linecap="round"
+    opacity="0.75"
+    fill="none"
+  />
+
+  <!-- Steaming Vapor Lines -->
+  <g stroke="#94A3B8" stroke-width="4" stroke-linecap="round" fill="none">
+    <path d="M -15,-48 C -22,-60 -10,-70 -16,-82" />
+    <path d="M 0,-48 C 6,-62 -4,-72 2,-85" />
+    <path d="M 15,-48 C 8,-60 20,-70 14,-82" />
+  </g>
+</svg>

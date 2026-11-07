@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-300 -200 600 400" width="600" height="400">
+  <!-- Stand legs -->
+  <path d="M-200 120 L-240 180" stroke="#141414" stroke-width="14" stroke-linecap="round"/>
+  <path d="M200 120 L240 180" stroke="#141414" stroke-width="14" stroke-linecap="round"/>
+  <path d="M-220 180 L220 180" stroke="#141414" stroke-width="10" stroke-linecap="round"/>
+  <!-- Outer Frame -->
+  <rect x="-260" y="-160" width="520" height="290" rx="14" fill="#94A3B8" stroke="#141414" stroke-width="14"/>
+  <!-- White Board Area -->
+  <rect x="-240" y="-140" width="480" height="250" rx="8" fill="#F8FAFC"/>
+  <!-- Marker doodles (chart & checkmarks) -->
+  <path d="M-180 50 L-110 -10 L-40 20 L40 -70 L110 -40 L180 -100" stroke="#3B82F6" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <path d="M-170 -90 L-150 -70 L-110 -110" stroke="#22C55E" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- Marker tray -->
+  <rect x="-180" y="115" width="360" height="15" rx="4" fill="#64748B" stroke="#141414" stroke-width="6"/>
+</svg>

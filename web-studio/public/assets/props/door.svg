@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-140 -300 280 600" width="280" height="600">
+  <!-- Frame -->
+  <rect x="-130" y="-290" width="260" height="580" rx="8" fill="#475569" stroke="#141414" stroke-width="14"/>
+  <!-- Door Panel -->
+  <rect x="-115" y="-275" width="230" height="555" rx="6" fill="#D97706" stroke="#141414" stroke-width="12"/>
+  <!-- Decorative insets -->
+  <rect x="-95" y="-250" width="190" height="230" rx="10" fill="#B45309" stroke="#141414" stroke-width="10"/>
+  <rect x="-95" y="10" width="190" height="240" rx="10" fill="#B45309" stroke="#141414" stroke-width="10"/>
+  <!-- Door knob -->
+  <circle cx="75" cy="15" r="18" fill="#FCD34D" stroke="#141414" stroke-width="8"/>
+  <circle cx="79" cy="11" r="5" fill="#FEF3C7"/>
+  <!-- Keyhole -->
+  <rect x="73" y="24" width="4" height="10" rx="2" fill="#78350F"/>
+</svg>

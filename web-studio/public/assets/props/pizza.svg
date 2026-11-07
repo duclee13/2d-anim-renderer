@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-130 -130 260 260" width="260" height="260">
+  <!-- Crust -->
+  <path d="M-110 -90 Q0 -130 110 -90 L0 110 Z" fill="#F59E0B" stroke="#141414" stroke-width="12" stroke-linejoin="round"/>
+  <path d="M-105 -85 Q0 -120 105 -85" stroke="#B45309" stroke-width="16" fill="none" stroke-linecap="round"/>
+  <!-- Melted Cheese -->
+  <path d="M-85 -70 Q0 -95 85 -70 L0 95 Z" fill="#FCD34D" stroke="#141414" stroke-width="8" stroke-linejoin="round"/>
+  <!-- Pepperoni Slices -->
+  <circle cx="-25" cy="-40" r="20" fill="#DC2626" stroke="#141414" stroke-width="6"/>
+  <circle cx="30" cy="-30" r="18" fill="#DC2626" stroke="#141414" stroke-width="6"/>
+  <circle cx="-5" cy="20" r="22" fill="#DC2626" stroke="#141414" stroke-width="6"/>
+  <!-- Basil / Pepper leaves -->
+  <path d="M-40 0 Q-30 -15 -20 0 Z" fill="#22C55E" stroke="#141414" stroke-width="4"/>
+  <path d="M25 15 Q35 0 40 18 Z" fill="#22C55E" stroke="#141414" stroke-width="4"/>
+</svg>

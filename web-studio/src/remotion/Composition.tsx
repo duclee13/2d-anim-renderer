@@ -170,21 +170,45 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
   }
 
   // =========================================================================
-  // ÁNH XẠ PROP ASSET ID
+  // ÁNH XẠ PROP ASSET ID (Tự động chuẩn hóa camelCase & alias sang file vector 2K thật)
   // =========================================================================
   const resolvePropAssetId = (type: string) => {
-    switch (type) {
-      case "glassJar":
-        return "glass-jar";
-      case "deskLamp":
-        return "desk-lamp";
-      case "gaugeMeter":
-        return "gauge-meter";
-      case "pottedPlant":
-        return "potted-plant";
-      default:
-        return type;
-    }
+    const normalized = type
+      .replace(/([A-Z])/g, "-$1")
+      .toLowerCase()
+      .replace(/^-/, "");
+
+    const aliasMap: Record<string, string> = {
+      glassjar: "glass-jar",
+      desklamp: "desk-lamp",
+      gaugemeter: "gauge-meter",
+      pottedplant: "potted-plant",
+      deskback: "desk-back",
+      deskfront: "desk-front",
+      alarmclock: "alarm-clock",
+      coffeecup: "coffee-cup",
+      teacup: "coffee-cup",
+      cup: "coffee-cup",
+      plant: "potted-plant",
+      lamp: "desk-lamp",
+      meter: "gauge-meter",
+      jar: "glass-jar",
+      whiteboard: "whiteboard",
+      television: "tv",
+      smarttv: "tv",
+      screen: "tv",
+      mobilephone: "phone",
+      cellphone: "phone",
+      smartphone: "phone",
+      coffeemug: "coffee-cup",
+      diningtable: "table",
+      deskchair: "chair",
+      armchair: "chair",
+      petcat: "cat",
+      kitten: "cat",
+    };
+
+    return aliasMap[normalized] || aliasMap[type.toLowerCase()] || normalized;
   };
 
   // =========================================================================
