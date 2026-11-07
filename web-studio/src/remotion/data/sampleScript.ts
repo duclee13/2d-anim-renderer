@@ -37,10 +37,10 @@ export const sampleScriptSceneGraph: MasterSceneGraph = {
         scale: 1.0,
         facing: "left",
         pose: "standing",
-        eyes: "surprised",
+        eyes: "neutral",
         eyebrows: "raised",
         mouth: "gasp",
-        pupilGaze: { x: -0.9, y: 0.2 },
+        pupilGaze: { x: -0.85, y: 0.35 },
       },
       props: [
         {
@@ -48,9 +48,9 @@ export const sampleScriptSceneGraph: MasterSceneGraph = {
           type: "glassJar",
           slot: "floor.left",
           layer: "midgroundFrontLayer",
-          x: 780,
+          x: 720,
           y: 1120,
-          scale: 1.0,
+          scale: 0.38,
           properties: {
             hasSpiderInside: true,
           },
@@ -105,8 +105,8 @@ export const sampleScriptSceneGraph: MasterSceneGraph = {
           id: "bubble_s1",
           text: "Ơ kìa!",
           hasMusicNote: false,
-          position: { x: 1820, y: 560 },
-          tailAnchor: { x: -50, y: 80 },
+          position: { x: 1620, y: 340 },
+          tailAnchor: { x: 60, y: 40 },
           startFrame: 25,
           endFrame: 110,
         },
@@ -117,7 +117,7 @@ export const sampleScriptSceneGraph: MasterSceneGraph = {
           action: "moveCharacter",
           target: "character",
           params: { fromX: 2100, toX: 1750, fromY: 1120, toY: 1120 },
-          springConfig: { damping: 14, stiffness: 75, mass: 0.8 },
+          springConfig: { damping: 18, stiffness: 70, mass: 0.8, overshootClamping: true },
         },
       ],
     },
@@ -134,7 +134,7 @@ export const sampleScriptSceneGraph: MasterSceneGraph = {
       background: { preset: "infographicStripes" },
       camera: {
         zoomFrom: 1.0,
-        zoomTo: 1.25,
+        zoomTo: 1.15,
         focusSlot: "screen.centerCloseUp",
         panDurationFrames: 50,
       },
@@ -151,7 +151,7 @@ export const sampleScriptSceneGraph: MasterSceneGraph = {
           layer: "midgroundFrontLayer",
           x: 1280,
           y: 720,
-          scale: 2.1,
+          scale: 1.7,
           anchorPoint: "center",
           pivotPoint: "center",
           properties: {
@@ -170,8 +170,8 @@ export const sampleScriptSceneGraph: MasterSceneGraph = {
         {
           targetId: "jar_closeup",
           type: "scaleBounce",
-          fromScale: 1.85,
-          toScale: 2.1,
+          fromScale: 1.55,
+          toScale: 1.7,
         },
       ],
       subtitles: [
@@ -304,7 +304,7 @@ export const sampleScriptSceneGraph: MasterSceneGraph = {
           layer: "midgroundFrontLayer",
           x: 800,
           y: 760,
-          scale: 1.3,
+          scale: 1.15,
         },
         {
           id: "jar_s4",
@@ -313,7 +313,7 @@ export const sampleScriptSceneGraph: MasterSceneGraph = {
           layer: "midgroundFrontLayer",
           x: 1480,
           y: 760,
-          scale: 0.7,
+          scale: 0.35,
           properties: {
             hasSpiderInside: true,
           },

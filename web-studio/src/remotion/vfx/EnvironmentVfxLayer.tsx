@@ -5,6 +5,7 @@ import { STAGE_CONFIG } from "../utils/slotResolver";
 export interface EnvironmentVfxLayerProps {
   effects?: EnvironmentVfxType[];
   lighting?: LightingConfig;
+  backgroundPreset?: string;
   frame: number;
   fps?: number;
   canvasWidth?: number;
@@ -50,6 +51,7 @@ const CLOUDS = [
 export const EnvironmentVfxLayer: React.FC<EnvironmentVfxLayerProps> = ({
   effects = [],
   lighting,
+  backgroundPreset,
   frame,
   canvasWidth = 2560,
   canvasHeight = 1440,
@@ -59,6 +61,11 @@ export const EnvironmentVfxLayer: React.FC<EnvironmentVfxLayerProps> = ({
   const hasWind = effects.includes("windBreeze");
   const hasSunbeams = effects.includes("sunbeams") || lighting?.preset === "sunbeams" || lighting?.sunbeams;
   const hasWarmNightLamp = lighting?.preset === "warmNightLamp";
+
+  // Mặt trời dạng thiên thể (Sun Orb) CHỈ hiển thị ở ngoại cảnh ngoài trời (như gardenDay).
+  // Trong phòng khách có cửa sổ (livingRoomDay), chỉ chiếu các chùm tia nắng (god-rays) qua cửa sổ, KHÔNG vẽ mặt trời đè lên tường phòng.
+  const isIndoor = backgroundPreset?.includes("livingRoom") || backgroundPreset?.includes("indoor") || backgroundPreset === "infographicStripes";
+  const showSunOrb = hasSunbeams && !isIndoor;
 
   return (
     <g id="environment-vfx-layer" className="pointer-events-none select-none">
@@ -92,43 +99,45 @@ export const EnvironmentVfxLayer: React.FC<EnvironmentVfxLayerProps> = ({
          ========================================================================= */}
       {hasSunbeams && (
         <g id="vfx-sunbeams-system">
-          {/* A. MẶT TRỜI HOẠT HỌA 2K (Tâm sáng rực & các tia nắng xoay tròn nhẹ nhàng) */}
-          <g id="vfx-sun-actor" transform={`translate(280, 180)`}>
-            {/* Quầng sáng tỏa rộng */}
-            <circle cx={0} cy={0} r={180} fill="url(#sunGlow)" opacity={0.85 + 0.15 * Math.sin(frame * 0.04)} />
+          {/* A. MẶT TRỜI HOẠT HỌA 2K (Chỉ vẽ ở ngoại cảnh, không vẽ đè lên tường phòng khách) */}
+          {showSunOrb && (
+            <g id="vfx-sun-actor" transform={`translate(280, 180)`}>
+              {/* Quầng sáng tỏa rộng */}
+              <circle cx={0} cy={0} r={180} fill="url(#sunGlow)" opacity={0.85 + 0.15 * Math.sin(frame * 0.04)} />
 
-            {/* Các tia nắng hoạt họa xoay quanh tâm (0.22 deg/frame ~13 deg/giây) */}
-            <g
-              id="vfx-sun-rays"
-              transform={`rotate(${frame * 0.22}, 0, 0)`}
-              opacity={0.82 + 0.18 * Math.sin(frame * 0.05)}
-            >
-              {Array.from({ length: 12 }).map((_, i) => {
-                const angle = (i * 360) / 12;
-                return (
-                  <polygon
-                    key={i}
-                    points="-14,-105 14,-105 0,-155"
-                    fill="#FBBF24"
-                    stroke="#F59E0B"
-                    strokeWidth={4}
-                    strokeLinejoin="round"
-                    transform={`rotate(${angle}, 0, 0)`}
-                  />
-                );
-              })}
+              {/* Các tia nắng hoạt họa xoay quanh tâm (0.22 deg/frame ~13 deg/giây) */}
+              <g
+                id="vfx-sun-rays"
+                transform={`rotate(${frame * 0.22}, 0, 0)`}
+                opacity={0.82 + 0.18 * Math.sin(frame * 0.05)}
+              >
+                {Array.from({ length: 12 }).map((_, i) => {
+                  const angle = (i * 360) / 12;
+                  return (
+                    <polygon
+                      key={i}
+                      points="-14,-105 14,-105 0,-155"
+                      fill="#FBBF24"
+                      stroke="#F59E0B"
+                      strokeWidth={4}
+                      strokeLinejoin="round"
+                      transform={`rotate(${angle}, 0, 0)`}
+                    />
+                  );
+                })}
+              </g>
+
+              {/* Đĩa tròn mặt trời trung tâm */}
+              <circle
+                cx={0}
+                cy={0}
+                r={78}
+                fill="url(#sunCenter)"
+                stroke="#F59E0B"
+                strokeWidth={8}
+              />
             </g>
-
-            {/* Đĩa tròn mặt trời trung tâm */}
-            <circle
-              cx={0}
-              cy={0}
-              r={78}
-              fill="url(#sunCenter)"
-              stroke="#F59E0B"
-              strokeWidth={8}
-            />
-          </g>
+          )}
 
           {/* B. CÁC DẢI GOD RAYS CHIẾU CHÉO ĐA TẦNG ALPHA */}
           <g id="vfx-god-rays" opacity={0.70 + 0.15 * Math.sin(frame * 0.035)}>

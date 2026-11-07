@@ -5,6 +5,7 @@ import path from "path";
 import { MasterSceneGraph } from "@/remotion/types/sceneGraph";
 import { sampleScriptSceneGraph } from "@/remotion/data/sampleScript";
 import { generateVectorAsset } from "@/lib/vectorAssetGenerator";
+import { normalizePropAssetId } from "@/remotion/utils/propResolver";
 
 const SYSTEM_PROMPT = `
 You are the Lead 2D Animation Director and Spatial Scene Graph Architect for a 2K 60FPS Stickman Explainer Video Engine.
@@ -50,8 +51,13 @@ Strict Rules:
      * 'pivotPoint': 'bottomCenter' | 'center' | 'topCenter' | 'topLeft' | 'custom'
      * 'alphaConfig': { fadeInFrames: 20, pulseAlpha: true }
 8. 2K Viewport Scale & Origin Standards:
-   - Floor & desk surface objects (Origin = Bottom-Center): Stickman baseline y = 1120. Props on floor or desk (sofa, deskLamp, pottedPlant) touch the floor or desk at y.
-   - Screen close-ups & Infographics (Origin = Mid-Center / 'center'): Objects at 'screen.center' or 'screen.centerCloseUp' (GlassJar close-up, GaugeMeter) MUST use 'anchorPoint': 'center' and 'pivotPoint': 'center' so their geometric center is at (1280, 720). This keeps the whole jar/gauge perfectly centered in the 2K viewport without cutting off the top or bottom!
+   - Realistic Proportions:
+     * Floor props like glassJar: scale MUST be 0.35 - 0.40 (~160px tall, NEVER 1.0 or huge like an oil drum!).
+     * Desk props (deskLamp, glassJar, laptop, coffeeCup): scale MUST be 0.30 - 0.38 (desk surface at y = 760).
+     * Close-up props: scale MUST be 1.6 - 1.8 (anchorPoint: 'center', pivotPoint: 'center' at slot 'screen.centerCloseUp').
+     * Background furniture (sofa, desk): scale 1.0.
+   - Origin Bottom-Center for floor/desk props (y is bottom touching floor or desk).
+   - Origin Center for screen close-up props (y is center, anchorPoint: 'center').
    - In close-up shots, DO NOT use scale from 0 to prevent white flash. Use pop or direct transition.
 9. Character Poses: 'standing', 'sittingBehindDesk', 'holdingObject', 'walking', 'pointing', 'shrugging'.
 10. ACTION & MOTION RULES (NEVER LEAVE CHARACTER STATIC):
@@ -64,44 +70,7 @@ Strict Rules:
 `;
 
 function getStandardPropFileName(type: string): string {
-  const normalized = type
-    .replace(/([A-Z])/g, "-$1")
-    .toLowerCase()
-    .replace(/^-/, "");
-
-  const aliasMap: Record<string, string> = {
-    glassjar: "glass-jar",
-    desklamp: "desk-lamp",
-    gaugemeter: "gauge-meter",
-    pottedplant: "potted-plant",
-    deskback: "desk-back",
-    deskfront: "desk-front",
-    alarmclock: "alarm-clock",
-    coffeecup: "coffee-cup",
-    teacup: "coffee-cup",
-    cup: "coffee-cup",
-    plant: "potted-plant",
-    lamp: "desk-lamp",
-    meter: "gauge-meter",
-    jar: "glass-jar",
-    whiteboard: "whiteboard",
-    television: "tv",
-    smarttv: "tv",
-    screen: "tv",
-    mobilephone: "phone",
-    cellphone: "phone",
-    smartphone: "phone",
-    diningtable: "table",
-    deskchair: "chair",
-    armchair: "chair",
-    petcat: "cat",
-    kitten: "cat",
-    bush: "bush",
-    shrub: "bush",
-    hedge: "bush",
-  };
-
-  return aliasMap[normalized] || aliasMap[type.toLowerCase()] || normalized;
+  return normalizePropAssetId(type);
 }
 
 /**
@@ -240,26 +209,46 @@ function sanitizeSceneGraph(raw: any): MasterSceneGraph {
         pupilGaze: s?.character?.pupilGaze || { x: 0, y: 0 },
       },
       props: Array.isArray(s?.props)
-        ? s.props.map((p: any, pIdx: number) => ({
-            id: String(p?.id || `prop_${idx}_${pIdx}`),
-            type: getStandardPropFileName(String(p?.type || "glassJar")),
-            slot: p?.slot || undefined,
-            layer: p?.layer === "midgroundBackLayer" ? ("midgroundBackLayer" as const) : ("midgroundFrontLayer" as const),
-            x: Number(p?.x) || 1280,
-            y: Number(p?.y) || 1120,
-            scale: Number(p?.scale) || 1.0,
-            scaleX: p?.scaleX !== undefined ? Number(p.scaleX) : 1,
-            scaleY: p?.scaleY !== undefined ? Number(p.scaleY) : 1,
-            rotation: Number(p?.rotation) || 0,
-            opacity: p?.opacity !== undefined ? Number(p.opacity) : 1,
-            alphaConfig: p?.alphaConfig || undefined,
-            anchorPoint: p?.anchorPoint || (p?.slot && String(p.slot).startsWith("screen.") ? ("center" as const) : undefined),
-            pivotPoint: p?.pivotPoint || undefined,
-            pivotX: p?.pivotX !== undefined ? Number(p.pivotX) : undefined,
-            pivotY: p?.pivotY !== undefined ? Number(p.pivotY) : undefined,
-            properties: p?.properties || {},
-            entrance: p?.entrance || undefined,
-          }))
+        ? s.props.map((p: any, pIdx: number) => {
+            const canonicalType = getStandardPropFileName(String(p?.type || "glassJar"));
+            let propScale = Number(p?.scale) || 1.0;
+            const isScreenSlot = Boolean(p?.slot && String(p.slot).startsWith("screen."));
+
+            // Tự động chuẩn hóa tỷ lệ scale thực tế để không bao giờ bị quá to như thùng phi
+            if (canonicalType === "glass-jar") {
+              if (isScreenSlot) {
+                if (propScale > 1.8) propScale = 1.7;
+              } else if (p?.slot === "desk.topRight" || p?.slot === "desk.topLeft") {
+                propScale = 0.35;
+              } else if (propScale >= 0.8) {
+                propScale = 0.38;
+              }
+            }
+
+            return {
+              id: String(p?.id || `prop_${idx}_${pIdx}`),
+              type: canonicalType,
+              slot: p?.slot || undefined,
+              layer: p?.layer === "midgroundBackLayer" ? ("midgroundBackLayer" as const) : ("midgroundFrontLayer" as const),
+              x: Number(p?.x) || 1280,
+              y: Number(p?.y) || 1120,
+              scale: propScale,
+              scaleX: p?.scaleX !== undefined ? Number(p.scaleX) : 1,
+              scaleY: p?.scaleY !== undefined ? Number(p.scaleY) : 1,
+              rotation: Number(p?.rotation) || 0,
+              opacity: p?.opacity !== undefined ? Number(p.opacity) : 1,
+              alphaConfig: p?.alphaConfig || undefined,
+              anchorPoint: p?.anchorPoint || (isScreenSlot ? ("center" as const) : undefined),
+              pivotPoint: p?.pivotPoint || (isScreenSlot ? ("center" as const) : undefined),
+              pivotX: p?.pivotX !== undefined ? Number(p.pivotX) : undefined,
+              pivotY: p?.pivotY !== undefined ? Number(p.pivotY) : undefined,
+              properties: {
+                hasSpiderInside: canonicalType === "glass-jar" ? true : undefined,
+                ...p?.properties,
+              },
+              entrance: p?.entrance || undefined,
+            };
+          })
         : [],
       subtitles: Array.isArray(s?.subtitles)
         ? s.subtitles.map((sub: any, subIdx: number) => ({

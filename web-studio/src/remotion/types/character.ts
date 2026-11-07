@@ -72,6 +72,7 @@ export interface StickmanState {
   };
   pointingTarget?: Point2D;
   walkCycleProgress?: number; // 0 to 1 for continuous walk
+  walkWeight?: number; // 0 (standing flat) to 1 (full stride) for smooth deceleration
 }
 
 export interface PropAnchorPorts {

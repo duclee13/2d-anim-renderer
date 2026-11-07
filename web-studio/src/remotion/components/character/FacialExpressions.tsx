@@ -3,6 +3,7 @@ import { EyeExpression, EyebrowExpression, MouthExpression, Point2D } from "../.
 
 interface FacialExpressionsProps {
   headRadius: number;
+  facing?: "left" | "right";
   eyes?: EyeExpression;
   eyebrows?: EyebrowExpression;
   mouth?: MouthExpression;
@@ -14,6 +15,7 @@ interface FacialExpressionsProps {
 
 export const FacialExpressions: React.FC<FacialExpressionsProps> = ({
   headRadius = 90,
+  facing = "right",
   eyes = "neutral",
   eyebrows = "neutral",
   mouth = "smile",
@@ -22,15 +24,19 @@ export const FacialExpressions: React.FC<FacialExpressionsProps> = ({
   sweatDrop = false,
   strokeColor = "#141414",
 }) => {
-  // Eye geometry (2K Proportions for headRadius 95)
-  const eyeRadius = 20;
-  const pupilRadius = 13;
-  const eyeDistance = 44;
-  const eyeY = -16;
+  // Eye geometry (2K Proportions: tối giản, con ngươi là 1 chấm tròn di chuyển)
+  const eyeRadius = 16;
+  const pupilRadius = 6;
+  const eyeDistance = 38;
+  const eyeY = -12;
 
-  // Pupil offset from gaze
-  const maxGazeOffset = 6;
-  const gazeX = (pupilGaze.x || 0) * maxGazeOffset;
+  // Lông mày: 1 nét thẳng đơn giản duy nhất, dịch xuống một chút sát mắt
+  const browY = eyeY - 20;
+
+  // Pupil offset from gaze (xét hướng quay mặt facing để con ngươi luôn nhìn đúng hướng)
+  const maxGazeOffset = 8;
+  const flipSign = facing === "left" ? -1 : 1;
+  const gazeX = (pupilGaze.x || 0) * maxGazeOffset * flipSign;
   const gazeY = (pupilGaze.y || 0) * maxGazeOffset;
 
   const leftEyeCenter = { x: -eyeDistance + gazeX, y: eyeY + gazeY };
@@ -41,69 +47,50 @@ export const FacialExpressions: React.FC<FacialExpressionsProps> = ({
       {/* Blush cheeks */}
       {blush && (
         <g opacity={0.65}>
-          <ellipse cx={-eyeDistance - 12} cy={eyeY + 38} rx={18} ry={10} fill="#FF8BA7" />
-          <ellipse cx={eyeDistance + 12} cy={eyeY + 38} rx={18} ry={10} fill="#FF8BA7" />
+          <ellipse cx={-eyeDistance - 10} cy={eyeY + 36} rx={16} ry={9} fill="#FF8BA7" />
+          <ellipse cx={eyeDistance + 10} cy={eyeY + 36} rx={16} ry={9} fill="#FF8BA7" />
         </g>
       )}
 
-      {/* Eyebrows */}
-      <g stroke={strokeColor} strokeWidth={8} strokeLinecap="round" strokeLinejoin="round" fill="none">
+      {/* 1 LÔNG MÀY DUY NHẤT (Nét thẳng đơn giản, dịch xuống sát mắt) */}
+      <g stroke={strokeColor} strokeWidth={7} strokeLinecap="round" strokeLinejoin="round" fill="none">
         {eyebrows === "neutral" && (
-          <>
-            <path d={`M ${-eyeDistance - 22} ${eyeY - 26} Q ${-eyeDistance} ${eyeY - 32} ${-eyeDistance + 22} ${eyeY - 26}`} />
-            <path d={`M ${eyeDistance - 22} ${eyeY - 26} Q ${eyeDistance} ${eyeY - 32} ${eyeDistance + 22} ${eyeY - 26}`} />
-          </>
+          <line x1={-38} y1={browY} x2={38} y2={browY} />
         )}
         {eyebrows === "raised" && (
-          <>
-            <path d={`M ${-eyeDistance - 22} ${eyeY - 36} Q ${-eyeDistance} ${eyeY - 44} ${-eyeDistance + 22} ${eyeY - 34}`} />
-            <path d={`M ${eyeDistance - 22} ${eyeY - 34} Q ${eyeDistance} ${eyeY - 44} ${eyeDistance + 22} ${eyeY - 36}`} />
-          </>
+          <line x1={-38} y1={browY - 10} x2={38} y2={browY - 10} />
         )}
         {eyebrows === "inquisitive" && (
-          <>
-            <path d={`M ${-eyeDistance - 22} ${eyeY - 28} Q ${-eyeDistance} ${eyeY - 34} ${-eyeDistance + 22} ${eyeY - 26}`} />
-            <path d={`M ${eyeDistance - 22} ${eyeY - 42} Q ${eyeDistance} ${eyeY - 50} ${eyeDistance + 22} ${eyeY - 36}`} />
-          </>
+          <line x1={-38} y1={browY + 4} x2={38} y2={browY - 8} />
         )}
         {eyebrows === "worried" && (
-          <>
-            <path d={`M ${-eyeDistance - 22} ${eyeY - 34} Q ${-eyeDistance} ${eyeY - 26} ${-eyeDistance + 22} ${eyeY - 24}`} />
-            <path d={`M ${eyeDistance - 22} ${eyeY - 24} Q ${eyeDistance} ${eyeY - 26} ${eyeDistance + 22} ${eyeY - 34}`} />
-          </>
+          <line x1={-38} y1={browY - 8} x2={38} y2={browY + 4} />
         )}
         {eyebrows === "furrowed" && (
-          <>
-            <path d={`M ${-eyeDistance - 22} ${eyeY - 24} L ${-eyeDistance + 22} ${eyeY - 32}`} />
-            <path d={`M ${eyeDistance - 22} ${eyeY - 32} L ${eyeDistance + 22} ${eyeY - 24}`} />
-          </>
+          <line x1={-38} y1={browY + 6} x2={38} y2={browY + 6} />
         )}
       </g>
 
       {/* Eyes */}
       {eyes === "closed" ? (
-        <g stroke={strokeColor} strokeWidth={8} strokeLinecap="round" strokeLinejoin="round" fill="none">
-          <path d={`M ${-eyeDistance - 18} ${eyeY} Q ${-eyeDistance} ${eyeY + 16} ${-eyeDistance + 18} ${eyeY}`} />
-          <path d={`M ${eyeDistance - 18} ${eyeY} Q ${eyeDistance} ${eyeY + 16} ${eyeDistance + 18} ${eyeY}`} />
+        <g stroke={strokeColor} strokeWidth={6} strokeLinecap="round" strokeLinejoin="round" fill="none">
+          <line x1={-eyeDistance - 14} y1={eyeY} x2={-eyeDistance + 14} y2={eyeY} />
+          <line x1={eyeDistance - 14} y1={eyeY} x2={eyeDistance + 14} y2={eyeY} />
         </g>
       ) : eyes === "happy" ? (
-        <g stroke={strokeColor} strokeWidth={8} strokeLinecap="round" strokeLinejoin="round" fill="none">
-          <path d={`M ${-eyeDistance - 18} ${eyeY + 8} Q ${-eyeDistance} ${eyeY - 14} ${-eyeDistance + 18} ${eyeY + 8}`} />
-          <path d={`M ${eyeDistance - 18} ${eyeY + 8} Q ${eyeDistance} ${eyeY - 14} ${eyeDistance + 18} ${eyeY + 8}`} />
+        <g stroke={strokeColor} strokeWidth={6} strokeLinecap="round" strokeLinejoin="round" fill="none">
+          <path d={`M ${-eyeDistance - 14} ${eyeY + 6} Q ${-eyeDistance} ${eyeY - 8} ${-eyeDistance + 14} ${eyeY + 6}`} />
+          <path d={`M ${eyeDistance - 14} ${eyeY + 6} Q ${eyeDistance} ${eyeY - 8} ${eyeDistance + 14} ${eyeY + 6}`} />
         </g>
       ) : (
         <g>
-          {/* Eye whites */}
-          <circle cx={-eyeDistance} cy={eyeY} r={eyeRadius} fill="#FFFFFF" stroke={strokeColor} strokeWidth={7} />
-          <circle cx={eyeDistance} cy={eyeY} r={eyeRadius} fill="#FFFFFF" stroke={strokeColor} strokeWidth={7} />
+          {/* Tròng mắt trắng tối giản */}
+          <circle cx={-eyeDistance} cy={eyeY} r={eyeRadius} fill="#FFFFFF" stroke={strokeColor} strokeWidth={5} />
+          <circle cx={eyeDistance} cy={eyeY} r={eyeRadius} fill="#FFFFFF" stroke={strokeColor} strokeWidth={5} />
 
-          {/* Pupils */}
+          {/* Con ngươi: 1 chấm tròn đen đơn giản di chuyển */}
           <circle cx={leftEyeCenter.x} cy={leftEyeCenter.y} r={pupilRadius} fill={strokeColor} />
           <circle cx={rightEyeCenter.x} cy={rightEyeCenter.y} r={pupilRadius} fill={strokeColor} />
-
-          {/* Specular highlights for cute shiny eyes */}
-          <circle cx={leftEyeCenter.x - 4} cy={leftEyeCenter.y - 4} r={4.5} fill="#FFFFFF" />
-          <circle cx={rightEyeCenter.x - 4} cy={rightEyeCenter.y - 4} r={4.5} fill="#FFFFFF" />
         </g>
       )}
 

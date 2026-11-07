@@ -152,10 +152,13 @@ export const StickmanRig: React.FC<StickmanRigProps> = ({
   let leftFoot: Point2D = { x: -45, y: 0 };
   let rightFoot: Point2D = { x: 45, y: 0 };
 
-  const isWalking = pose === "walking" || walkCycleProgress > 0;
+  const weight = state.walkWeight !== undefined ? state.walkWeight : 1.0;
+  const isWalking = (pose === "walking" || walkCycleProgress > 0) && weight > 0.02;
 
   if (isWalking) {
-    const walkData = calculateWalkCycle(hip, walkCycleProgress);
+    const stride = 65 * weight;
+    const stepH = 22 * weight;
+    const walkData = calculateWalkCycle(hip, walkCycleProgress, stride, stepH);
     leftKnee = walkData.leftKnee;
     rightKnee = walkData.rightKnee;
     leftFoot = walkData.leftFoot;
@@ -280,6 +283,7 @@ export const StickmanRig: React.FC<StickmanRigProps> = ({
                 <circle cx={0} cy={0} r={headRadius} fill="#FFFFFF" stroke="#141414" strokeWidth={14} />
                 <FacialExpressions
                   headRadius={headRadius}
+                  facing={facing}
                   eyes={state.eyes}
                   eyebrows={state.eyebrows}
                   mouth={state.mouth}

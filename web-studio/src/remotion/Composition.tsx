@@ -29,6 +29,7 @@ import { resolveSemanticSlot, STAGE_CONFIG } from "./utils/slotResolver";
 import { SvgDefsLibrary } from "./vfx/SvgDefsLibrary";
 import { CameraRig } from "./vfx/CameraRig";
 import { EnvironmentVfxLayer } from "./vfx/EnvironmentVfxLayer";
+import { normalizePropAssetId } from "./utils/propResolver";
 
 export interface MainCompositionProps {
   sceneGraph?: MasterSceneGraph;
@@ -130,11 +131,18 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
   const moveCharKf = activeKeyframes.find(
     (kf) => kf.action === "moveCharacter" && kf.target === "character"
   );
-  let isCurrentlyTranslating = false;
+  let charVelocity = 0;
 
   if (moveCharKf && isCharacterVisible) {
     const { fromX, toX, fromY, toY } = moveCharKf.params;
-    const cfg = moveCharKf.springConfig;
+    // BẮT BUỘC: overshootClamping: true để người đi tới đích không bao giờ bị nảy quá trớn rồi trượt lùi lại!
+    const cfg = {
+      damping: 18,
+      stiffness: 70,
+      mass: 0.8,
+      ...moveCharKf.springConfig,
+      overshootClamping: true,
+    };
     if (fromX !== undefined && toX !== undefined) {
       dynamicCharacterState.x = springMove(
         sceneLocalFrame,
@@ -153,9 +161,7 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
         moveCharKf.frame,
         cfg
       );
-      if (Math.abs(nextX - dynamicCharacterState.x) > 0.4) {
-        isCurrentlyTranslating = true;
-      }
+      charVelocity = Math.abs(nextX - dynamicCharacterState.x);
     }
     if (fromY !== undefined && toY !== undefined) {
       dynamicCharacterState.y = springMove(
@@ -170,7 +176,7 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
   } else if (hasWalkAction && isCharacterVisible && currentScene.durationInFrames > 60) {
     const walkDuration = currentScene.durationInFrames * 0.85;
     if (sceneLocalFrame < walkDuration) {
-      isCurrentlyTranslating = true;
+      charVelocity = 2.0;
     }
     const startX = currentScene.character.facing === "left" ? 1700 : 700;
     const endX = currentScene.character.facing === "left" ? 900 : 1700;
@@ -179,18 +185,25 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
   }
 
   // --- Hiệu ứng bước chân (Walk Cycle Animation) KHI VÀ CHỈ KHI ĐANG DI CHUYỂN ---
-  const isWalkingActive =
-    dynamicCharacterState.pose === "walking" || isCurrentlyTranslating;
+  // Trọng số bước đi (Deceleration Smooth Weight): khi vận tốc giảm dần về 0, sải chân & độ cao nhấc chân
+  // thu hẹp êm ái về 0 và tiếp đất tự nhiên, LOẠI BỎ HOÀN TOÀN hiện tượng giật cục hay đổi hướng khi dừng.
+  const isWalkingActive = dynamicCharacterState.pose === "walking" || charVelocity > 0.08;
+  const walkWeight = dynamicCharacterState.pose === "walking"
+    ? 1.0
+    : Math.min(1.0, Math.max(0, (charVelocity - 0.08) / 1.2));
 
-  if (isWalkingActive) {
+  dynamicCharacterState.walkWeight = walkWeight;
+
+  if (isWalkingActive && walkWeight > 0.02) {
     // Tốc độ bước tự nhiên: ~0.95s cho 1 chu kỳ 2 bước (~57 frames @ 60 FPS = multiplier 0.0175)
     dynamicCharacterState.walkCycleProgress = (sceneLocalFrame * 0.0175) % 1;
-    // Nhấp nhô hông tự nhiên 5.5px (không nảy 14px thô bạo)
-    const walkBobY = Math.abs(Math.sin(sceneLocalFrame * 0.0175 * Math.PI * 2)) * 5.5;
+    // Nhấp nhô hông tự nhiên theo tỷ lệ vận tốc thực
+    const walkBobY = Math.abs(Math.sin(sceneLocalFrame * 0.0175 * Math.PI * 2)) * (5.5 * walkWeight);
     dynamicCharacterState.y = (dynamicCharacterState.y || STAGE_CONFIG.floorY) - walkBobY;
   } else {
     // Khi đứng yên: CHÂN ĐỨNG IM CHẠM ĐẤT 100%, không đạp chân
     dynamicCharacterState.walkCycleProgress = 0;
+    dynamicCharacterState.walkWeight = 0;
   }
 
   // --- Áp dụng keyframe "changeExpression" ---
@@ -217,8 +230,12 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
     }
   }
 
-  // --- Tự động gán holdingTarget từ Auto-Anchoring IK ---
-  const primaryProp = currentScene.props[0];
+  // --- Tự động gán holdingTarget từ Auto-Anchoring IK (Ưu tiên vật thể cầm tay di động) ---
+  const primaryProp = currentScene.props.find((p) => {
+    const id = normalizePropAssetId(p.type);
+    return !["sofa", "desk", "desk-front", "desk-back", "tree", "bush", "door", "whiteboard", "tv", "table"].includes(id);
+  }) || currentScene.props[0];
+
   if (isHolding && primaryProp) {
     const propHoldingX = dynamicCharacterState.x + (dynamicCharacterState.facing === "left" ? -140 : 140);
     const propHoldingY = (dynamicCharacterState.y || STAGE_CONFIG.floorY) - 170;
@@ -240,47 +257,7 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
   // =========================================================================
   // ÁNH XẠ PROP ASSET ID (Tự động chuẩn hóa camelCase & alias sang file vector 2K thật)
   // =========================================================================
-  const resolvePropAssetId = (type: string) => {
-    const normalized = type
-      .replace(/([A-Z])/g, "-$1")
-      .toLowerCase()
-      .replace(/^-/, "");
-
-    const aliasMap: Record<string, string> = {
-      glassjar: "glass-jar",
-      desklamp: "desk-lamp",
-      gaugemeter: "gauge-meter",
-      pottedplant: "potted-plant",
-      deskback: "desk-back",
-      deskfront: "desk-front",
-      alarmclock: "alarm-clock",
-      coffeecup: "coffee-cup",
-      teacup: "coffee-cup",
-      cup: "coffee-cup",
-      plant: "potted-plant",
-      lamp: "desk-lamp",
-      meter: "gauge-meter",
-      jar: "glass-jar",
-      whiteboard: "whiteboard",
-      television: "tv",
-      smarttv: "tv",
-      screen: "tv",
-      mobilephone: "phone",
-      cellphone: "phone",
-      smartphone: "phone",
-      coffeemug: "coffee-cup",
-      diningtable: "table",
-      deskchair: "chair",
-      armchair: "chair",
-      petcat: "cat",
-      kitten: "cat",
-      bush: "bush",
-      shrub: "bush",
-      hedge: "bush",
-    };
-
-    return aliasMap[normalized] || aliasMap[type.toLowerCase()] || normalized;
-  };
+  const resolvePropAssetId = (type: string) => normalizePropAssetId(type);
 
   // =========================================================================
   // TÍNH TOÁN VỊ TRÍ PROP VỚI ENTRANCE ANIMATION + KEYFRAMES + SEMANTIC SLOTS + VFX
@@ -512,6 +489,7 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
           <EnvironmentVfxLayer
             effects={currentScene.environmentVfx}
             lighting={currentScene.lighting}
+            backgroundPreset={currentScene.background.preset}
             frame={frame}
             fps={fps}
             canvasWidth={width}
@@ -660,7 +638,7 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
                               id="spider"
                               x={0}
                               y={0}
-                              scale={0.8}
+                              scale={(prop.scale ?? 1.0) < 1.0 ? 0.45 : 0.55}
                               anchorPoint="center"
                               defaultDimensions={{ width: 320, height: 240 }}
                             />

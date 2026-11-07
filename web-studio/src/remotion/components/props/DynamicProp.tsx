@@ -3,6 +3,7 @@ import { staticFile, interpolate } from "remotion";
 import { Point2D, PropAnchorPorts } from "../../types/character";
 import { computeAutoAnchorPorts, extractSvgDimensions, SvgDimensionInfo } from "../../lib/autoAnchoring";
 import { AlphaConfig } from "../../types/sceneGraph";
+import { normalizePropAssetId } from "../../utils/propResolver";
 
 export interface DynamicPropProps {
   id: string; // Tên file trong public/assets/props/${id}.svg
@@ -97,13 +98,14 @@ export const DynamicProp: React.FC<DynamicPropProps> = ({
   onAnchorsComputed,
   children,
 }) => {
+  const canonicalId = normalizePropAssetId(id);
   const initialDims = customSvgContent
     ? defaultDimensions
-    : KNOWN_PROP_DIMENSIONS[id] || defaultDimensions;
+    : KNOWN_PROP_DIMENSIONS[canonicalId] || KNOWN_PROP_DIMENSIONS[id] || defaultDimensions;
   const [dimensions, setDimensions] = useState<SvgDimensionInfo>(initialDims);
   const [hasLoadError, setHasLoadError] = useState(false);
 
-  const baseAssetPath = staticFile(`assets/props/${id}.svg`);
+  const baseAssetPath = staticFile(`assets/props/${canonicalId}.svg`);
   const assetUrl = `${baseAssetPath}?v=20261107_2k`;
 
   useEffect(() => {
@@ -117,7 +119,7 @@ export const DynamicProp: React.FC<DynamicPropProps> = ({
 
     fetch(assetUrl)
       .then((res) => {
-        if (!res.ok) throw new Error(`Không tìm thấy file ${id}.svg trong public/assets/props/`);
+        if (!res.ok) throw new Error(`Không tìm thấy file ${canonicalId}.svg trong public/assets/props/`);
         return res.text();
       })
       .then((svgText) => {
@@ -127,7 +129,7 @@ export const DynamicProp: React.FC<DynamicPropProps> = ({
         setHasLoadError(false);
       })
       .catch((err) => {
-        console.warn(`[DynamicProp] Dùng kích thước mặc định cho prop '${id}':`, err.message);
+        console.warn(`[DynamicProp] Dùng kích thước mặc định cho prop '${canonicalId}':`, err.message);
         if (isMounted) {
           setHasLoadError(true);
         }
@@ -136,7 +138,7 @@ export const DynamicProp: React.FC<DynamicPropProps> = ({
     return () => {
       isMounted = false;
     };
-  }, [id, customSvgContent, assetUrl]);
+  }, [canonicalId, customSvgContent, assetUrl]);
 
   const effectiveAnchor = anchorPoint || (pivotPoint === "center" ? "center" : "bottomCenter");
 
@@ -154,8 +156,9 @@ export const DynamicProp: React.FC<DynamicPropProps> = ({
   }, [dimensions, x, y, scale, rotation, effectiveAnchor]);
 
   const { width, height } = dimensions;
-  const isGauge = id === "gauge-meter";
-  const isSpider = id === "spider";
+  const isGauge = canonicalId === "gauge-meter";
+  const isSpider = canonicalId === "spider";
+  const isGlassJar = canonicalId === "glass-jar";
 
   // Vị trí Y của ảnh và các phần tử con theo Anchor/Origin:
   // "center" (Mid-Center): Tâm hình học của vật thể đặt tại (x, y) - dùng cho Cảnh cận, Màn hình, Infographics
@@ -182,9 +185,9 @@ export const DynamicProp: React.FC<DynamicPropProps> = ({
       // Các vật thể chuẩn (như lọ thủy tinh glass-jar, sofa, đèn bàn, v.v.)
       imageY = -height / 2;
       // Nhện nằm trong thân lọ thủy tinh tại vị trí cân đối
-      childrenY = id === "glass-jar" ? Math.round(height * 0.12) : 0;
+      childrenY = isGlassJar ? Math.round(height * 0.12) : 0;
       // Nhãn dán "TÁM" nằm ở 1/3 phía trên thân lọ, trên đầu con nhện
-      labelY = id === "glass-jar" ? -Math.round(height * 0.22) : -Math.round(height * 0.25);
+      labelY = isGlassJar ? -Math.round(height * 0.22) : -Math.round(height * 0.25);
     }
   } else {
     // bottomCenter
@@ -199,7 +202,7 @@ export const DynamicProp: React.FC<DynamicPropProps> = ({
     } else {
       imageY = -height;
       childrenY = -Math.round(height * 0.22);
-      labelY = id === "glass-jar" ? -Math.round(height * 0.72) : -Math.round(height * 0.5);
+      labelY = isGlassJar ? -Math.round(height * 0.72) : -Math.round(height * 0.5);
     }
   }
 
@@ -257,7 +260,7 @@ export const DynamicProp: React.FC<DynamicPropProps> = ({
   }
 
   // Đung đưa cây cỏ (Foliage Sway) CHỈ KHI CÓ HIỆU ỨNG THỜI TIẾT NGOÀI TRỜI ĐƯỢC BẬT (Vật tĩnh giữ tĩnh 100%)
-  const isPlant = foliageSway && (id === "potted-plant" || id === "tree" || id === "bush");
+  const isPlant = foliageSway && (canonicalId === "potted-plant" || canonicalId === "tree" || canonicalId === "bush");
   const plantSwayDeg = isPlant ? Math.sin(frame * 0.045 + (x % 10)) * 3.5 : 0;
 
   const labelBoxWidth = isGauge ? 280 : 150;
