@@ -5,7 +5,12 @@ export type BackgroundPreset =
   | "livingRoomDay"
   | "livingRoomNight"
   | "gardenDay"
-  | "infographicStripes";
+  | "infographicStripes"
+  | "classroom"
+  | "office"
+  | "cityStreet"
+  | "beachSunny"
+  | "nightSky";
 
 export interface SubtitleWord {
   word: string;

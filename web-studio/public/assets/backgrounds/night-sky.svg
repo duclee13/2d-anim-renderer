@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2560 1440" width="2560" height="1440">
+  <defs>
+    <linearGradient id="nightSkyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#020617" />
+      <stop offset="60%" stop-color="#0F172A" />
+      <stop offset="100%" stop-color="#1E1B4B" />
+    </linearGradient>
+  </defs>
+
+  <!-- Deep Midnight Sky -->
+  <rect x="0" y="0" width="2560" height="1060" fill="url(#nightSkyGrad)" />
+
+  <!-- Crescent Moon -->
+  <g transform="translate(2100, 240)">
+    <path d="M 0,-80 A 90,90 0 1,0 80,60 A 75,75 0 1,1 0,-80 Z" fill="#FEF08A" stroke="#141414" stroke-width="10" stroke-linejoin="round" />
+  </g>
+
+  <!-- Twinkling Cartoon Stars -->
+  <g fill="#FFFFFF" opacity="0.85">
+    <circle cx="320" cy="180" r="8" />
+    <circle cx="560" cy="280" r="12" />
+    <circle cx="820" cy="140" r="7" />
+    <circle cx="1100" cy="220" r="10" />
+    <circle cx="1380" cy="120" r="9" />
+    <circle cx="1640" cy="260" r="11" />
+    <circle cx="1880" cy="150" r="8" />
+    <circle cx="450" cy="420" r="7" />
+    <circle cx="950" cy="460" r="9" />
+    <circle cx="1480" cy="410" r="10" />
+  </g>
+
+  <!-- 4-point Sparkle Stars -->
+  <g fill="#FEF08A" stroke="#141414" stroke-width="6">
+    <path d="M 680,360 Q 680,330 700,330 Q 680,330 680,300 Q 680,330 660,330 Q 680,330 680,360 Z" />
+    <path d="M 1250,310 Q 1250,280 1270,280 Q 1250,280 1250,250 Q 1250,280 1230,280 Q 1250,280 1250,310 Z" />
+    <path d="M 1820,380 Q 1820,350 1840,350 Q 1820,350 1820,320 Q 1820,350 1800,350 Q 1820,350 1820,380 Z" />
+  </g>
+
+  <!-- Night Grass Hill Baseline (y = 1060 to 1440) -->
+  <line x1="0" y1="1060" x2="2560" y2="1060" stroke="#141414" stroke-width="12" />
+  <rect x="0" y="1060" width="2560" height="380" fill="#064E3B" />
+  <rect x="0" y="1120" width="2560" height="320" fill="#022C22" opacity="0.45" />
+</svg>

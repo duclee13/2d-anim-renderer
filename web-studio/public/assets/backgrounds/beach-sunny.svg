@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2560 1440" width="2560" height="1440">
+  <!-- Sky -->
+  <rect x="0" y="0" width="2560" height="720" fill="#7DD3FC" />
+
+  <!-- Tropical Bright Sun -->
+  <g transform="translate(420, 240)">
+    <circle cx="0" cy="0" r="110" fill="#FDE047" stroke="#141414" stroke-width="10" />
+  </g>
+
+  <!-- Distant Tropical Island Silhouette -->
+  <path d="M 1400,720 Q 1650,600 1900,720 Z" fill="#0D9488" stroke="#141414" stroke-width="8" />
+
+  <!-- Turquoise Ocean (y = 720 to 1040) -->
+  <rect x="0" y="720" width="2560" height="320" fill="#06B6D4" stroke="#141414" stroke-width="10" />
+  <!-- Ocean Foam Waves -->
+  <path d="M 0,940 Q 320,910 640,940 T 1280,940 T 1920,940 T 2560,940" fill="none" stroke="#FFFFFF" stroke-width="12" stroke-linecap="round" />
+  <path d="M 0,1020 Q 300,990 600,1020 T 1200,1020 T 1800,1020 T 2560,1020" fill="none" stroke="#E0F2FE" stroke-width="16" stroke-linecap="round" />
+
+  <!-- Warm Golden Sand Beach (y = 1040 to 1440) -->
+  <line x1="0" y1="1040" x2="2560" y2="1040" stroke="#141414" stroke-width="12" />
+  <rect x="0" y="1040" width="2560" height="400" fill="#FCD34D" />
+
+  <!-- Beach baseline for characters (y = 1120) -->
+  <!-- Cartoon Palm Tree on the right -->
+  <g transform="translate(2280, 1120)" stroke="#141414" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Trunk -->
+    <path d="M 0,0 Q -60,-400 40,-850" fill="none" stroke="#78350F" stroke-width="48" />
+    <path d="M 0,0 Q -60,-400 40,-850" fill="none" stroke="#141414" stroke-width="56" opacity="0.15" />
+    <!-- Fronds -->
+    <g transform="translate(40, -850)" fill="#16A34A" stroke="#141414" stroke-width="10">
+      <path d="M 0,0 Q -240,-120 -380,60 Q -200,20 0,0 Z" />
+      <path d="M 0,0 Q -180,-240 -260,-400 Q -120,-180 0,0 Z" />
+      <path d="M 0,0 Q 120,-260 220,-420 Q 80,-180 0,0 Z" />
+      <path d="M 0,0 Q 220,-120 360,40 Q 180,20 0,0 Z" />
+      <path d="M 0,0 Q 40,80 80,180 Q 20,60 0,0 Z" />
+    </g>
+  </g>
+</svg>

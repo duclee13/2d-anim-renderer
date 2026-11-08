@@ -1,0 +1,147 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-150 -150 300 300" width="300" height="300">
+  <defs>
+    <!-- Soft Car Roof Highlight -->
+    <linearGradient id="roofGlow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FF8594" />
+      <stop offset="100%" stop-color="#FF4757" />
+    </linearGradient>
+    <!-- Window Glass Gradient -->
+    <linearGradient id="windowGlass" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#E8F8FF" />
+      <stop offset="40%" stop-color="#A4E2FB" />
+      <stop offset="100%" stop-color="#72CCF1" />
+    </linearGradient>
+    <!-- Wheel Rim Gradient -->
+    <linearGradient id="rimGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="100%" stop-color="#D2D7DE" />
+    </linearGradient>
+  </defs>
+
+  <!-- Ground Shadow -->
+  <ellipse cx="0" cy="67" rx="118" ry="12" fill="#141414" opacity="0.15" />
+
+  <!-- Exhaust Pipe Smoke Puff (Cute Cartoon Touch) -->
+  <ellipse cx="-124" cy="36" rx="6" ry="5" fill="#E4E8EE" stroke="#141414" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
+  <circle cx="-136" cy="30" r="4" fill="#E4E8EE" stroke="#141414" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+
+  <!-- Back Bumper -->
+  <rect x="-119" y="32" width="16" height="12" rx="6" fill="#D2D7DE" stroke="#141414" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" />
+
+  <!-- Front Bumper -->
+  <rect x="103" y="32" width="16" height="12" rx="6" fill="#D2D7DE" stroke="#141414" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" />
+
+  <!-- Main Body Base (Shadow layer for depth) -->
+  <path d="M -105 38 
+           L -105 15 
+           C -105 0 -92 -10 -68 -15 
+           L -45 -48 
+           C -40 -53 -30 -54 10 -54 
+           C 22 -54 28 -50 36 -40 
+           L 66 3 
+           L 104 8 
+           C 114 10 116 18 116 28 
+           L 116 38 
+           L 90 38 
+           A 28 28 0 0 0 34 38 
+           L -34 38 
+           A 28 28 0 0 0 -90 38 
+           Z" 
+        fill="#D63031" />
+
+  <!-- Main Car Body -->
+  <path d="M -105 33 
+           L -105 15 
+           C -105 0 -92 -10 -68 -15 
+           L -45 -48 
+           C -40 -53 -30 -54 10 -54 
+           C 22 -54 28 -50 36 -40 
+           L 66 3 
+           L 104 8 
+           C 114 10 116 18 116 28 
+           L 116 35 
+           L 90 35 
+           A 28 28 0 0 0 34 35 
+           L -34 35 
+           A 28 28 0 0 0 -90 35 
+           Z" 
+        fill="url(#roofGlow)" 
+        stroke="#141414" 
+        stroke-width="12" 
+        stroke-linecap="round" 
+        stroke-linejoin="round" />
+
+  <!-- Under-hood highlight stripe -->
+  <path d="M -60 -10 L 98 8 C 108 10 110 16 110 22" fill="none" stroke="#FF7675" stroke-width="5" stroke-linecap="round" />
+
+  <!-- Rear Window -->
+  <path d="M -41 -44 
+           L -1 -44 
+           L -1 -4 
+           L -58 -4 
+           C -54 -18 -48 -36 -41 -44 Z" 
+        fill="url(#windowGlass)" 
+        stroke="#141414" 
+        stroke-width="11" 
+        stroke-linecap="round" 
+        stroke-linejoin="round" />
+
+  <!-- Front Windshield -->
+  <path d="M 11 -44 
+           L 24 -44 
+           C 29 -44 33 -40 37 -33 
+           L 57 1 
+           C 58 4 56 -4 46 -4 
+           L 11 -4 
+           Z" 
+        fill="url(#windowGlass)" 
+        stroke="#141414" 
+        stroke-width="11" 
+        stroke-linecap="round" 
+        stroke-linejoin="round" />
+
+  <!-- Window Glare Lines -->
+  <path d="M -24 -40 L -42 -8" fill="none" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" opacity="0.8" />
+  <path d="M -16 -40 L -34 -8" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" opacity="0.8" />
+  <path d="M 27 -36 L 15 -8" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" opacity="0.8" />
+
+  <!-- Door Cut Line & Handle -->
+  <path d="M 5 -4 L 5 35" fill="none" stroke="#141414" stroke-width="9" stroke-linecap="round" />
+  <rect x="13" y="4" width="12" height="5" rx="2.5" fill="#141414" />
+
+  <!-- Headlight -->
+  <path d="M 108 14 C 114 15 117 21 117 28 C 111 29 108 27 106 24 Z" 
+        fill="#FFF275" 
+        stroke="#141414" 
+        stroke-width="9" 
+        stroke-linecap="round" 
+        stroke-linejoin="round" />
+
+  <!-- Taillight -->
+  <path d="M -107 14 C -103 14 -101 17 -101 24 L -107 25 Z" 
+        fill="#FFA502" 
+        stroke="#141414" 
+        stroke-width="9" 
+        stroke-linecap="round" 
+        stroke-linejoin="round" />
+
+  <!-- BACK WHEEL ASSEMBLY -->
+  <g transform="translate(-62, 40)">
+    <!-- Tire -->
+    <circle cx="0" cy="0" r="24" fill="#2C3A47" stroke="#141414" stroke-width="12" />
+    <!-- Rim -->
+    <circle cx="0" cy="0" r="12" fill="url(#rimGrad)" stroke="#141414" stroke-width="8" />
+    <!-- Hubcap Nut -->
+    <circle cx="0" cy="0" r="3.5" fill="#141414" />
+  </g>
+
+  <!-- FRONT WHEEL ASSEMBLY -->
+  <g transform="translate(62, 40)">
+    <!-- Tire -->
+    <circle cx="0" cy="0" r="24" fill="#2C3A47" stroke="#141414" stroke-width="12" />
+    <!-- Rim -->
+    <circle cx="0" cy="0" r="12" fill="url(#rimGrad)" stroke="#141414" stroke-width="8" />
+    <!-- Hubcap Nut -->
+    <circle cx="0" cy="0" r="3.5" fill="#141414" />
+  </g>
+</svg>

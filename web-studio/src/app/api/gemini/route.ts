@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import fs from "fs";
 import path from "path";
-import { MasterSceneGraph, SceneGraphScene, EnvironmentVfxType } from "@/remotion/types/sceneGraph";
+import { MasterSceneGraph, SceneGraphScene, EnvironmentVfxType, BackgroundPreset } from "@/remotion/types/sceneGraph";
 import { sampleScriptSceneGraph } from "@/remotion/data/sampleScript";
 import { generateVectorAsset } from "@/lib/vectorAssetGenerator";
 import { normalizePropAssetId } from "@/remotion/utils/propResolver";
@@ -67,10 +67,15 @@ Strict Rules:
 11. Dynamic Asset Bank:
    - Standard built-in props: 'glassJar', 'spider', 'sofa', 'desk', 'deskLamp', 'gaugeMeter', 'pottedPlant', 'bush', 'chair', 'table', 'tv', 'pizza', 'apple', 'guitar', 'cat', 'tree', 'balloon', 'trophy', 'star', 'heart', 'whiteboard', 'laptop', 'coffeeCup', 'phone', 'book', 'clock'.
    - Background presets (SELECT STRICTLY BY THEME):
-     * 'gardenDay': For ANY outdoor scene, meadow, lawn, grass, park, field, nature, blue sky, white clouds, sunshine ('đồng cỏ', 'cỏ xanh', 'vườn', 'sân vườn', 'ngoài trời', 'thiên nhiên', 'bầu trời', 'mây trắng', 'nắng vàng').
-     * 'livingRoomDay': For daytime indoor scenes, living room, study room ('trong nhà', 'phòng khách', 'nhà').
-     * 'livingRoomNight': For nighttime scenes ('ban đêm', 'tối', 'khuya', 'đêm', 'trăng').
-     * 'infographicStripes': For abstract metrics and presentations.
+     * 'gardenDay': For outdoor nature, meadow, grass, park, field, sky, clouds, sunshine ('đồng cỏ', 'cỏ xanh', 'vườn', 'sân vườn', 'ngoài trời', 'thiên nhiên', 'bầu trời', 'mây trắng', 'nắng vàng').
+     * 'classroom': For schools, teaching, blackboard, education, lectures ('lớp học', 'trường học', 'bài giảng', 'thầy cô', 'bảng đen', 'học sinh').
+     * 'office': For offices, companies, workplaces, corporate discussions ('văn phòng', 'công ty', 'công sở', 'họp', 'doanh nghiệp').
+     * 'cityStreet': For urban roads, streets, sidewalks, cars, towns ('đường phố', 'phố xá', 'vỉa hè', 'thành phố', 'đô thị').
+     * 'beachSunny': For beaches, tropical sea, coast, sand, palm trees ('bãi biển', 'biển', 'bờ cát', 'sóng biển', 'mùa hè').
+     * 'nightSky': For starry night sky, galaxy, astronomy, moon gazing ('bầu trời đêm', 'trăng sao', 'ngắm sao', 'đêm đầy sao').
+     * 'livingRoomDay': For daytime indoor scenes, living room, study room ('trong nhà', 'phòng khách', 'nhà', 'sofa').
+     * 'livingRoomNight': For nighttime cozy indoor scenes ('ban đêm trong nhà', 'đèn ngủ').
+     * 'infographicStripes': For abstract metrics and presentations ('thuyết trình', 'số liệu', 'biểu đồ').
 12. SUBTITLES & SPOKEN NARRATION (CRITICAL):
    - Every scene MUST include a 'subtitles' array with the exact narration sentence from the user's script:
      'subtitles': [{ 'id': 'sub_1_0', 'text': 'Câu thoại/thuyết minh của cảnh này', 'startFrame': 5, 'endFrame': 210 }]
@@ -180,18 +185,29 @@ function sanitizeSceneGraph(raw: any, userPrompt?: string): MasterSceneGraph {
 
     const sceneCombinedText = `${s?.name || ""} ${subTexts} ${promptSceneTexts[idx] || ""}`.toLowerCase();
 
-    // 1. Phân giải bối cảnh Background Preset chính xác
-    let preset: "livingRoomDay" | "livingRoomNight" | "gardenDay" | "infographicStripes" =
-      s?.background?.preset || "livingRoomDay";
-    const isOutdoor =
+    // 1. Phân giải bối cảnh Background Preset chính xác (Hỗ trợ 9 Bối cảnh Động 2K)
+    let preset: BackgroundPreset = "livingRoomDay";
+    if (/lớp học|trường học|giảng đường|bài giảng|thầy|cô giáo|bảng đen|classroom|school/i.test(sceneCombinedText)) {
+      preset = "classroom";
+    } else if (/văn phòng|công ty|công sở|họp|doanh nghiệp|office|workplace/i.test(sceneCombinedText)) {
+      preset = "office";
+    } else if (/đường phố|phố xá|vỉa hè|thành phố|đô thị|street|city/i.test(sceneCombinedText)) {
+      preset = "cityStreet";
+    } else if (/bãi biển|biển|bờ cát|sóng biển|mùa hè|cây dừa|beach|sea/i.test(sceneCombinedText)) {
+      preset = "beachSunny";
+    } else if (/bầu trời đêm|ngắm sao|đêm đầy sao|vũ trụ|dải ngân hà|night sky|starry/i.test(sceneCombinedText)) {
+      preset = "nightSky";
+    } else if (
       /đồng cỏ|bãi cỏ|cỏ xanh|thảo nguyên|vườn|sân vườn|công viên|ngoài trời|thiên nhiên|bầu trời|mây trắng|nắng vàng|cây xanh|rừng|garden|park|meadow|grass|lawn|outdoor|sky/i.test(sceneCombinedText) &&
-      !/trong nhà|phòng khách|bàn học|ghế sofa|indoor|living\s*room/i.test(sceneCombinedText);
-    const isNight = /ban đêm|tối|khuya|đêm|trăng|sao|night|moonlight/i.test(sceneCombinedText);
-
-    if (isOutdoor) {
+      !/trong nhà|phòng khách|bàn học|ghế sofa|indoor|living\s*room/i.test(sceneCombinedText)
+    ) {
       preset = "gardenDay";
-    } else if (isNight) {
+    } else if (/ban đêm|tối|khuya|đêm|trăng|sao|night|moonlight/i.test(sceneCombinedText)) {
       preset = "livingRoomNight";
+    } else if (/biểu đồ|số liệu|chỉ số|infographic|thuyết trình/i.test(sceneCombinedText)) {
+      preset = "infographicStripes";
+    } else if (s?.background?.preset) {
+      preset = s.background.preset;
     }
 
     // 2. Phân giải tư thế Pose và Hướng nhìn
@@ -234,16 +250,17 @@ function sanitizeSceneGraph(raw: any, userPrompt?: string): MasterSceneGraph {
 
     // 3. Environment VFX & Lighting
     let envVfx: EnvironmentVfxType[] = Array.isArray(s?.environmentVfx) ? [...s.environmentVfx] : [];
-    if (preset === "gardenDay") {
+    const isNight = preset === "livingRoomNight" || preset === "nightSky";
+    if (preset === "gardenDay" || preset === "beachSunny") {
       if (!envVfx.includes("cloudDrift")) envVfx.push("cloudDrift");
       if (!envVfx.includes("sunbeams")) envVfx.push("sunbeams");
       if (!envVfx.includes("windBreeze")) envVfx.push("windBreeze");
       if (!envVfx.includes("foliageSway")) envVfx.push("foliageSway");
-    } else if (preset === "livingRoomNight" && !envVfx.includes("cloudDrift")) {
+    } else if (isNight && !envVfx.includes("cloudDrift")) {
       envVfx.push("cloudDrift");
     }
 
-    const lighting = s?.lighting || (preset === "gardenDay" ? "sunbeams" : isNight ? "moonlight" : "neutral");
+    const lighting = s?.lighting || (preset === "gardenDay" || preset === "beachSunny" ? "sunbeams" : isNight ? "moonlight" : "neutral");
 
     let charSlot = s?.character?.slot;
     if (!charSlot) {
@@ -465,10 +482,20 @@ function generateProceduralSceneGraph(prompt: string): MasterSceneGraph {
     currentStart = start + dur;
 
     // Phân tích bối cảnh Background
-    let preset: "livingRoomDay" | "livingRoomNight" | "gardenDay" | "infographicStripes" = "livingRoomDay";
-    if (/vườn|ngoài trời|cỏ|sân|garden|park|bush|hoa/i.test(lower)) {
+    let preset: BackgroundPreset = "livingRoomDay";
+    if (/lớp học|trường học|giảng đường|bài giảng|thầy|cô giáo|bảng đen|classroom|school/i.test(lower)) {
+      preset = "classroom";
+    } else if (/văn phòng|công ty|công sở|họp|doanh nghiệp|office|workplace/i.test(lower)) {
+      preset = "office";
+    } else if (/đường phố|phố xá|vỉa hè|thành phố|đô thị|street|city/i.test(lower)) {
+      preset = "cityStreet";
+    } else if (/bãi biển|biển|bờ cát|sóng biển|mùa hè|cây dừa|beach|sea/i.test(lower)) {
+      preset = "beachSunny";
+    } else if (/bầu trời đêm|ngắm sao|đêm đầy sao|vũ trụ|dải ngân hà|night sky|starry/i.test(lower)) {
+      preset = "nightSky";
+    } else if (/vườn|ngoài trời|cỏ|sân|đồng cỏ|thảo nguyên|thiên nhiên|bầu trời|garden|park|bush|hoa/i.test(lower)) {
       preset = "gardenDay";
-    } else if (/tối|đêm|khuya|trăng|night|moon|bàn học|làm việc/i.test(lower)) {
+    } else if (/tối|đêm|khuya|trăng|night|moon/i.test(lower)) {
       preset = "livingRoomNight";
     } else if (/biểu đồ|đo|chỉ số|infographic|đồng hồ đo|trao đổi/i.test(lower)) {
       preset = "infographicStripes";

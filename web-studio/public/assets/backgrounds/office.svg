@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2560 1440" width="2560" height="1440">
+  <!-- Sky View Outside Skyscraper -->
+  <rect x="0" y="0" width="2560" height="1120" fill="#93C5FD" />
+
+  <!-- City Skyline Silhouette outside glass -->
+  <g fill="#60A5FA" opacity="0.6">
+    <rect x="180" y="320" width="220" height="800" />
+    <rect x="440" y="450" width="180" height="670" />
+    <rect x="680" y="260" width="260" height="860" />
+    <rect x="1000" y="380" width="310" height="740" />
+    <rect x="1380" y="220" width="280" height="900" />
+    <rect x="1720" y="360" width="240" height="760" />
+    <rect x="2020" y="280" width="350" height="840" />
+  </g>
+
+  <!-- Modern Glass Curtain Wall Panes -->
+  <g stroke="#141414" stroke-width="12" fill="none">
+    <line x1="640" y1="0" x2="640" y2="1120" />
+    <line x1="1280" y1="0" x2="1280" y2="1120" />
+    <line x1="1920" y1="0" x2="1920" y2="1120" />
+    <line x1="0" y1="420" x2="2560" y2="420" />
+  </g>
+
+  <!-- Minimalist Ceiling Light Panel -->
+  <rect x="400" y="0" width="1760" height="40" fill="#FFFFFF" stroke="#141414" stroke-width="8" />
+
+  <!-- Polished Office Wooden Parquet Floor (y = 1120 to 1440) -->
+  <rect x="0" y="1080" width="2560" height="40" fill="#E2E8F0" stroke="#141414" stroke-width="8" />
+  <line x1="0" y1="1120" x2="2560" y2="1120" stroke="#141414" stroke-width="12" />
+  <rect x="0" y="1120" width="2560" height="320" fill="#D97706" />
+  <!-- Gloss reflection stripes -->
+  <g stroke="#B45309" stroke-width="6" opacity="0.6">
+    <line x1="0" y1="1200" x2="2560" y2="1200" />
+    <line x1="0" y1="1290" x2="2560" y2="1290" />
+    <line x1="0" y1="1370" x2="2560" y2="1370" />
+  </g>
+</svg>
