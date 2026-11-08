@@ -12,6 +12,7 @@ import {
   Clock,
   Cpu,
   Check,
+  Key,
 } from "lucide-react";
 import { MasterSceneGraph } from "../remotion/types/sceneGraph";
 
@@ -37,6 +38,7 @@ interface JobsSummary {
 interface RenderModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onOpenSettings?: () => void;
   sceneGraph: MasterSceneGraph;
   githubToken: string;
   githubOwner: string;
@@ -46,6 +48,7 @@ interface RenderModalProps {
 export const RenderModal: React.FC<RenderModalProps> = ({
   isOpen,
   onClose,
+  onOpenSettings,
   sceneGraph,
   githubToken,
   githubOwner,
@@ -274,6 +277,32 @@ export const RenderModal: React.FC<RenderModalProps> = ({
             </div>
           </div>
 
+          {/* Token Warning / Setup Helper */}
+          {!githubToken && !isRendering && (
+            <div className="flex flex-col space-y-2 rounded-xl bg-amber-950/40 p-3.5 border border-amber-500/30 text-amber-200">
+              <div className="flex items-center space-x-2 font-medium">
+                <AlertCircle className="h-4 w-4 text-amber-400 shrink-0" />
+                <span>Chưa có GitHub Token (PAT)</span>
+              </div>
+              <p className="text-[11px] text-amber-300/80 leading-relaxed">
+                Để kích hoạt cụm 10-15 máy ảo Ubuntu render video 2K trên GitHub Actions (miễn phí), hệ thống cần GitHub Token cá nhân của bạn có quyền <code>workflow</code> và <code>repo</code>.
+              </p>
+              {onOpenSettings && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onOpenSettings();
+                  }}
+                  className="self-start mt-1 flex items-center space-x-1.5 rounded-lg bg-amber-500/20 px-3 py-1.5 text-[11px] font-semibold text-amber-200 hover:bg-amber-500/30 transition-colors border border-amber-500/30"
+                >
+                  <Key className="h-3 w-3" />
+                  <span>Mở Cấu hình API để điền Token</span>
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Chunk slider */}
           {!isRendering && !downloadUrl && (
             <div className="flex flex-col space-y-2 rounded-xl bg-[#18181B] p-3 border border-[#27272A]">
@@ -408,9 +437,24 @@ export const RenderModal: React.FC<RenderModalProps> = ({
 
           {/* Error */}
           {errorMessage && (
-            <div className="flex items-center space-x-2 rounded-xl bg-rose-950/40 p-3 border border-rose-500/30 text-rose-300">
-              <AlertCircle className="h-4 w-4 shrink-0 text-rose-400" />
-              <span>{errorMessage}</span>
+            <div className="flex flex-col space-y-2 rounded-xl bg-rose-950/40 p-3 border border-rose-500/30 text-rose-300">
+              <div className="flex items-center space-x-2">
+                <AlertCircle className="h-4 w-4 shrink-0 text-rose-400" />
+                <span>{errorMessage}</span>
+              </div>
+              {onOpenSettings && errorMessage.includes("GitHub Personal Access Token") && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onOpenSettings();
+                  }}
+                  className="self-start mt-1 flex items-center space-x-1.5 rounded-lg bg-rose-500/20 px-3 py-1.5 text-[11px] font-semibold text-rose-200 hover:bg-rose-500/30 transition-colors border border-rose-500/30"
+                >
+                  <Key className="h-3 w-3" />
+                  <span>Bấm vào đây để mở Cấu hình API</span>
+                </button>
+              )}
             </div>
           )}
 

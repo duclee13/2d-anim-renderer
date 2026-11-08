@@ -19,8 +19,8 @@ export default function StudioPage() {
   // Settings State (Loaded from localStorage)
   const [geminiKey, setGeminiKey] = useState("");
   const [githubToken, setGithubToken] = useState("");
-  const [githubOwner, setGithubOwner] = useState("");
-  const [githubRepo, setGithubRepo] = useState("");
+  const [githubOwner, setGithubOwner] = useState("duclee13");
+  const [githubRepo, setGithubRepo] = useState("2d-anim-renderer");
 
   const [sceneVersion, setSceneVersion] = useState<number>(Date.now());
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -31,8 +31,8 @@ export default function StudioPage() {
     if (typeof window !== "undefined") {
       setGeminiKey(localStorage.getItem("STICKMAN_GEMINI_KEY") || "");
       setGithubToken(localStorage.getItem("STICKMAN_GH_TOKEN") || "");
-      setGithubOwner(localStorage.getItem("STICKMAN_GH_OWNER") || "");
-      setGithubRepo(localStorage.getItem("STICKMAN_GH_REPO") || "");
+      setGithubOwner(localStorage.getItem("STICKMAN_GH_OWNER") || "duclee13");
+      setGithubRepo(localStorage.getItem("STICKMAN_GH_REPO") || "2d-anim-renderer");
     }
   }, []);
 
@@ -131,6 +131,7 @@ export default function StudioPage() {
       <RenderModal
         isOpen={isRenderModalOpen}
         onClose={() => setIsRenderModalOpen(false)}
+        onOpenSettings={() => setIsSettingsOpen(true)}
         sceneGraph={sceneGraph}
         githubToken={githubToken}
         githubOwner={githubOwner}
