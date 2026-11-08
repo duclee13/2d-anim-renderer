@@ -2,10 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import fs from "fs";
 import path from "path";
-import { MasterSceneGraph, SceneGraphScene, EnvironmentVfxType, BackgroundPreset } from "@/remotion/types/sceneGraph";
-import { sampleScriptSceneGraph } from "@/remotion/data/sampleScript";
+import {
+  MasterSceneGraph,
+  SceneGraphScene,
+  EnvironmentVfxType,
+  BackgroundPreset,
+} from "@/remotion/types/sceneGraph";
 import { generateVectorAsset } from "@/lib/vectorAssetGenerator";
 import { normalizePropAssetId } from "@/remotion/utils/propResolver";
+import { sanitizeSceneGraph } from "@/remotion/utils/sceneGraphSanitizer";
 
 const SYSTEM_PROMPT = `
 You are the Lead 2D Animation Director and Spatial Scene Graph Architect for a 2K 60FPS Stickman Explainer Video Engine.
@@ -61,21 +66,24 @@ Strict Rules:
    - In close-up shots, DO NOT use scale from 0 to prevent white flash. Use pop or direct transition.
 9. Character Poses: 'standing', 'sittingBehindDesk', 'holdingObject', 'walking', 'pointing', 'shrugging'.
    - When walking or stepping ("bước đi", "từ từ bước", "đi bộ", "dạo bước", "bước"): pose MUST be 'walking'!
+   - When a scene has no character (e.g. purely close-up of prop or diagram): set 'visible: false'!
 10. ACTION & MOTION RULES (NEVER LEAVE CHARACTER STATIC):
-   - When walking/stepping: add 'moveCharacter' keyframe in 'keyframes' from x=600 to x=1850.
+   - When walking/stepping: add 'moveCharacter' keyframe in 'keyframes' with fromX and toX.
    - When holding or carrying ("cầm", "giữ", "bê", "mang", "xách"): pose MUST be 'holdingObject'.
+   - When expression changes: add 'changeExpression' keyframe with target: 'character', frame, and params: { eyes, mouth, eyebrows, blush }.
+   - When prop scales or rotates: add 'scaleProp' with { fromScale, toScale } or 'rotateProp' with { fromDeg, toDeg }.
 11. Dynamic Asset Bank:
-   - Standard built-in props: 'glassJar', 'spider', 'sofa', 'desk', 'deskLamp', 'gaugeMeter', 'pottedPlant', 'bush', 'chair', 'table', 'tv', 'pizza', 'apple', 'guitar', 'cat', 'tree', 'balloon', 'trophy', 'star', 'heart', 'whiteboard', 'laptop', 'coffeeCup', 'phone', 'book', 'clock'.
+   - Standard built-in props: 'glassJar', 'spider', 'sofa', 'desk', 'deskLamp', 'gaugeMeter', 'pottedPlant', 'bush', 'chair', 'table', 'tv', 'pizza', 'apple', 'guitar', 'cat', 'tree', 'balloon', 'trophy', 'star', 'heart', 'whiteboard', 'laptop', 'coffeeCup', 'phone', 'book', 'clock', 'car'.
    - Background presets (SELECT STRICTLY BY THEME):
-     * 'gardenDay': For outdoor nature, meadow, grass, park, field, sky, clouds, sunshine ('đồng cỏ', 'cỏ xanh', 'vườn', 'sân vườn', 'ngoài trời', 'thiên nhiên', 'bầu trời', 'mây trắng', 'nắng vàng').
-     * 'classroom': For schools, teaching, blackboard, education, lectures ('lớp học', 'trường học', 'bài giảng', 'thầy cô', 'bảng đen', 'học sinh').
-     * 'office': For offices, companies, workplaces, corporate discussions ('văn phòng', 'công ty', 'công sở', 'họp', 'doanh nghiệp').
-     * 'cityStreet': For urban roads, streets, sidewalks, cars, towns ('đường phố', 'phố xá', 'vỉa hè', 'thành phố', 'đô thị').
-     * 'beachSunny': For beaches, tropical sea, coast, sand, palm trees ('bãi biển', 'biển', 'bờ cát', 'sóng biển', 'mùa hè').
-     * 'nightSky': For starry night sky, galaxy, astronomy, moon gazing ('bầu trời đêm', 'trăng sao', 'ngắm sao', 'đêm đầy sao').
-     * 'livingRoomDay': For daytime indoor scenes, living room, study room ('trong nhà', 'phòng khách', 'nhà', 'sofa').
-     * 'livingRoomNight': For nighttime cozy indoor scenes ('ban đêm trong nhà', 'đèn ngủ').
-     * 'infographicStripes': For abstract metrics and presentations ('thuyết trình', 'số liệu', 'biểu đồ').
+     * 'gardenDay': For outdoor nature, meadow, grass, park, field, sky, clouds, sunshine.
+     * 'classroom': For schools, teaching, blackboard, education, lectures.
+     * 'office': For offices, companies, workplaces, corporate discussions.
+     * 'cityStreet': For urban roads, streets, sidewalks, cars, towns.
+     * 'beachSunny': For beaches, tropical sea, coast, sand, palm trees.
+     * 'nightSky': For starry night sky, galaxy, astronomy, moon gazing.
+     * 'livingRoomDay': For daytime indoor scenes, living room, study room.
+     * 'livingRoomNight': For nighttime cozy indoor scenes.
+     * 'infographicStripes': For abstract metrics and presentations.
 12. SUBTITLES & SPOKEN NARRATION (CRITICAL):
    - Every scene MUST include a 'subtitles' array with the exact narration sentence from the user's script:
      'subtitles': [{ 'id': 'sub_1_0', 'text': 'Câu thoại/thuyết minh của cảnh này', 'startFrame': 5, 'endFrame': 210 }]
@@ -118,12 +126,13 @@ async function fetchAccountModels(apiKey: string): Promise<string[]> {
       .map((m: any) => m.name.replace(/^models\//, ""));
 
     const score = (name: string): number => {
+      // Ưu tiên model 3.8-flash cao nhất trước khi kiểm tra flash chung
+      if (name.includes("3.8-flash") || name === "gemini-3.8-flash") return 1050;
       if (name.includes("3.1-flash-lite")) return 1000;
       if (name.includes("2.5-flash")) return 950;
       if (name.includes("2.0-flash")) return 900;
       if (name.includes("flash-lite")) return 850;
       if (name.includes("flash")) return 800;
-      if (name === "gemini-3.8-flash") return 500;
       if (name.includes("3.")) return 600;
       if (name.includes("2.5")) return 500;
       return 100;
@@ -138,309 +147,9 @@ async function fetchAccountModels(apiKey: string): Promise<string[]> {
 }
 
 /**
- * Chuẩn hóa và làm sạch 100% dữ liệu SceneGraph từ LLM
- * Đảm bảo timeline liên tục, thời lượng đồng bộ audio và tích hợp đầy đủ VFX.
- */
-function sanitizeSceneGraph(raw: any, userPrompt?: string): MasterSceneGraph {
-  const scenesRaw = Array.isArray(raw?.scenes) ? raw.scenes : [];
-  let currentStart = 0;
-
-  const promptSceneTexts: string[] = [];
-  if (userPrompt) {
-    const lines = userPrompt.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-    for (const line of lines) {
-      const match = line.match(/^(?:cảnh|scene)\s*\d+[:.-]?\s*(.*)$/i);
-      if (match && match[1].trim()) {
-        promptSceneTexts.push(match[1].trim());
-      } else if (line.length > 5 && !line.startsWith("#")) {
-        promptSceneTexts.push(line);
-      }
-    }
-  }
-
-  const cleanScenes = scenesRaw.map((s: any, idx: number) => {
-    const existingSubs = Array.isArray(s?.subtitles)
-      ? s.subtitles.filter((sub: any) => sub?.text && String(sub.text).trim().length > 0)
-      : [];
-
-    const fallbackText =
-      existingSubs.length > 0
-        ? existingSubs.map((sub: any) => sub.text).join(" ")
-        : promptSceneTexts[idx] ||
-          (s?.name && !/^cảnh\s*\d+$/i.test(s.name) ? s.name : "") ||
-          s?.description ||
-          "";
-
-    const subTexts = fallbackText;
-    const wordCount = subTexts.trim() ? subTexts.trim().split(/\s+/).length : 0;
-    const estDialogueFrames = wordCount > 0 ? Math.round((wordCount / 2.8) * 60) + 30 : 120;
-
-    let dur = Math.max(60, Math.round(Number(s?.durationInFrames || s?.duration || estDialogueFrames)));
-    if (wordCount > 0 && dur > estDialogueFrames + 60) {
-      dur = estDialogueFrames + 30;
-    }
-
-    const start = currentStart;
-    currentStart = start + dur;
-
-    const sceneCombinedText = `${s?.name || ""} ${subTexts} ${promptSceneTexts[idx] || ""}`.toLowerCase();
-
-    // 1. Phân giải bối cảnh Background Preset chính xác (Hỗ trợ 9 Bối cảnh Động 2K)
-    let preset: BackgroundPreset = "livingRoomDay";
-    if (/lớp học|trường học|giảng đường|bài giảng|thầy|cô giáo|bảng đen|classroom|school/i.test(sceneCombinedText)) {
-      preset = "classroom";
-    } else if (/văn phòng|công ty|công sở|họp|doanh nghiệp|office|workplace/i.test(sceneCombinedText)) {
-      preset = "office";
-    } else if (/đường phố|phố xá|vỉa hè|thành phố|đô thị|street|city/i.test(sceneCombinedText)) {
-      preset = "cityStreet";
-    } else if (/bãi biển|biển|bờ cát|sóng biển|mùa hè|cây dừa|beach|sea/i.test(sceneCombinedText)) {
-      preset = "beachSunny";
-    } else if (/bầu trời đêm|ngắm sao|đêm đầy sao|vũ trụ|dải ngân hà|night sky|starry/i.test(sceneCombinedText)) {
-      preset = "nightSky";
-    } else if (
-      /đồng cỏ|bãi cỏ|cỏ xanh|thảo nguyên|vườn|sân vườn|công viên|ngoài trời|thiên nhiên|bầu trời|mây trắng|nắng vàng|cây xanh|rừng|garden|park|meadow|grass|lawn|outdoor|sky/i.test(sceneCombinedText) &&
-      !/trong nhà|phòng khách|bàn học|ghế sofa|indoor|living\s*room/i.test(sceneCombinedText)
-    ) {
-      preset = "gardenDay";
-    } else if (/ban đêm|tối|khuya|đêm|trăng|sao|night|moonlight/i.test(sceneCombinedText)) {
-      preset = "livingRoomNight";
-    } else if (/biểu đồ|số liệu|chỉ số|infographic|thuyết trình/i.test(sceneCombinedText)) {
-      preset = "infographicStripes";
-    } else if (s?.background?.preset) {
-      preset = s.background.preset;
-    }
-
-    // 2. Phân giải tư thế Pose và Hướng nhìn
-    let characterPose = s?.character?.pose || "standing";
-    const hasWalkKeywords = /bước đi|từ từ bước|dạo bước|đi bộ|bước|đi dạo|chạy|di chuyển|ra vườn|walking|walk|stroll/i.test(sceneCombinedText);
-
-    if (/cầm|bê|mang|xách|giữ|nâng|holding|carry/i.test(sceneCombinedText) && characterPose === "standing") {
-      characterPose = "holdingObject";
-    } else if (hasWalkKeywords && characterPose === "standing") {
-      characterPose = "walking";
-    }
-
-    let finalKeyframes = Array.isArray(s?.keyframes) && s.keyframes.length > 0
-      ? s.keyframes.map((kf: any) => ({
-          action: String(kf?.action || kf?.type || "moveCharacter"),
-          target: String(kf?.target || kf?.targetId || "character"),
-          frame: Number(kf?.frame !== undefined ? kf.frame : kf?.startFrame !== undefined ? kf.startFrame : 0),
-          params: {
-            fromX: kf?.params?.fromX !== undefined ? Number(kf.params.fromX) : kf?.fromX !== undefined ? Number(kf.fromX) : 600,
-            toX: kf?.params?.toX !== undefined ? Number(kf.params.toX) : kf?.toX !== undefined ? Number(kf.toX) : 1850,
-            fromY: kf?.params?.fromY !== undefined ? Number(kf.params.fromY) : kf?.fromY !== undefined ? Number(kf.fromY) : undefined,
-            toY: kf?.params?.toY !== undefined ? Number(kf.params.toY) : kf?.toY !== undefined ? Number(kf.toY) : undefined,
-          },
-        }))
-      : [];
-
-    if (finalKeyframes.length === 0 && hasWalkKeywords) {
-      finalKeyframes = [
-        {
-          action: "moveCharacter",
-          target: "character",
-          frame: 0,
-          params: {
-            fromX: 600,
-            toX: 1850,
-          },
-        },
-      ];
-    }
-
-    // 3. Environment VFX & Lighting
-    let envVfx: EnvironmentVfxType[] = Array.isArray(s?.environmentVfx) ? [...s.environmentVfx] : [];
-    const isNight = preset === "livingRoomNight" || preset === "nightSky";
-    if (preset === "gardenDay" || preset === "beachSunny") {
-      if (!envVfx.includes("cloudDrift")) envVfx.push("cloudDrift");
-      if (!envVfx.includes("sunbeams")) envVfx.push("sunbeams");
-      if (!envVfx.includes("windBreeze")) envVfx.push("windBreeze");
-      if (!envVfx.includes("foliageSway")) envVfx.push("foliageSway");
-    } else if (isNight && !envVfx.includes("cloudDrift")) {
-      envVfx.push("cloudDrift");
-    }
-
-    const lighting = s?.lighting || (preset === "gardenDay" || preset === "beachSunny" ? "sunbeams" : isNight ? "moonlight" : "neutral");
-
-    let charSlot = s?.character?.slot;
-    if (!charSlot) {
-      if (characterPose === "sittingBehindDesk") {
-        charSlot = "desk.seat";
-      } else if (s?.character?.x !== undefined) {
-        charSlot = undefined;
-      } else {
-        charSlot = "floor.center";
-      }
-    }
-
-    return {
-      id: String(s?.id || `scene_${idx + 1}`),
-      name: String(s?.name || `Cảnh ${idx + 1}`),
-      startFrame: start,
-      durationInFrames: dur,
-      background: {
-        preset,
-      },
-      camera: {
-        x: Number(s?.camera?.x) || 1280,
-        y: Number(s?.camera?.y) || 720,
-        zoom: Number(s?.camera?.zoom) || 1.0,
-        zoomFrom: s?.camera?.zoomFrom !== undefined ? Number(s.camera.zoomFrom) : undefined,
-        zoomTo: s?.camera?.zoomTo !== undefined ? Number(s.camera.zoomTo) : undefined,
-        focusSlot: s?.camera?.focusSlot || undefined,
-        focusTarget: s?.camera?.focusTarget || undefined,
-      },
-      character: {
-        slot: charSlot,
-        x: s?.character?.x !== undefined ? Number(s.character.x) : 1280,
-        y: s?.character?.y !== undefined ? Number(s.character.y) : 1120,
-        scale: Number(s?.character?.scale) || 1.0,
-        facing: s?.character?.facing === "left" ? ("left" as const) : ("right" as const),
-        pose: characterPose,
-        eyes: s?.character?.eyes || "neutral",
-        eyebrows: s?.character?.eyebrows || "neutral",
-        mouth: s?.character?.mouth || "smile",
-        pupilGaze: characterPose === "walking" ? { x: 0.6, y: 0 } : (s?.character?.pupilGaze || { x: 0, y: 0 }),
-      },
-      props: Array.isArray(s?.props)
-        ? s.props
-            .map((p: any, pIdx: number) => {
-              const rawPropType = String(p?.type || p?.id || "prop");
-              const canonicalType = getStandardPropFileName(rawPropType);
-
-              // Nếu bối cảnh là ngoài trời (gardenDay), loại bỏ đồ nội thất trong nhà nếu không được nhắc tới
-              if (preset === "gardenDay" && ["sofa", "desk", "desk-lamp", "desk-front", "desk-back"].includes(canonicalType)) {
-                if (!/sofa|bàn học|ghế|đèn bàn/i.test(sceneCombinedText)) {
-                  return null;
-                }
-              }
-
-              let propScale = Number(p?.scale) || 1.0;
-              const isScreenSlot = Boolean(p?.slot && String(p.slot).startsWith("screen."));
-
-              // Tự động chuẩn hóa tỷ lệ scale thực tế đạt 280px - 320px ở cảnh toàn (chuẩn 2K)
-              if (canonicalType === "glass-jar") {
-                if (isScreenSlot) {
-                  if (propScale > 1.8) propScale = 1.7;
-                } else if (p?.slot === "desk.topRight" || p?.slot === "desk.topLeft") {
-                  propScale = 0.68; // ~285px trên mặt bàn
-                } else {
-                  propScale = 0.72; // ~302px trên sàn nhà (gấp 2.2x trước đây)
-                }
-              }
-
-              const hasSpider =
-                canonicalType === "glass-jar" &&
-                (/nhện|spider|tám/i.test(sceneCombinedText) || p?.properties?.hasSpiderInside === true);
-
-              return {
-                id: String(p?.id || `prop_${idx}_${pIdx}`),
-                type: canonicalType,
-                slot: p?.slot || undefined,
-                layer: p?.layer === "midgroundBackLayer" ? ("midgroundBackLayer" as const) : ("midgroundFrontLayer" as const),
-                x: Number(p?.x) || 1280,
-                y: Number(p?.y) || 1120,
-                scale: propScale,
-                scaleX: p?.scaleX !== undefined ? Number(p.scaleX) : 1,
-                scaleY: p?.scaleY !== undefined ? Number(p.scaleY) : 1,
-                rotation: Number(p?.rotation) || 0,
-                opacity: p?.opacity !== undefined ? Number(p.opacity) : 1,
-                alphaConfig: p?.alphaConfig || undefined,
-                anchorPoint: p?.anchorPoint || (isScreenSlot ? ("center" as const) : undefined),
-                pivotPoint: p?.pivotPoint || (isScreenSlot ? ("center" as const) : undefined),
-                pivotX: p?.pivotX !== undefined ? Number(p.pivotX) : undefined,
-                pivotY: p?.pivotY !== undefined ? Number(p.pivotY) : undefined,
-                properties: {
-                  hasSpiderInside: hasSpider ? true : undefined,
-                  ...p?.properties,
-                },
-                entrance: p?.entrance || undefined,
-              };
-            })
-            .filter(Boolean)
-        : [],
-      subtitles:
-        existingSubs.length > 0
-          ? existingSubs.map((sub: any, subIdx: number) => ({
-              id: String(sub?.id || `sub_${idx}_${subIdx}`),
-              text: String(sub?.text || ""),
-              startFrame: sub?.startFrame !== undefined ? Number(sub.startFrame) : start + 5,
-              endFrame: sub?.endFrame !== undefined ? Number(sub.endFrame) : start + dur - 5,
-              words: Array.isArray(sub?.words) ? sub.words : [],
-            }))
-          : fallbackText
-          ? [
-              {
-                id: `sub_${idx}_0`,
-                text: fallbackText,
-                startFrame: start + 5,
-                endFrame: start + dur - 5,
-                words: [],
-              },
-            ]
-          : [],
-      speechBubbles: Array.isArray(s?.speechBubbles) && s.speechBubbles.length > 0
-        ? s.speechBubbles.map((b: any, bIdx: number) => {
-            let bubbleText = String(b?.text || "");
-            const quoteMatch = subTexts.match(/['"“](.+?)['"”]/);
-            if (quoteMatch && quoteMatch[1] && (/ơ kìa/i.test(bubbleText) || !bubbleText.trim())) {
-              bubbleText = quoteMatch[1];
-            }
-            return {
-              id: String(b?.id || `bubble_${idx}_${bIdx}`),
-              text: bubbleText,
-              hasMusicNote: Boolean(b?.hasMusicNote),
-              position: b?.position || { x: 1620, y: 340 },
-              tailAnchor: b?.tailAnchor || { x: 60, y: 40 },
-              startFrame: b?.startFrame !== undefined ? Number(b.startFrame) : start + 15,
-              endFrame: b?.endFrame !== undefined ? Number(b.endFrame) : start + dur - 10,
-            };
-          })
-        : (() => {
-            const quoteMatch = subTexts.match(/['"“](.+?)['"”]/);
-            if (quoteMatch && quoteMatch[1]) {
-              return [
-                {
-                  id: `bubble_${idx}_0`,
-                  text: quoteMatch[1],
-                  hasMusicNote: false,
-                  position: { x: 1620, y: 340 },
-                  tailAnchor: { x: 60, y: 40 },
-                  startFrame: start + 20,
-                  endFrame: start + dur - 10,
-                },
-              ];
-            }
-            return [];
-          })(),
-      keyframes: finalKeyframes,
-      lines: Array.isArray(s?.lines) ? s.lines : [],
-      environmentVfx: envVfx.length > 0 ? envVfx : undefined,
-      lighting: lighting,
-      propAnimations: Array.isArray(s?.propAnimations) ? s.propAnimations : undefined,
-    };
-  });
-
-  const totalFrames = cleanScenes.reduce(
-    (acc: number, s: any) => acc + s.durationInFrames,
-    0
-  );
-
-  return {
-    version: "3.1.0",
-    title: String(raw?.title || "Stickman 2D Explainer Video"),
-    width: 2560,
-    height: 1440,
-    fps: 60,
-    totalDurationInFrames: Math.max(120, Math.round(totalFrames)),
-    scenes: cleanScenes.length > 0 ? cleanScenes : sampleScriptSceneGraph.scenes,
-  };
-}
-
-/**
  * Bộ tạo Scene Graph từ Kịch bản theo thuật toán suy luận (Procedural Fallback Engine)
  * Phân tích trực tiếp câu chữ tiếng Việt của người dùng để dựng cảnh, phụ đề, đạo cụ và nhân vật
- * khi chưa có Gemini API Key hoặc khi mạng bị gián đoạn. Không bao giờ để rơi về kịch bản nhện cũ!
+ * khi chưa có Gemini API Key hoặc khi mạng bị gián đoạn.
  */
 function generateProceduralSceneGraph(prompt: string): MasterSceneGraph {
   const cleanPrompt = (prompt || "").trim();
@@ -547,7 +256,7 @@ function generateProceduralSceneGraph(prompt: string): MasterSceneGraph {
         layer: "midgroundFrontLayer",
         x: isCloseUp ? 1280 : 850,
         y: isCloseUp ? 720 : 1120,
-        scale: isCloseUp ? 1.7 : 0.72,
+        scale: isCloseUp ? 1.7 : pose === "sittingBehindDesk" ? 0.35 : 0.38,
         properties: {
           hasSpiderInside: /nhện|spider|tám/i.test(lower),
         },
@@ -576,10 +285,22 @@ function generateProceduralSceneGraph(prompt: string): MasterSceneGraph {
       });
     }
 
-    if (/bụi cây|bụi|bush/i.test(lower) || (preset === "gardenDay" && detectedProps.length === 0)) {
+    if (/bụi cây|bụi|bush/i.test(lower)) {
       detectedProps.push({
         id: `prop_${idx}_bush`,
         type: "bush",
+        slot: "floor.farLeft",
+        layer: "midgroundBackLayer",
+        x: 450,
+        y: 1120,
+        scale: 1.0,
+      });
+    }
+
+    if (/cây xanh|cây to|tree/i.test(lower) || (preset === "gardenDay" && detectedProps.length === 0)) {
+      detectedProps.push({
+        id: `prop_${idx}_tree`,
+        type: "tree",
         slot: "floor.farLeft",
         layer: "midgroundBackLayer",
         x: 450,
@@ -600,31 +321,7 @@ function generateProceduralSceneGraph(prompt: string): MasterSceneGraph {
       });
     }
 
-    if (/pizza/i.test(lower)) {
-      detectedProps.push({
-        id: `prop_${idx}_pizza`,
-        type: "pizza",
-        slot: "floor.center",
-        layer: "midgroundFrontLayer",
-        x: 1280,
-        y: 1120,
-        scale: 0.85,
-      });
-    }
-
-    if (/táo|apple/i.test(lower)) {
-      detectedProps.push({
-        id: `prop_${idx}_apple`,
-        type: "apple",
-        slot: "floor.center",
-        layer: "midgroundFrontLayer",
-        x: 1280,
-        y: 1120,
-        scale: 0.85,
-      });
-    }
-
-    if (/laptop|máy tính/i.test(lower)) {
+    if (/laptop|máy tính|computer/i.test(lower)) {
       detectedProps.push({
         id: `prop_${idx}_laptop`,
         type: "laptop",
@@ -633,6 +330,18 @@ function generateProceduralSceneGraph(prompt: string): MasterSceneGraph {
         x: 1280,
         y: 760,
         scale: 0.65,
+      });
+    }
+
+    if (/cà phê|cốc|coffee/i.test(lower)) {
+      detectedProps.push({
+        id: `prop_${idx}_coffee`,
+        type: "coffee-cup",
+        slot: "desk.topRight",
+        layer: "midgroundFrontLayer",
+        x: 1450,
+        y: 760,
+        scale: 0.5,
       });
     }
 
@@ -676,6 +385,7 @@ function generateProceduralSceneGraph(prompt: string): MasterSceneGraph {
       camera,
       character: {
         slot: pose === "sittingBehindDesk" ? "desk.seat" : "floor.center",
+        visible: true,
         x: 1280,
         y: 1120,
         scale: 1.0,
@@ -705,17 +415,48 @@ function generateProceduralSceneGraph(prompt: string): MasterSceneGraph {
   };
 }
 
+export type GenerationStatus = "ready" | "draft_fallback" | "failed";
+
+export interface GenerationMetadata {
+  requestedModel: string;
+  resolvedModel: string;
+  provider: "google-gemini" | "procedural-fallback";
+  status: GenerationStatus;
+  latencyMs: number;
+  fallbackReason?: string;
+  autoGeneratedAssets?: string[];
+}
+
 export async function POST(req: NextRequest) {
+  const startTime = Date.now();
+  let requestedModel = "gemini-3.8-flash";
+
   try {
-    const { prompt, apiKey } = await req.json();
+    const body = await req.json();
+    const prompt = body.prompt;
+    const apiKey = body.apiKey;
+    if (body.model && typeof body.model === "string") {
+      requestedModel = body.model;
+    }
 
     const activeApiKey = apiKey || process.env.GEMINI_API_KEY;
+
     if (!activeApiKey) {
-      // Khi người dùng chưa nhập key, tự động dùng Procedural Script Engine để chuyển kịch bản của họ thành cảnh hoạt họa thật!
       console.log("[Gemini API] Chưa có API Key -> Kích hoạt Procedural Engine cho kịch bản của người dùng...");
       const proceduralGraph = generateProceduralSceneGraph(prompt);
+      const latencyMs = Date.now() - startTime;
+      const metadata: GenerationMetadata = {
+        requestedModel,
+        resolvedModel: "procedural-script-engine",
+        provider: "procedural-fallback",
+        status: "draft_fallback",
+        latencyMs,
+        fallbackReason: "Missing Gemini API Key. Generated draft procedural scene graph.",
+      };
       return NextResponse.json({
         success: true,
+        status: "draft_fallback",
+        metadata,
         modelUsed: "Procedural Script Engine (Chưa nhập Gemini Key)",
         sceneGraph: proceduralGraph,
       });
@@ -728,6 +469,13 @@ export async function POST(req: NextRequest) {
         "gemini-3.1-flash-lite-preview",
         "gemini-2.5-flash",
       ];
+    }
+
+    // Đưa requestedModel lên đầu nếu chưa có
+    if (!candidateModels.includes(requestedModel)) {
+      candidateModels.unshift(requestedModel);
+    } else {
+      candidateModels = [requestedModel, ...candidateModels.filter((m) => m !== requestedModel)];
     }
 
     const genAI = new GoogleGenerativeAI(activeApiKey);
@@ -769,8 +517,19 @@ export async function POST(req: NextRequest) {
         ) {
           console.warn("[Gemini API] Key không hợp lệ -> Dùng Procedural Engine cho kịch bản.");
           const proceduralGraph = generateProceduralSceneGraph(prompt);
+          const latencyMs = Date.now() - startTime;
+          const metadata: GenerationMetadata = {
+            requestedModel,
+            resolvedModel: "procedural-script-engine",
+            provider: "procedural-fallback",
+            status: "draft_fallback",
+            latencyMs,
+            fallbackReason: "Invalid Gemini API Key. Generated draft procedural scene graph.",
+          };
           return NextResponse.json({
             success: true,
+            status: "draft_fallback",
+            metadata,
             modelUsed: "Procedural Script Engine (Key không hợp lệ)",
             sceneGraph: proceduralGraph,
           });
@@ -781,11 +540,22 @@ export async function POST(req: NextRequest) {
     }
 
     if (!responseText) {
-      console.warn("[Gemini API] Gemini quá tải -> Dùng Procedural Engine tạo Scene Graph từ kịch bản.");
+      console.warn("[Gemini API] Gemini quá tải/lỗi -> Dùng Procedural Engine tạo Scene Graph từ kịch bản.");
       const proceduralGraph = generateProceduralSceneGraph(prompt);
+      const latencyMs = Date.now() - startTime;
+      const metadata: GenerationMetadata = {
+        requestedModel,
+        resolvedModel: "procedural-script-engine",
+        provider: "procedural-fallback",
+        status: "draft_fallback",
+        latencyMs,
+        fallbackReason: `Gemini API call failed (${lastError?.message || "All candidate models exhausted"}). Generated draft procedural scene graph.`,
+      };
       return NextResponse.json({
         success: true,
-        modelUsed: "Procedural Script Engine (Fallback do Gemini quá tải)",
+        status: "draft_fallback",
+        metadata,
+        modelUsed: "Procedural Script Engine (Fallback do Gemini lỗi/quá tải)",
         sceneGraph: proceduralGraph,
       });
     }
@@ -793,8 +563,8 @@ export async function POST(req: NextRequest) {
     let cleanText = responseText.trim();
     cleanText = cleanText.replace(/^```(?:json)?\n?/i, "").replace(/\n?```$/i, "");
     const rawParsed = JSON.parse(cleanText);
-    console.log("[Gemini API] RAW GENERATED BY GEMINI:\n", JSON.stringify(rawParsed, null, 2));
 
+    // Sử dụng Sanitizer phân biệt Action & Bảo toàn 100% dữ liệu
     const parsedGraph = sanitizeSceneGraph(rawParsed, prompt);
 
     const assetsDir = path.join(process.cwd(), "public", "assets", "props");
@@ -821,16 +591,42 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    const latencyMs = Date.now() - startTime;
+    const metadata: GenerationMetadata = {
+      requestedModel,
+      resolvedModel: successfulModel,
+      provider: "google-gemini",
+      status: "ready",
+      latencyMs,
+      autoGeneratedAssets: generatedAssets,
+    };
+
     return NextResponse.json({
       success: true,
+      status: "ready",
+      metadata,
       modelUsed: successfulModel,
       sceneGraph: parsedGraph,
       autoGeneratedAssets: generatedAssets,
     });
   } catch (error: any) {
     console.error("Gemini API Error:", error);
+    const latencyMs = Date.now() - startTime;
+    const metadata: GenerationMetadata = {
+      requestedModel,
+      resolvedModel: "none",
+      provider: "google-gemini",
+      status: "failed",
+      latencyMs,
+      fallbackReason: error.message || "Unhandled server error",
+    };
     return NextResponse.json(
-      { error: error.message || "Lỗi khi gọi Gemini API" },
+      {
+        success: false,
+        status: "failed",
+        metadata,
+        error: error.message || "Lỗi khi gọi Gemini API",
+      },
       { status: 500 }
     );
   }

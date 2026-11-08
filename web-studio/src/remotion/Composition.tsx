@@ -123,7 +123,8 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
   const isHolding =
     currentScene.character.pose === "holdingObject" ||
     (hasHoldAction && currentScene.props.length > 0 && !isSitting);
-  const isCharacterVisible = currentScene.character.x > -9000;
+  const isCharacterVisible =
+    currentScene.character.visible !== false && currentScene.character.x > -9000;
 
   // Phân giải vị trí chuẩn qua Semantic Slot (Zero-Guessing Pixel Engine)
   const baseCharPos = resolveSemanticSlot(currentScene.character.slot, {
@@ -257,6 +258,9 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
     if (latest.params.eyes) dynamicCharacterState.eyes = latest.params.eyes;
     if (latest.params.mouth) dynamicCharacterState.mouth = latest.params.mouth;
     if (latest.params.eyebrows) dynamicCharacterState.eyebrows = latest.params.eyebrows;
+    if (latest.params.blush !== undefined) dynamicCharacterState.blush = latest.params.blush;
+    if (latest.params.sweatDrop !== undefined) dynamicCharacterState.sweatDrop = latest.params.sweatDrop;
+    if (latest.params.pupilGaze) dynamicCharacterState.pupilGaze = latest.params.pupilGaze;
   }
 
   // --- Micro-Animations (breathing, blink, talk, idle sway) ---
@@ -541,7 +545,7 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
           {/* LAYER 20: MIDGROUND BACK LAYER (Sofa, Chân sau bàn học) */}
           <g id="layer-midground-back">
             {currentScene.props
-              .filter((p) => p.layer === "midgroundBackLayer")
+              .filter((p) => p.layer === "midgroundBackLayer" && p.visible !== false)
               .map((prop) => {
                 const t = computePropTransform(prop);
                 const opacity = computeEntranceOpacity(prop);
@@ -633,7 +637,7 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
           {/* LAYER 40: MIDGROUND FRONT LAYER (Đèn bàn, Lọ thủy tinh trên bàn/sàn) */}
           <g id="layer-midground-front">
             {currentScene.props
-              .filter((p) => p.layer !== "midgroundBackLayer")
+              .filter((p) => p.layer !== "midgroundBackLayer" && p.visible !== false)
               .map((prop) => {
                 const t = computePropTransform(prop);
                 const opacity = computeEntranceOpacity(prop);

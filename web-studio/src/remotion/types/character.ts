@@ -53,6 +53,7 @@ export interface StickmanAnchors {
 }
 
 export interface StickmanState {
+  visible?: boolean;
   x: number;
   y: number;
   slot?: string; // Semantic slot e.g. "floor.center", "desk.seat"

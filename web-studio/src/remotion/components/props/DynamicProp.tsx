@@ -63,6 +63,7 @@ const KNOWN_PROP_DIMENSIONS: Record<string, SvgDimensionInfo> = {
   "heart": { width: 240, height: 240 },
   "whiteboard": { width: 600, height: 400 },
   "bush": { width: 400, height: 240 },
+  "car": { width: 500, height: 260 },
   "environment": { width: 300, height: 300 },
 };
 
