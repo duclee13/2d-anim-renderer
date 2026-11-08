@@ -54,7 +54,7 @@ export const RenderModal: React.FC<RenderModalProps> = ({
   githubOwner,
   githubRepo,
 }) => {
-  const [chunkCount, setChunkCount] = useState(15);
+  const [chunkCount, setChunkCount] = useState(1);
   const [isDispatching, setIsDispatching] = useState(false);
   const [isRendering, setIsRendering] = useState(false);
   const [workflowStatus, setWorkflowStatus] = useState<string | null>(null);
@@ -303,26 +303,68 @@ export const RenderModal: React.FC<RenderModalProps> = ({
             </div>
           )}
 
-          {/* Chunk slider */}
+          {/* Render Mode Selector */}
           {!isRendering && !downloadUrl && (
-            <div className="flex flex-col space-y-2 rounded-xl bg-[#18181B] p-3 border border-[#27272A]">
-              <div className="flex items-center justify-between">
-                <span className="font-medium text-zinc-200">Số lượng máy ảo song song (Chunks)</span>
-                <span className="rounded bg-blue-500/20 px-2 py-0.5 font-bold text-blue-400">
-                  {chunkCount} Chunks
-                </span>
+            <div className="flex flex-col space-y-3 rounded-xl bg-[#18181B] p-3.5 border border-[#27272A]">
+              <span className="font-semibold text-zinc-200">Chế độ Render Đám mây</span>
+
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setChunkCount(1)}
+                  className={`flex flex-col items-start p-2.5 rounded-xl border text-left transition-all ${
+                    chunkCount === 1
+                      ? "bg-blue-600/20 border-blue-500 text-white shadow-sm"
+                      : "bg-[#121215] border-[#27272A] text-zinc-400 hover:text-zinc-200"
+                  }`}
+                >
+                  <div className="flex items-center space-x-1.5 font-bold text-xs text-blue-400">
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    <span>1 Máy Full (Khuyên dùng)</span>
+                  </div>
+                  <span className="text-[10px] text-zinc-400 mt-1 leading-tight">
+                    1 máy render toàn bộ từ đầu đến cuối. Ổn định 100%, không lo lỗi thiếu chunk hay ghép nối.
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setChunkCount(3)}
+                  className={`flex flex-col items-start p-2.5 rounded-xl border text-left transition-all ${
+                    chunkCount > 1
+                      ? "bg-purple-600/20 border-purple-500 text-white shadow-sm"
+                      : "bg-[#121215] border-[#27272A] text-zinc-400 hover:text-zinc-200"
+                  }`}
+                >
+                  <div className="flex items-center space-x-1.5 font-bold text-xs text-purple-400">
+                    <Cpu className="h-3.5 w-3.5" />
+                    <span>Song song ({chunkCount > 1 ? chunkCount : 3} Máy)</span>
+                  </div>
+                  <span className="text-[10px] text-zinc-400 mt-1 leading-tight">
+                    Chia nhỏ render song song cho kịch bản rất dài ({">"} 3 phút).
+                  </span>
+                </button>
               </div>
-              <input
-                type="range"
-                min={4}
-                max={15}
-                value={chunkCount}
-                onChange={(e) => setChunkCount(Number(e.target.value))}
-                className="accent-blue-500"
-              />
-              <span className="text-[10px] text-zinc-400">
-                Mỗi máy ảo Ubuntu 16GB RAM render ~{Math.ceil(totalFrames / chunkCount)} frames.
-              </span>
+
+              {chunkCount > 1 && (
+                <div className="pt-2 border-t border-[#27272A]/60 flex flex-col space-y-1.5">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-zinc-400">Số lượng máy song song:</span>
+                    <span className="font-bold text-purple-300">{chunkCount} Máy</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={2}
+                    max={6}
+                    value={chunkCount}
+                    onChange={(e) => setChunkCount(Number(e.target.value))}
+                    className="accent-purple-500"
+                  />
+                  <span className="text-[10px] text-zinc-500">
+                    Mỗi máy render ~{Math.ceil(totalFrames / chunkCount)} frames.
+                  </span>
+                </div>
+              )}
             </div>
           )}
 

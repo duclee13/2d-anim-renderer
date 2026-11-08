@@ -25,10 +25,11 @@ const calculateMetadata: CalculateMetadataFunction<any> = async ({ props }) => {
     return Math.max(acc, start + dur);
   }, 0);
 
-  const actualDuration = Math.max(
-    60,
-    scenesEnd || Number(graph?.totalDurationInFrames) || Number(props?.totalFrames) || 480
-  );
+  const requestedTotal = Number(props?.totalFrames) || 0;
+  const sceneDuration = scenesEnd || Number(graph?.totalDurationInFrames) || 480;
+  // BẢO VỆ CHỐNG OUT-OF-BOUNDS: Composition duration luôn bao phủ cả sceneDuration lẫn requestedTotal
+  // Đảm bảo không một runner nào bị lỗi out-of-bounds dù được chỉ định render range frame nào
+  const actualDuration = Math.max(60, sceneDuration, requestedTotal);
 
   return {
     durationInFrames: actualDuration,

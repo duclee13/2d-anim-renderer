@@ -12,9 +12,9 @@ on:
         required: true
         default: '480'
       chunkCount:
-        description: 'Number of parallel chunks (e.g. 10 to 15)'
+        description: 'Number of parallel chunks (1 = Full single-runner, 2-10 = Parallel chunks)'
         required: true
-        default: '10'
+        default: '1'
       scenePayloadUrl:
         description: 'Signed URL or raw JSON string containing the Scene Graph'
         required: false
@@ -36,14 +36,14 @@ jobs:
         with:
           script: |
             let totalFrames = parseInt('${{ github.event.inputs.totalFrames }}', 10) || 480;
-            const chunkCount = parseInt('${{ github.event.inputs.chunkCount }}', 10) || 10;
+            const chunkCount = Math.max(1, parseInt('${{ github.event.inputs.chunkCount }}', 10) || 1);
             const rawPayload = `${{ github.event.inputs.scenePayloadUrl }}`.trim();
             if (rawPayload && rawPayload.startsWith('{')) {
               try {
                 const parsed = JSON.parse(rawPayload);
                 if (parsed.totalDurationInFrames) {
                   totalFrames = parseInt(parsed.totalDurationInFrames, 10);
-                } else if (Array.isArray(parsed.scenes)) {
+                } else if (Array.isArray(parsed.scenes) && parsed.scenes.length > 0) {
                   const maxEnd = parsed.scenes.reduce((acc, s) => {
                     const start = Number(s?.startFrame) || 0;
                     const dur = Number(s?.durationInFrames) || 120;
@@ -159,8 +159,9 @@ jobs:
           retention-days: 1
 
   stitch-and-release:
-    name: Concat Chunks & Publish GitHub Release
+    name: Assemble & Publish 2K Video
     needs: [prepare-matrix, render-chunk]
+    if: always() && needs.prepare-matrix.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -176,21 +177,31 @@ jobs:
           pattern: chunk-*
           merge-multiple: true
 
-      - name: Assemble Video with Zero Re-encoding (FFmpeg Concat)
+      - name: Assemble Video (Full Mode or Concat)
         run: |
           mkdir -p output
           ls -lah downloaded_chunks/
 
-          # Tạo file danh sách chunk theo đúng thứ tự
-          for f in $(ls downloaded_chunks/chunk_*.mp4 | sort -V); do
-            echo "file '$PWD/$f'" >> concat_list.txt
-          done
+          CHUNK_FILES=( $(ls downloaded_chunks/chunk_*.mp4 2>/dev/null | sort -V) )
+          COUNT=${#CHUNK_FILES[@]}
+          echo "Tìm thấy $COUNT chunk video."
 
-          echo "Concat list:"
-          cat concat_list.txt
+          if [ "$COUNT" -eq 0 ]; then
+            echo "LỖI: Không tìm thấy file chunk video nào được render!"
+            exit 1
+          fi
 
-          # Ghép nối cực nhanh trong vài giây bằng cách copy stream (-c copy)
-          ffmpeg -f concat -safe 0 -i concat_list.txt -c copy output/final_raw.mp4
+          if [ "$COUNT" -eq 1 ]; then
+            echo "Chỉ có 1 file duy nhất (Chế độ Full Single Runner) -> Copy trực tiếp, không cần ghép concat!"
+            cp "${CHUNK_FILES[0]}" output/final_raw.mp4
+          else
+            echo "Ghép $COUNT chunks theo đúng thứ tự..."
+            for f in "${CHUNK_FILES[@]}"; do
+              echo "file '$PWD/$f'" >> concat_list.txt
+            done
+            cat concat_list.txt
+            ffmpeg -f concat -safe 0 -i concat_list.txt -c copy output/final_raw.mp4
+          fi
 
           # Tối ưu hóa FastStart cho Web Streaming
           ffmpeg -i output/final_raw.mp4 -c copy -movflags +faststart output/story_${{ github.event.inputs.scriptId }}_2k60fps.mp4

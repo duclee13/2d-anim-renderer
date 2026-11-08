@@ -10,23 +10,24 @@ export async function POST(req: NextRequest) {
       repo,
       scriptId = "story_001",
       totalFrames,
-      chunkCount = 10,
+      chunkCount = 1,
       sceneGraph,
       runId,
       dispatchedAt,
     } = await req.json();
 
-    // Tự động tính toán totalFrames chuẩn xác từ sceneGraph nếu không truyền hoặc là fallback mặc định
+    // Tự động tính toán totalFrames chuẩn xác từ sceneGraph
     let effectiveTotalFrames = Number(totalFrames);
-    if ((!effectiveTotalFrames || effectiveTotalFrames === 3600) && sceneGraph) {
+    if ((!effectiveTotalFrames || effectiveTotalFrames === 3600 || effectiveTotalFrames === 480) && sceneGraph) {
       if (sceneGraph.totalDurationInFrames) {
         effectiveTotalFrames = Number(sceneGraph.totalDurationInFrames);
-      } else if (Array.isArray(sceneGraph.scenes)) {
-        effectiveTotalFrames = sceneGraph.scenes.reduce((acc: number, s: any) => {
+      } else if (Array.isArray(sceneGraph.scenes) && sceneGraph.scenes.length > 0) {
+        const calculatedEnd = sceneGraph.scenes.reduce((acc: number, s: any) => {
           const start = Number(s?.startFrame) || 0;
           const dur = Number(s?.durationInFrames) || 120;
           return Math.max(acc, start + dur);
-        }, 480);
+        }, 0);
+        if (calculatedEnd > 0) effectiveTotalFrames = calculatedEnd;
       }
     }
     effectiveTotalFrames = effectiveTotalFrames || 480;
