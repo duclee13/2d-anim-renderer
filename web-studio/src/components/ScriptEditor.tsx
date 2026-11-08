@@ -21,6 +21,7 @@ export const ScriptEditor: React.FC<ScriptEditorProps> = ({
 }) => {
   const [isLoadingGemini, setIsLoadingGemini] = useState(false);
   const [isLoadingTts, setIsLoadingTts] = useState(false);
+  const [selectedModel, setSelectedModel] = useState("gemini-3.1-flash-lite");
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -48,15 +49,43 @@ Cảnh 4: Buổi tối bình thường, tôi ngồi sau bàn học làm việc d
     setStatusMessage("Đã hủy yêu cầu tạo Scene Graph. Kịch bản và phân cảnh trước đó được giữ nguyên.");
   };
 
-  const handleGenerateGemini = async () => {
+  const handleGenerateProcedural = async () => {
+    if (!script.trim()) {
+      setErrorMessage("Vui lòng nhập nội dung kịch bản trước.");
+      return;
+    }
+    setIsLoadingGemini(true);
+    setErrorMessage(null);
+    setStatusMessage("Đang sinh Scene Graph qua Procedural Script Engine (không phụ thuộc mạng/AI)...");
+    try {
+      const res = await fetch("/api/gemini", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: script, forceProcedural: true }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Không thể sinh Scene Graph");
+      }
+      onSceneGraphGenerated(data.sceneGraph);
+      setStatusMessage("Đã tạo Scene Graph thành công qua Procedural Engine! Live Preview đã cập nhật.");
+    } catch (err: any) {
+      setErrorMessage(err.message || "Lỗi tạo Procedural Scene Graph");
+    } finally {
+      setIsLoadingGemini(false);
+    }
+  };
+
+  const handleGenerateGemini = async (modelOverride?: string) => {
     if (!script.trim()) {
       setErrorMessage("Vui lòng nhập nội dung kịch bản trước.");
       return;
     }
 
+    const activeModel = typeof modelOverride === "string" && modelOverride ? modelOverride : selectedModel;
     setIsLoadingGemini(true);
     setErrorMessage(null);
-    setStatusMessage("Gemini đang thiết kế Scene Graph 1080p và tính toán tọa độ IK (hỗ trợ tự động thử lại nếu 503)...");
+    setStatusMessage(`Đang kết nối tới ${activeModel} và tính toán Scene Graph 1080p...`);
 
     abortControllerRef.current = new AbortController();
 
@@ -64,7 +93,7 @@ Cảnh 4: Buổi tối bình thường, tôi ngồi sau bàn học làm việc d
       const res = await fetch("/api/gemini", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: script, apiKey, model: "gemini-3.8-flash" }),
+        body: JSON.stringify({ prompt: script, apiKey, model: activeModel }),
         signal: abortControllerRef.current.signal,
       });
 
@@ -74,7 +103,7 @@ Cảnh 4: Buổi tối bình thường, tôi ngồi sau bàn học làm việc d
       }
 
       onSceneGraphGenerated(data.sceneGraph);
-      setStatusMessage(`Đã tạo Scene Graph thành công qua model ${data.modelUsed || "Gemini"}! Live Preview đã cập nhật.`);
+      setStatusMessage(`Đã tạo Scene Graph thành công qua model ${data.modelUsed || activeModel}! Live Preview đã cập nhật.`);
     } catch (err: any) {
       if (err.name === "AbortError") {
         setStatusMessage("Đã hủy yêu cầu. Kịch bản và dữ liệu hiện tại được giữ nguyên.");
@@ -122,12 +151,24 @@ Cảnh 4: Buổi tối bình thường, tôi ngồi sau bàn học làm việc d
 
   return (
     <div className="flex flex-col space-y-4 rounded-2xl border border-[#232326] bg-[#121215] p-5 shadow-lg">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div className="flex items-center space-x-2">
           <FileText className="h-4 w-4 text-blue-400" />
           <h2 className="text-sm font-semibold text-white">Kịch bản & Ý tưởng phân cảnh</h2>
         </div>
-        <span className="text-[11px] text-zinc-500">Mô hình AI: Gemini 3.8 / 2.5 Flash</span>
+        <div className="flex items-center space-x-2">
+          <span className="text-[11px] text-zinc-400">Mô hình AI:</span>
+          <select
+            value={selectedModel}
+            onChange={(e) => setSelectedModel(e.target.value)}
+            disabled={isLoadingGemini}
+            className="rounded-lg border border-[#27272A] bg-[#18181B] px-2.5 py-1 text-xs text-blue-300 font-medium focus:border-blue-500 focus:outline-none"
+          >
+            <option value="gemini-3.1-flash-lite">⚡ gemini-3.1-flash-lite (Siêu nhanh &lt; 1s, Rất ổn định)</option>
+            <option value="gemini-3.5-flash">🚀 gemini-3.5-flash (Chuẩn Google)</option>
+            <option value="gemini-3.8-flash">🧪 gemini-3.8-flash (Có thể quá tải khi cao điểm)</option>
+          </select>
+        </div>
       </div>
 
       {/* Preset script chips */}
@@ -160,9 +201,33 @@ Cảnh 4: Buổi tối bình thường, tôi ngồi sau bàn học làm việc d
         </div>
       )}
       {errorMessage && (
-        <div className="flex items-center space-x-2 rounded-lg bg-rose-950/40 border border-rose-500/20 px-3 py-2 text-xs text-rose-300">
-          <AlertCircle className="h-4 w-4 shrink-0 text-rose-400" />
-          <span>{errorMessage}</span>
+        <div className="flex flex-col space-y-2 rounded-lg bg-rose-950/40 border border-rose-500/20 px-3 py-2 text-xs text-rose-300">
+          <div className="flex items-center space-x-2">
+            <AlertCircle className="h-4 w-4 shrink-0 text-rose-400" />
+            <span>{errorMessage}</span>
+          </div>
+          <div className="flex flex-wrap gap-2 pt-1">
+            {selectedModel !== "gemini-3.1-flash-lite" && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedModel("gemini-3.1-flash-lite");
+                  setErrorMessage(null);
+                  handleGenerateGemini("gemini-3.1-flash-lite");
+                }}
+                className="rounded-md bg-blue-600/80 hover:bg-blue-600 px-2.5 py-1 text-[11px] font-medium text-white transition-colors"
+              >
+                ⚡ Chuyển sang gemini-3.1-flash-lite &amp; Thử lại ngay
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handleGenerateProcedural}
+              className="rounded-md bg-zinc-800 hover:bg-zinc-700 px-2.5 py-1 text-[11px] font-medium text-zinc-200 transition-colors"
+            >
+              🛠️ Sinh nhanh bằng Procedural Engine (Không cần AI)
+            </button>
+          </div>
         </div>
       )}
 
@@ -177,7 +242,7 @@ Cảnh 4: Buổi tối bình thường, tôi ngồi sau bàn học làm việc d
       {/* Action Buttons */}
       <div className="flex flex-col sm:flex-row items-center gap-3 pt-1">
         <button
-          onClick={handleGenerateGemini}
+          onClick={() => handleGenerateGemini()}
           disabled={isLoadingGemini}
           className="flex w-full sm:w-auto flex-1 items-center justify-center space-x-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 text-xs font-semibold text-white shadow-md shadow-blue-500/10 transition-all hover:brightness-110 disabled:opacity-50"
         >

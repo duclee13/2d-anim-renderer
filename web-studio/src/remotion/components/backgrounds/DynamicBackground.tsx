@@ -75,7 +75,39 @@ export const DynamicBackground: React.FC<DynamicBackgroundProps> = ({
     stars: "night-sky",
   };
 
-  const assetFileName = customAssetFileName || fileNameMap[preset] || preset || "living-room-day";
+  const resolveBackgroundFileName = (rawPreset: string | undefined): string => {
+    if (!rawPreset) return "living-room-day";
+    const raw = String(rawPreset).trim().toLowerCase();
+    if (fileNameMap[rawPreset] || fileNameMap[raw]) return fileNameMap[rawPreset] || fileNameMap[raw];
+
+    if (/meadow|garden|grass|lawn|field|park|forest|nature|outdoor|dong-co|thao-nguyen|vuon|cay-xanh/i.test(raw)) {
+      return "garden-day";
+    }
+    if (/class|school|lecture|teacher|student|lop-hoc|truong-hoc|giang-duong|bang-den/i.test(raw)) {
+      return "classroom";
+    }
+    if (/office|workplace|desk|corp|meeting|business|van-phong|cong-ty|cong-so/i.test(raw)) {
+      return "office";
+    }
+    if (/street|city|road|urban|traffic|car|duong-pho|pho-xa|via-he/i.test(raw)) {
+      return "city-street";
+    }
+    if (/beach|sea|ocean|sand|summer|coast|bai-bien|bien|bo-cat/i.test(raw)) {
+      return "beach-sunny";
+    }
+    if (/night-sky|night_sky|star|galaxy|space|cosmos|ngan-ha|vu-tru|sao/i.test(raw)) {
+      return "night-sky";
+    }
+    if (/night|dark|evening|moon|khuya|toi|dem|trang/i.test(raw)) {
+      return "living-room-night";
+    }
+    if (/info|graph|chart|metric|stripes|bieu-do|infographic/i.test(raw)) {
+      return "infographic-stripes";
+    }
+    return "living-room-day";
+  };
+
+  const assetFileName = customAssetFileName || resolveBackgroundFileName(preset as string);
   const baseAssetPath = staticFile(`assets/backgrounds/${assetFileName}.svg`);
   const assetUrl = `${baseAssetPath}?v=20261108_2k`;
 

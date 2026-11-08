@@ -212,11 +212,11 @@ function generateProceduralSceneGraph(prompt: string): MasterSceneGraph {
 
     // Phân tích tư thế nhân vật Pose
     let pose: "standing" | "sittingBehindDesk" | "holdingObject" | "walking" | "pointing" = "standing";
-    if (/ngồi|bàn học|làm việc|desk/i.test(lower)) {
+    if (/ngồi|sit|sitting/i.test(lower) || (/bàn|desk/i.test(lower) && /ngồi/i.test(lower))) {
       pose = "sittingBehindDesk";
     } else if (/cầm|bê|mang|giữ|xách|nâng|holding|carry/i.test(lower)) {
       pose = "holdingObject";
-    } else if (/đi|bước|chạy|ra vườn|walk|run/i.test(lower)) {
+    } else if (/đi|bước|chạy|ra vườn|dạo|walk|run|stroll/i.test(lower)) {
       pose = "walking";
     }
 
@@ -429,12 +429,33 @@ export interface GenerationMetadata {
 
 export async function POST(req: NextRequest) {
   const startTime = Date.now();
-  let requestedModel = "gemini-3.8-flash";
+  let requestedModel = "gemini-3.1-flash-lite";
 
   try {
     const body = await req.json();
     const prompt = body.prompt;
     const apiKey = body.apiKey;
+    const forceProcedural = Boolean(body.forceProcedural);
+
+    if (forceProcedural) {
+      console.log("[Gemini API] Kích hoạt Procedural Engine theo yêu cầu của người dùng...");
+      const proceduralGraph = generateProceduralSceneGraph(prompt);
+      const latencyMs = Date.now() - startTime;
+      return NextResponse.json({
+        success: true,
+        status: "ready",
+        metadata: {
+          requestedModel: "procedural-engine",
+          resolvedModel: "procedural-engine",
+          provider: "procedural-fallback",
+          status: "ready",
+          latencyMs,
+        },
+        modelUsed: "Procedural Script Engine (Chạy nội bộ siêu tốc)",
+        sceneGraph: proceduralGraph,
+      });
+    }
+
     if (body.model && typeof body.model === "string") {
       requestedModel = body.model;
     }
@@ -465,14 +486,14 @@ export async function POST(req: NextRequest) {
     let candidateModels = await fetchAccountModels(activeApiKey);
     if (candidateModels.length === 0) {
       candidateModels = [
+        "gemini-3.1-flash-lite",
+        "gemini-3.5-flash",
         "gemini-3.8-flash",
-        "gemini-3.1-flash-lite-preview",
-        "gemini-2.5-flash",
       ];
     }
 
-    // Giữ nguyên 100% model người dùng đã chọn (ví dụ: gemini-3.8-flash), tuyệt đối không tự ý chuyển model
-    const activeModelName = requestedModel || "gemini-3.8-flash";
+    // Giữ nguyên 100% model người dùng đã chọn (ví dụ: gemini-3.1-flash-lite hoặc gemini-3.8-flash)
+    const activeModelName = requestedModel || "gemini-3.1-flash-lite";
     const genAI = new GoogleGenerativeAI(activeApiKey);
     let responseText = "";
 
@@ -490,7 +511,7 @@ export async function POST(req: NextRequest) {
               },
               systemInstruction: SYSTEM_PROMPT,
             },
-            { timeout: 60000 }
+            { timeout: 25000 }
           );
 
           const result = await model.generateContent(
@@ -559,8 +580,9 @@ export async function POST(req: NextRequest) {
             fallbackReason: `Model ${activeModelName} gặp lỗi sau 3 lần thử lại: ${err.message}`,
           },
           error: is503OrOverload
-            ? `Model ${activeModelName} hiện đang quá tải (503 Service Unavailable). Hệ thống đã tự động thử lại 3 lần nhưng server Google chưa phản hồi. Kịch bản và dữ liệu trước đó của bạn được giữ nguyên.`
+            ? `Model ${activeModelName} hiện đang quá tải (503 Service Unavailable). Hãy chọn model 'gemini-3.1-flash-lite' (siêu nhanh < 1s, rất ổn định) ở menu phía trên hoặc bấm 'Tạo nhanh bằng Procedural' để tiếp tục làm việc tức thì!`
             : `Không thể kết nối tới Gemini API (${activeModelName}): ${err.message}. Kịch bản và dữ liệu trước đó của bạn được giữ nguyên.`,
+          canSwitchToFastModel: is503OrOverload && activeModelName !== "gemini-3.1-flash-lite",
         },
         { status: is503OrOverload ? 503 : 500 }
       );

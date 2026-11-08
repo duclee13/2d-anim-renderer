@@ -241,27 +241,50 @@ export function sanitizeSceneGraph(
 
     // 2. Phân giải bối cảnh Background Preset chính xác (Hỗ trợ 9 Bối cảnh Động 2K)
     let preset: BackgroundPreset = "livingRoomDay";
-    if (/lớp học|trường học|giảng đường|bài giảng|thầy|cô giáo|bảng đen|classroom|school/i.test(sceneCombinedText)) {
-      preset = "classroom";
-    } else if (/văn phòng|công ty|công sở|họp|doanh nghiệp|office|workplace/i.test(sceneCombinedText)) {
-      preset = "office";
-    } else if (/đường phố|phố xá|vỉa hè|thành phố|đô thị|street|city/i.test(sceneCombinedText)) {
-      preset = "cityStreet";
-    } else if (/bãi biển|biển|bờ cát|sóng biển|mùa hè|cây dừa|beach|sea/i.test(sceneCombinedText)) {
-      preset = "beachSunny";
-    } else if (/bầu trời đêm|ngắm sao|đêm đầy sao|vũ trụ|dải ngân hà|night sky|starry/i.test(sceneCombinedText)) {
-      preset = "nightSky";
-    } else if (
-      /đồng cỏ|bãi cỏ|cỏ xanh|thảo nguyên|vườn|sân vườn|công viên|ngoài trời|thiên nhiên|bầu trời|mây trắng|nắng vàng|cây xanh|rừng|garden|park|meadow|grass|lawn|outdoor|sky/i.test(sceneCombinedText) &&
-      !/trong nhà|phòng khách|bàn học|ghế sofa|indoor|living\s*room/i.test(sceneCombinedText)
-    ) {
-      preset = "gardenDay";
-    } else if (/ban đêm|tối|khuya|đêm|trăng|sao|night|moonlight/i.test(sceneCombinedText)) {
-      preset = "livingRoomNight";
-    } else if (/biểu đồ|số liệu|chỉ số|infographic|thuyết trình/i.test(sceneCombinedText)) {
-      preset = "infographicStripes";
-    } else if (s?.background?.preset) {
-      preset = s.background.preset;
+    if (s?.background?.preset) {
+      const rawP = String(s.background.preset).trim().toLowerCase();
+      if (/meadow|garden|grass|lawn|field|park|forest|nature|outdoor|sky/i.test(rawP)) {
+        preset = "gardenDay";
+      } else if (/class|school|lecture|teacher/i.test(rawP)) {
+        preset = "classroom";
+      } else if (/office|workplace|desk|corp|meeting/i.test(rawP)) {
+        preset = "office";
+      } else if (/street|city|road|urban|traffic/i.test(rawP)) {
+        preset = "cityStreet";
+      } else if (/beach|sea|ocean|sand/i.test(rawP)) {
+        preset = "beachSunny";
+      } else if (/night-sky|night_sky|star|galaxy|space/i.test(rawP)) {
+        preset = "nightSky";
+      } else if (/night|dark|evening|moon/i.test(rawP)) {
+        preset = "livingRoomNight";
+      } else if (/info|graph|chart|metric|stripes/i.test(rawP)) {
+        preset = "infographicStripes";
+      } else if (["livingRoomDay", "livingRoomNight", "gardenDay", "infographicStripes", "classroom", "office", "cityStreet", "beachSunny", "nightSky"].includes(s.background.preset)) {
+        preset = s.background.preset;
+      }
+    }
+
+    if (preset === "livingRoomDay") {
+      if (/lớp học|trường học|giảng đường|bài giảng|thầy|cô giáo|bảng đen|classroom|school/i.test(sceneCombinedText)) {
+        preset = "classroom";
+      } else if (/văn phòng|công ty|công sở|họp|doanh nghiệp|office|workplace/i.test(sceneCombinedText)) {
+        preset = "office";
+      } else if (/đường phố|phố xá|vỉa hè|thành phố|đô thị|street|city/i.test(sceneCombinedText)) {
+        preset = "cityStreet";
+      } else if (/bãi biển|biển|bờ cát|sóng biển|mùa hè|cây dừa|beach|sea/i.test(sceneCombinedText)) {
+        preset = "beachSunny";
+      } else if (/bầu trời đêm|ngắm sao|đêm đầy sao|vũ trụ|dải ngân hà|night sky|starry/i.test(sceneCombinedText)) {
+        preset = "nightSky";
+      } else if (
+        /đồng cỏ|bãi cỏ|cỏ xanh|thảo nguyên|vườn|sân vườn|công viên|ngoài trời|thiên nhiên|bầu trời|mây trắng|nắng vàng|cây xanh|rừng|garden|park|meadow|grass|lawn|outdoor|sky/i.test(sceneCombinedText) &&
+        !/trong nhà|phòng khách|bàn học|ghế sofa|indoor|living\s*room/i.test(sceneCombinedText)
+      ) {
+        preset = "gardenDay";
+      } else if (/ban đêm|tối|khuya|đêm|trăng|sao|night|moonlight/i.test(sceneCombinedText)) {
+        preset = "livingRoomNight";
+      } else if (/biểu đồ|số liệu|chỉ số|infographic|thuyết trình/i.test(sceneCombinedText)) {
+        preset = "infographicStripes";
+      }
     }
 
     // Bảo toàn màu nền tùy chỉnh (customColors)
@@ -402,19 +425,19 @@ export function sanitizeSceneGraph(
     }
 
     // 6. Chuẩn hóa đạo cụ Props (BẢO TOÀN x=0, y=0, scale tùy chỉnh, visible, containment)
-    const rawProps = Array.isArray(s?.props)
+    const rawPropsList = Array.isArray(s?.props)
       ? s.props
       : Array.isArray(s?.assets)
       ? s.assets.filter((a: any) => a.type !== "character")
       : [];
 
-    // Kiểm tra xem cảnh có lọ chứa nhện hay vật chứa nào không
-    const hasJarInScene = rawProps.some(
-      (p: any) =>
-        /glass-jar|jar|thuy-tinh|container/i.test(p?.type || "") ||
-        /glass_jar|jar/i.test(p?.id || "") ||
-        p?.properties?.hasSpiderInside
-    );
+    // Chuyển đổi mọi định dạng (kể cả mảng string do Gemini trả về) thành object chuẩn
+    const rawProps = rawPropsList.map((p: any, pIdx: number) => {
+      if (typeof p === "string") {
+        return { id: `prop_${idx}_${pIdx}`, type: p };
+      }
+      return p;
+    });
 
     const props: PropItem[] = rawProps
       .map((p: any, pIdx: number) => {
@@ -541,8 +564,7 @@ export function sanitizeSceneGraph(
         const hasSpider =
           canonicalType === "glass-jar" &&
           (/nhện|spider|tám/i.test(sceneCombinedText) ||
-            p?.properties?.hasSpiderInside === true ||
-            hasJarInScene);
+            p?.properties?.hasSpiderInside === true);
 
         // Phân giải slot chuẩn
         let propSlot = p?.slot;

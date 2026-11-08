@@ -290,7 +290,7 @@ export const RenderModal: React.FC<RenderModalProps> = ({
                     const res = await fetch("/api/gemini", {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ prompt: currentScript, apiKey: geminiKey }),
+                      body: JSON.stringify({ prompt: currentScript, apiKey: geminiKey, model: "gemini-3.1-flash-lite" }),
                     });
                     const data = await res.json();
                     if (data.success && data.sceneGraph && onSceneGraphGenerated) {
