@@ -66,7 +66,11 @@ Strict Rules:
 11. Dynamic Asset Bank:
    - Standard built-in props: 'glassJar', 'spider', 'sofa', 'desk', 'deskLamp', 'gaugeMeter', 'pottedPlant', 'bush', 'chair', 'table', 'tv', 'pizza', 'apple', 'guitar', 'cat', 'tree', 'balloon', 'trophy', 'star', 'heart', 'whiteboard', 'laptop', 'coffeeCup', 'phone', 'book', 'clock'.
    - Background presets: 'livingRoomDay', 'livingRoomNight', 'gardenDay', 'infographicStripes'.
-12. Output ONLY a valid JSON object matching the MasterSceneGraph schema. No markdown formatting.
+12. SUBTITLES & SPOKEN NARRATION (CRITICAL):
+   - Every scene MUST include a 'subtitles' array with the exact narration sentence from the user's script:
+     'subtitles': [{ 'id': 'sub_1_0', 'text': 'Câu thoại/thuyết minh của cảnh này', 'startFrame': 5, 'endFrame': 210 }]
+   - NEVER leave 'subtitles' empty!
+13. Output ONLY a valid JSON object matching the MasterSceneGraph schema. No markdown formatting.
 `;
 
 function getStandardPropFileName(type: string): string {
@@ -104,12 +108,12 @@ async function fetchAccountModels(apiKey: string): Promise<string[]> {
       .map((m: any) => m.name.replace(/^models\//, ""));
 
     const score = (name: string): number => {
-      if (name === "gemini-3.8-flash") return 1000;
-      if (name.includes("3.1-flash")) return 950;
-      if (name.includes("3.") && name.includes("flash")) return 900;
-      if (name.includes("2.5-flash")) return 850;
-      if (name.includes("2.0-flash")) return 800;
-      if (name.includes("flash")) return 700;
+      if (name.includes("3.1-flash-lite")) return 1000;
+      if (name.includes("2.5-flash")) return 950;
+      if (name.includes("2.0-flash")) return 900;
+      if (name.includes("flash-lite")) return 850;
+      if (name.includes("flash")) return 800;
+      if (name === "gemini-3.8-flash") return 500;
       if (name.includes("3.")) return 600;
       if (name.includes("2.5")) return 500;
       return 100;
@@ -127,14 +131,37 @@ async function fetchAccountModels(apiKey: string): Promise<string[]> {
  * Chuẩn hóa và làm sạch 100% dữ liệu SceneGraph từ LLM
  * Đảm bảo timeline liên tục, thời lượng đồng bộ audio và tích hợp đầy đủ VFX.
  */
-function sanitizeSceneGraph(raw: any): MasterSceneGraph {
+function sanitizeSceneGraph(raw: any, userPrompt?: string): MasterSceneGraph {
   const scenesRaw = Array.isArray(raw?.scenes) ? raw.scenes : [];
   let currentStart = 0;
 
+  const promptSceneTexts: string[] = [];
+  if (userPrompt) {
+    const lines = userPrompt.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    for (const line of lines) {
+      const match = line.match(/^(?:cảnh|scene)\s*\d+[:.-]?\s*(.*)$/i);
+      if (match && match[1].trim()) {
+        promptSceneTexts.push(match[1].trim());
+      } else if (line.length > 5 && !line.startsWith("#")) {
+        promptSceneTexts.push(line);
+      }
+    }
+  }
+
   const cleanScenes = scenesRaw.map((s: any, idx: number) => {
-    const subTexts = Array.isArray(s?.subtitles)
-      ? s.subtitles.map((sub: any) => sub?.text || "").join(" ")
-      : "";
+    const existingSubs = Array.isArray(s?.subtitles)
+      ? s.subtitles.filter((sub: any) => sub?.text && String(sub.text).trim().length > 0)
+      : [];
+
+    const fallbackText =
+      existingSubs.length > 0
+        ? existingSubs.map((sub: any) => sub.text).join(" ")
+        : promptSceneTexts[idx] ||
+          (s?.name && !/^cảnh\s*\d+$/i.test(s.name) ? s.name : "") ||
+          s?.description ||
+          "";
+
+    const subTexts = fallbackText;
     const wordCount = subTexts.trim() ? subTexts.trim().split(/\s+/).length : 0;
     const estDialogueFrames = wordCount > 0 ? Math.round((wordCount / 2.8) * 60) + 30 : 120;
 
@@ -210,7 +237,8 @@ function sanitizeSceneGraph(raw: any): MasterSceneGraph {
       },
       props: Array.isArray(s?.props)
         ? s.props.map((p: any, pIdx: number) => {
-            const canonicalType = getStandardPropFileName(String(p?.type || "glassJar"));
+            const rawPropType = String(p?.type || p?.id || "prop");
+            const canonicalType = getStandardPropFileName(rawPropType);
             let propScale = Number(p?.scale) || 1.0;
             const isScreenSlot = Boolean(p?.slot && String(p.slot).startsWith("screen."));
 
@@ -224,6 +252,11 @@ function sanitizeSceneGraph(raw: any): MasterSceneGraph {
                 propScale = 0.72; // ~302px trên sàn nhà (gấp 2.2x trước đây)
               }
             }
+
+            const sceneCombinedText = `${s?.name || ""} ${subTexts}`.toLowerCase();
+            const hasSpider =
+              canonicalType === "glass-jar" &&
+              (/nhện|spider|tám/i.test(sceneCombinedText) || p?.properties?.hasSpiderInside === true);
 
             return {
               id: String(p?.id || `prop_${idx}_${pIdx}`),
@@ -243,22 +276,33 @@ function sanitizeSceneGraph(raw: any): MasterSceneGraph {
               pivotX: p?.pivotX !== undefined ? Number(p.pivotX) : undefined,
               pivotY: p?.pivotY !== undefined ? Number(p.pivotY) : undefined,
               properties: {
-                hasSpiderInside: canonicalType === "glass-jar" ? true : undefined,
+                hasSpiderInside: hasSpider ? true : undefined,
                 ...p?.properties,
               },
               entrance: p?.entrance || undefined,
             };
           })
         : [],
-      subtitles: Array.isArray(s?.subtitles)
-        ? s.subtitles.map((sub: any, subIdx: number) => ({
-            id: String(sub?.id || `sub_${idx}_${subIdx}`),
-            text: String(sub?.text || ""),
-            startFrame: sub?.startFrame !== undefined ? Number(sub.startFrame) : start + 5,
-            endFrame: sub?.endFrame !== undefined ? Number(sub.endFrame) : start + dur - 5,
-            words: Array.isArray(sub?.words) ? sub.words : [],
-          }))
-        : [],
+      subtitles:
+        existingSubs.length > 0
+          ? existingSubs.map((sub: any, subIdx: number) => ({
+              id: String(sub?.id || `sub_${idx}_${subIdx}`),
+              text: String(sub?.text || ""),
+              startFrame: sub?.startFrame !== undefined ? Number(sub.startFrame) : start + 5,
+              endFrame: sub?.endFrame !== undefined ? Number(sub.endFrame) : start + dur - 5,
+              words: Array.isArray(sub?.words) ? sub.words : [],
+            }))
+          : fallbackText
+          ? [
+              {
+                id: `sub_${idx}_0`,
+                text: fallbackText,
+                startFrame: start + 5,
+                endFrame: start + dur - 5,
+                words: [],
+              },
+            ]
+          : [],
       speechBubbles: Array.isArray(s?.speechBubbles) && s.speechBubbles.length > 0
         ? s.speechBubbles.map((b: any, bIdx: number) => {
             let bubbleText = String(b?.text || "");
@@ -616,7 +660,7 @@ export async function POST(req: NextRequest) {
             },
             systemInstruction: SYSTEM_PROMPT,
           },
-          { timeout: 35000 }
+          { timeout: 15000 }
         );
 
         const result = await model.generateContent(
@@ -663,8 +707,9 @@ export async function POST(req: NextRequest) {
     let cleanText = responseText.trim();
     cleanText = cleanText.replace(/^```(?:json)?\n?/i, "").replace(/\n?```$/i, "");
     const rawParsed = JSON.parse(cleanText);
+    console.log("[Gemini API] RAW GENERATED BY GEMINI:\n", JSON.stringify(rawParsed, null, 2));
 
-    const parsedGraph = sanitizeSceneGraph(rawParsed);
+    const parsedGraph = sanitizeSceneGraph(rawParsed, prompt);
 
     const assetsDir = path.join(process.cwd(), "public", "assets", "props");
     if (!fs.existsSync(assetsDir)) {

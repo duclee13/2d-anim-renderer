@@ -5,7 +5,7 @@
  */
 
 export function normalizePropAssetId(rawType?: string): string {
-  if (!rawType) return "glass-jar";
+  if (!rawType) return "prop";
 
   // Chuyển camelCase / PascalCase sang kebab-case và thay thế gạch dưới/dấu cách
   let s = String(rawType)
