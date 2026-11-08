@@ -99,11 +99,12 @@ export const DynamicProp: React.FC<DynamicPropProps> = ({
   children,
 }) => {
   const canonicalId = normalizePropAssetId(id);
+  const isKnown = Boolean(KNOWN_PROP_DIMENSIONS[canonicalId] || KNOWN_PROP_DIMENSIONS[id]);
   const initialDims = customSvgContent
     ? defaultDimensions
     : KNOWN_PROP_DIMENSIONS[canonicalId] || KNOWN_PROP_DIMENSIONS[id] || defaultDimensions;
   const [dimensions, setDimensions] = useState<SvgDimensionInfo>(initialDims);
-  const [hasLoadError, setHasLoadError] = useState(false);
+  const [hasLoadError, setHasLoadError] = useState(!isKnown && !customSvgContent);
 
   const baseAssetPath = staticFile(`assets/props/${canonicalId}.svg`);
   const assetUrl = `${baseAssetPath}?v=20261107_2k`;
@@ -337,9 +338,29 @@ export const DynamicProp: React.FC<DynamicPropProps> = ({
         </g>
       )}
 
-      {/* 2. VẬT THỂ CON BÊN TRONG */}
+      {/* 2. VẬT THỂ CON BÊN TRONG (VÍ DỤ: CON NHỆN TRONG LỌ THỦY TINH ĐƯỢC CLIP KHỚP LÒNG LỌ) */}
+      {isGlassJar && (
+        <defs>
+          {/* Lòng trong của lọ thủy tinh để cắt gọn gàng chân nhện, tuyệt đối không thò ra ngoài đáy hay thành lọ */}
+          <clipPath id={`jar-inner-clip-${id}`}>
+            <rect
+              x={-125}
+              y={effectiveAnchor === "center" ? -145 : -355}
+              width={250}
+              height={300}
+              rx={26}
+              ry={26}
+            />
+          </clipPath>
+        </defs>
+      )}
+
       {children && (
-        <g id={`prop-children-${id}`} transform={`translate(0, ${childrenY})`}>
+        <g
+          id={`prop-children-${id}`}
+          transform={`translate(0, ${childrenY})`}
+          clipPath={isGlassJar ? `url(#jar-inner-clip-${id})` : undefined}
+        >
           {children}
         </g>
       )}

@@ -18,27 +18,24 @@ const calculateMetadata: CalculateMetadataFunction<any> = async ({ props }) => {
     graph = props as unknown as MasterSceneGraph;
   }
 
-  let total = Number(props?.totalFrames);
-  if (!total && graph?.totalDurationInFrames) {
-    total = Number(graph.totalDurationInFrames);
-  }
-  if (!total && graph?.scenes && Array.isArray(graph.scenes)) {
-    total = graph.scenes.reduce((acc, s) => {
-      const start = Number(s?.startFrame) || 0;
-      const dur = Number(s?.durationInFrames) || 120;
-      return Math.max(acc, start + dur);
-    }, 480);
-  }
+  const safeScenes = Array.isArray(graph?.scenes) ? graph.scenes : defaultMockSceneGraph.scenes;
+  const scenesEnd = safeScenes.reduce((acc, s) => {
+    const start = Number(s?.startFrame) || 0;
+    const dur = Number(s?.durationInFrames) || 120;
+    return Math.max(acc, start + dur);
+  }, 0);
 
-  // Ensure durationInFrames is AT LEAST 72,000 frames (20 minutes @ 60fps)
-  // so that ANY chunk range across parallel runners is ALWAYS valid
-  const durationInFrames = Math.max(72000, Number(total) || 72000);
+  const actualDuration = Math.max(
+    60,
+    scenesEnd || Number(graph?.totalDurationInFrames) || Number(props?.totalFrames) || 480
+  );
 
   return {
-    durationInFrames,
+    durationInFrames: actualDuration,
     props: {
       ...props,
       sceneGraph: graph || defaultMockSceneGraph,
+      totalFrames: actualDuration,
     },
   };
 };
@@ -49,7 +46,7 @@ export const RemotionRoot: React.FC = () => {
       <Composition
         id="MainScene"
         component={MainScene}
-        durationInFrames={72000} // Buffer 20 minutes @ 60fps so chunk bounds checks NEVER fail
+        durationInFrames={480}
         fps={60}
         width={2560}
         height={1440}

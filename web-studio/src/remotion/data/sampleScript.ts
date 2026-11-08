@@ -50,7 +50,7 @@ export const sampleScriptSceneGraph: MasterSceneGraph = {
           layer: "midgroundFrontLayer",
           x: 720,
           y: 1120,
-          scale: 0.38,
+          scale: 0.72,
           properties: {
             hasSpiderInside: true,
           },
@@ -103,7 +103,7 @@ export const sampleScriptSceneGraph: MasterSceneGraph = {
       speechBubbles: [
         {
           id: "bubble_s1",
-          text: "Ơ kìa!",
+          text: "Để sau!",
           hasMusicNote: false,
           position: { x: 1620, y: 340 },
           tailAnchor: { x: 60, y: 40 },
@@ -313,7 +313,7 @@ export const sampleScriptSceneGraph: MasterSceneGraph = {
           layer: "midgroundFrontLayer",
           x: 1480,
           y: 760,
-          scale: 0.35,
+          scale: 0.68,
           properties: {
             hasSpiderInside: true,
           },

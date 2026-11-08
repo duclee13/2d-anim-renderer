@@ -564,18 +564,18 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
               })}
           </g>
 
-          {/* LAYER 30: CHARACTER LOWER LAYER KHI NGỒI SAU BÀN (THÂN & ĐẦU) */}
+          {/* LAYER 30: CHARACTER LOWER LAYER KHI NGỒI SAU BÀN (TOÀN BỘ ĐẦU, THÂN VÀ TAY Ở SAU MẶT BÀN) */}
           {isSitting && isCharacterVisible && (
-            <g id="layer-character-seated-body">
+            <g id="layer-character-seated">
               <StickmanRig
                 state={dynamicCharacterState}
-                renderPart="bodyOnly"
+                renderPart="all"
                 breathScaleY={humanBreathScaleY}
               />
             </g>
           )}
 
-          {/* LAYER 35: MẶT BÀN GỖ (TABLETOP) CHE KHUẤT HÔNG NHÂN VẬT */}
+          {/* LAYER 35: MẶT BÀN GỖ (TABLETOP) CHE KHUẤT HÔNG VÀ BỤNG DƯỚI NHÂN VẬT */}
           {isSitting && (
             <g id="layer-desk-front">
               <DynamicProp
@@ -651,22 +651,14 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
               })}
           </g>
 
-          {/* LAYER 45: CHARACTER UPPER LAYER (TAY TỰA MẶT BÀN HOẶC TOÀN THÂN ĐỨNG) */}
-          {isCharacterVisible && (
+          {/* LAYER 45: CHARACTER UPPER LAYER (CHỈ VẼ KHI ĐỨNG, TUYỆT ĐỐI KHÔNG VẼ KHI NGỒI SAU BÀN ĐỂ KHÔNG ĐÈ LÊN MẶT BÀN) */}
+          {isCharacterVisible && !isSitting && (
             <g id="layer-character-front">
-              {isSitting ? (
-                <StickmanRig
-                  state={dynamicCharacterState}
-                  renderPart="armsOnly"
-                  breathScaleY={humanBreathScaleY}
-                />
-              ) : (
-                <StickmanRig
-                  state={dynamicCharacterState}
-                  renderPart="all"
-                  breathScaleY={humanBreathScaleY}
-                />
-              )}
+              <StickmanRig
+                state={dynamicCharacterState}
+                renderPart="all"
+                breathScaleY={humanBreathScaleY}
+              />
             </g>
           )}
 
@@ -718,22 +710,30 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
           </g>
         </CameraRig>
 
-        {/* VIGNETTE LỚP VIỀN NGOÀI CÙNG CHO ĐỘ SÂU ĐIỆN ẢNH */}
+        {/* VIGNETTE LỚP VIỀN NGOÀI CÙNG (ĐÃ GIẢM TỐI ĐA XUỐNG 0.08 ĐỂ NỀN HOẠT HÌNH TRONG TRẺO) */}
         <rect
           x={0}
           y={0}
           width={width}
           height={height}
           fill="url(#vignetteGradient)"
+          opacity={0.08}
           className="pointer-events-none"
         />
       </svg>
 
       {/* ===============================================================
-          LAYER 9999: SUBTITLE BOX (LUÔN LUÔN NẰM TRÊN MỌI VẬT THỂ & KHÔNG BỊ ZOOM THEO CAMERA)
+          LAYER 99999: SUBTITLE BOX (LUÔN NỔI TUYỆT ĐỐI TRÊN MỌI VẬT THỂ & KHÔNG BỊ ZOOM THEO CAMERA)
       =============================================================== */}
       {activeSubtitle && (
-        <AbsoluteFill style={{ zIndex: 9999, pointerEvents: "none" }}>
+        <AbsoluteFill
+          style={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 99999,
+            pointerEvents: "none",
+          }}
+        >
           <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full select-none">
             <SubtitleBox
               text={activeSubtitle.text}
@@ -741,7 +741,7 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
               currentFrame={frame}
               fps={fps}
               x={1280}
-              y={1340}
+              y={1320}
             />
           </svg>
         </AbsoluteFill>

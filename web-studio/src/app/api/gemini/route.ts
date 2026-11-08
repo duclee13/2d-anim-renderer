@@ -214,14 +214,14 @@ function sanitizeSceneGraph(raw: any): MasterSceneGraph {
             let propScale = Number(p?.scale) || 1.0;
             const isScreenSlot = Boolean(p?.slot && String(p.slot).startsWith("screen."));
 
-            // Tự động chuẩn hóa tỷ lệ scale thực tế để không bao giờ bị quá to như thùng phi
+            // Tự động chuẩn hóa tỷ lệ scale thực tế đạt 280px - 320px ở cảnh toàn (chuẩn 2K)
             if (canonicalType === "glass-jar") {
               if (isScreenSlot) {
                 if (propScale > 1.8) propScale = 1.7;
               } else if (p?.slot === "desk.topRight" || p?.slot === "desk.topLeft") {
-                propScale = 0.35;
-              } else if (propScale >= 0.8) {
-                propScale = 0.38;
+                propScale = 0.68; // ~285px trên mặt bàn
+              } else {
+                propScale = 0.72; // ~302px trên sàn nhà (gấp 2.2x trước đây)
               }
             }
 
@@ -259,7 +259,40 @@ function sanitizeSceneGraph(raw: any): MasterSceneGraph {
             words: Array.isArray(sub?.words) ? sub.words : [],
           }))
         : [],
-      speechBubbles: Array.isArray(s?.speechBubbles) ? s.speechBubbles : [],
+      speechBubbles: Array.isArray(s?.speechBubbles) && s.speechBubbles.length > 0
+        ? s.speechBubbles.map((b: any, bIdx: number) => {
+            let bubbleText = String(b?.text || "");
+            const quoteMatch = subTexts.match(/['"“](.+?)['"”]/);
+            if (quoteMatch && quoteMatch[1] && (/ơ kìa/i.test(bubbleText) || !bubbleText.trim())) {
+              bubbleText = quoteMatch[1];
+            }
+            return {
+              id: String(b?.id || `bubble_${idx}_${bIdx}`),
+              text: bubbleText,
+              hasMusicNote: Boolean(b?.hasMusicNote),
+              position: b?.position || { x: 1620, y: 340 },
+              tailAnchor: b?.tailAnchor || { x: 60, y: 40 },
+              startFrame: b?.startFrame !== undefined ? Number(b.startFrame) : start + 15,
+              endFrame: b?.endFrame !== undefined ? Number(b.endFrame) : start + dur - 10,
+            };
+          })
+        : (() => {
+            const quoteMatch = subTexts.match(/['"“](.+?)['"”]/);
+            if (quoteMatch && quoteMatch[1]) {
+              return [
+                {
+                  id: `bubble_${idx}_0`,
+                  text: quoteMatch[1],
+                  hasMusicNote: false,
+                  position: { x: 1620, y: 340 },
+                  tailAnchor: { x: 60, y: 40 },
+                  startFrame: start + 20,
+                  endFrame: start + dur - 10,
+                },
+              ];
+            }
+            return [];
+          })(),
       keyframes: finalKeyframes,
       lines: Array.isArray(s?.lines) ? s.lines : [],
       environmentVfx: Array.isArray(s?.environmentVfx) ? s.environmentVfx : undefined,

@@ -143,11 +143,11 @@ export const SvgDefsLibrary: React.FC = () => {
         <stop offset="100%" stopColor="#0F172A" stopOpacity={0.0} />
       </radialGradient>
 
-      {/* Vignette góc màn hình */}
+      {/* Vignette góc màn hình - Cực nhẹ tối đa 0.08 để giữ màu hoạt hình trong trẻo */}
       <radialGradient id="vignetteGradient" cx="50%" cy="50%" r="50%">
-        <stop offset="70%" stopColor="#000000" stopOpacity={0.0} />
-        <stop offset="90%" stopColor="#000000" stopOpacity={0.12} />
-        <stop offset="100%" stopColor="#000000" stopOpacity={0.28} />
+        <stop offset="80%" stopColor="#000000" stopOpacity={0.0} />
+        <stop offset="94%" stopColor="#000000" stopOpacity={0.04} />
+        <stop offset="100%" stopColor="#000000" stopOpacity={0.08} />
       </radialGradient>
     </defs>
   );

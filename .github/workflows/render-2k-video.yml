@@ -10,7 +10,7 @@ on:
       totalFrames:
         description: 'Total number of frames to render (e.g. 18000 for 5 mins @ 60fps)'
         required: true
-        default: '3600'
+        default: '480'
       chunkCount:
         description: 'Number of parallel chunks (e.g. 10 to 15)'
         required: true
@@ -35,8 +35,26 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const totalFrames = parseInt('${{ github.event.inputs.totalFrames }}', 10);
-            const chunkCount = parseInt('${{ github.event.inputs.chunkCount }}', 10);
+            let totalFrames = parseInt('${{ github.event.inputs.totalFrames }}', 10) || 480;
+            const chunkCount = parseInt('${{ github.event.inputs.chunkCount }}', 10) || 10;
+            const rawPayload = `${{ github.event.inputs.scenePayloadUrl }}`.trim();
+            if (rawPayload && rawPayload.startsWith('{')) {
+              try {
+                const parsed = JSON.parse(rawPayload);
+                if (parsed.totalDurationInFrames) {
+                  totalFrames = parseInt(parsed.totalDurationInFrames, 10);
+                } else if (Array.isArray(parsed.scenes)) {
+                  const maxEnd = parsed.scenes.reduce((acc, s) => {
+                    const start = Number(s?.startFrame) || 0;
+                    const dur = Number(s?.durationInFrames) || 120;
+                    return Math.max(acc, start + dur);
+                  }, 0);
+                  if (maxEnd > 0) totalFrames = maxEnd;
+                }
+              } catch (e) {
+                // Ignore parse errors, stick to totalFrames
+              }
+            }
             const chunkSize = Math.ceil(totalFrames / chunkCount);
             const chunks = [];
 

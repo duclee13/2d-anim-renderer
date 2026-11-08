@@ -34,13 +34,13 @@ export function normalizePropAssetId(rawType?: string): string {
     return "spider";
   }
 
-  // 3. Bụi cây (Bush / Shrub)
-  if (/bush|bui-?cay|\bbui\b|shrub|hedge/i.test(unaccented)) {
+  // 3. Bụi cây / Thảm cỏ sân vườn (Bush / Grass / Foliage)
+  if (/bush|bui-?cay|\bbui\b|shrub|hedge|grass|co|bai-?co|tham-?co|san-?vuon|vuon-?co/i.test(unaccented)) {
     return "bush";
   }
 
-  // 4. Chậu cây cảnh (Potted Plant)
-  if (/potted-?plant|plant|cay-?canh|chau-?cay|chau-?hoa|flower|hoa/i.test(unaccented)) {
+  // 4. Chậu cây cảnh / Hoa (Potted Plant / Flower)
+  if (/potted-?plant|plant|cay-?canh|chau-?cay|chau-?hoa|flower|hoa|\bcay\b/i.test(unaccented)) {
     return "potted-plant";
   }
 

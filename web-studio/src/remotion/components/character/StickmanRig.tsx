@@ -120,11 +120,11 @@ export const StickmanRig: React.FC<StickmanRigProps> = ({
     leftHand = { x: -40, y: neck.y + 160 };
     rightHand = { x: 40, y: neck.y + 160 };
   } else if (pose === "sittingBehindDesk") {
-    // Hai tay đặt tự nhiên lên mặt bàn làm việc (tabletop tại y = -360)
-    leftElbow = { x: -110, y: -480 };
-    rightElbow = { x: 110, y: -480 };
-    leftHand = { x: -70, y: -360 };
-    rightHand = { x: 70, y: -360 };
+    // Hai tay xuôi tự nhiên từ vai (y = neck.y) và đặt nhẹ bàn tay lên mặt bàn (tabletop tại y = -360)
+    leftElbow = { x: -65, y: -455 };
+    rightElbow = { x: 65, y: -455 };
+    leftHand = { x: -90, y: -360 };
+    rightHand = { x: 90, y: -360 };
   } else if (pose === "pointing" && pointingTarget) {
     const targetLocal: Point2D = {
       x: ((pointingTarget.x - x) / scale) * flipSign,
@@ -203,17 +203,28 @@ export const StickmanRig: React.FC<StickmanRigProps> = ({
   }, [x, y, scale, pose, holdingTarget, pointingTarget, walkCycleProgress, effectiveSpineLength, facing]);
 
   const flipTransform = facing === "left" ? "scale(-1, 1)" : "";
+  const isSitting = pose === "sittingBehindDesk";
 
   return (
     <g
       id="stickman-rig-wrapper"
       transform={`translate(${x}, ${y}) scale(${scale}) ${flipTransform} scale(1, ${breathScaleY})`}
       data-character-pose={pose}
+      clipPath={isSitting ? "url(#seated-desk-clip)" : undefined}
     >
+      {/* ClipPath cắt phẳng toàn bộ phần dưới mặt bàn (y > -358) khi ngồi làm việc */}
+      {isSitting && (
+        <defs>
+          <clipPath id="seated-desk-clip">
+            <rect x={-500} y={-1000} width={1000} height={642} />
+          </clipPath>
+        </defs>
+      )}
+
       {/* =========================================================================
-          LAYER A: CHÂN (LEGS & FEET) - ẨN HOÀN TOÀN KHI NGỒI SAU BÀN
+          LAYER A: CHÂN (LEGS & FEET) - ẨN 100% KHI NGỒI SAU BÀN
          ========================================================================= */}
-      {(renderPart === "all" || renderPart === "legsOnly") && pose !== "sittingBehindDesk" && (
+      {(renderPart === "all" || renderPart === "legsOnly") && !isSitting && (
         <g id="layer-character-legs">
           {/* CHÂN TRÁI */}
           <g id="bone-left-thigh" transform={`translate(${leftHipJoint.x}, ${leftHipJoint.y}) rotate(${leftThighAngle})`}>

@@ -9,12 +9,27 @@ export async function POST(req: NextRequest) {
       owner,
       repo,
       scriptId = "story_001",
-      totalFrames = 3600,
+      totalFrames,
       chunkCount = 10,
       sceneGraph,
       runId,
       dispatchedAt,
     } = await req.json();
+
+    // Tự động tính toán totalFrames chuẩn xác từ sceneGraph nếu không truyền hoặc là fallback mặc định
+    let effectiveTotalFrames = Number(totalFrames);
+    if ((!effectiveTotalFrames || effectiveTotalFrames === 3600) && sceneGraph) {
+      if (sceneGraph.totalDurationInFrames) {
+        effectiveTotalFrames = Number(sceneGraph.totalDurationInFrames);
+      } else if (Array.isArray(sceneGraph.scenes)) {
+        effectiveTotalFrames = sceneGraph.scenes.reduce((acc: number, s: any) => {
+          const start = Number(s?.startFrame) || 0;
+          const dur = Number(s?.durationInFrames) || 120;
+          return Math.max(acc, start + dur);
+        }, 480);
+      }
+    }
+    effectiveTotalFrames = effectiveTotalFrames || 480;
 
     const token = githubToken || process.env.GITHUB_TOKEN;
     if (!token) {
@@ -88,7 +103,7 @@ export async function POST(req: NextRequest) {
           ref: defaultBranch,
           inputs: {
             scriptId: String(scriptId),
-            totalFrames: String(totalFrames),
+            totalFrames: String(effectiveTotalFrames),
             chunkCount: String(chunkCount),
             scenePayloadUrl: payloadString.length < 60000 ? payloadString : "",
           },

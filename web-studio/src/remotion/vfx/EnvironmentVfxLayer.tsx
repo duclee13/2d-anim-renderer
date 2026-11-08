@@ -67,31 +67,72 @@ export const EnvironmentVfxLayer: React.FC<EnvironmentVfxLayerProps> = ({
   const isIndoor = backgroundPreset?.includes("livingRoom") || backgroundPreset?.includes("indoor") || backgroundPreset === "infographicStripes";
   const showSunOrb = hasSunbeams && !isIndoor;
 
+  const windowX = 240;
+  const windowY = 160;
+  const windowW = 560;
+  const windowH = 460;
+
+  const INDOOR_CLOUDS = [
+    { id: "ic1", seedX: 0, y: 220, speed: 0.45, width: 220, height: 75, opacity: 0.9 },
+    { id: "ic2", seedX: 320, y: 310, speed: 0.35, width: 190, height: 65, opacity: 0.8 },
+  ];
+
   return (
     <g id="environment-vfx-layer" className="pointer-events-none select-none">
+      <defs>
+        {/* ClipPath chuẩn khớp chính xác 100% với lòng kính cửa sổ phòng khách (2K) */}
+        <clipPath id="window-glass-clip">
+          <rect x={windowX} y={windowY} width={windowW} height={windowH} rx={10} />
+        </clipPath>
+      </defs>
+
       {/* =========================================================================
           1. CLOUD DRIFT (MÂY TRÔI NGANG BẦU TRỜI TUYẾN TÍNH)
          ========================================================================= */}
       {hasClouds && (
-        <g id="vfx-cloud-drift">
-          {CLOUDS.map((c) => {
-            const currentX =
-              ((c.seedX + frame * c.speed) % (canvasWidth + c.width + 100)) - c.width;
-            return (
-              <g
-                key={c.id}
-                transform={`translate(${currentX}, ${c.y})`}
-                opacity={c.opacity}
-              >
-                {/* Fluffy Cartoon Cloud Shape */}
-                <ellipse cx={c.width * 0.5} cy={c.height * 0.6} rx={c.width * 0.45} ry={c.height * 0.35} fill="#FFFFFF" />
-                <circle cx={c.width * 0.32} cy={c.height * 0.45} r={c.height * 0.35} fill="#FFFFFF" />
-                <circle cx={c.width * 0.58} cy={c.height * 0.35} r={c.height * 0.42} fill="#FFFFFF" />
-                <circle cx={c.width * 0.78} cy={c.height * 0.50} r={c.height * 0.30} fill="#FFFFFF" />
-              </g>
-            );
-          })}
-        </g>
+        isIndoor ? (
+          <g id="vfx-cloud-drift-indoor" clipPath="url(#window-glass-clip)">
+            {INDOOR_CLOUDS.map((c) => {
+              const currentX =
+                ((c.seedX + frame * c.speed) % (windowW + c.width + 80)) - c.width + windowX;
+              return (
+                <g
+                  key={c.id}
+                  transform={`translate(${currentX}, ${c.y})`}
+                  opacity={c.opacity}
+                >
+                  <ellipse cx={c.width * 0.5} cy={c.height * 0.6} rx={c.width * 0.45} ry={c.height * 0.35} fill="#FFFFFF" />
+                  <circle cx={c.width * 0.32} cy={c.height * 0.45} r={c.height * 0.35} fill="#FFFFFF" />
+                  <circle cx={c.width * 0.58} cy={c.height * 0.35} r={c.height * 0.42} fill="#FFFFFF" />
+                  <circle cx={c.width * 0.78} cy={c.height * 0.50} r={c.height * 0.30} fill="#FFFFFF" />
+                </g>
+              );
+            })}
+            {/* Chấn song cửa sổ đè lên mây để tạo chiều sâu chân thực */}
+            <line x1={520} y1={160} x2={520} y2={620} stroke="#141414" strokeWidth={10} />
+            <line x1={240} y1={390} x2={800} y2={390} stroke="#141414" strokeWidth={10} />
+          </g>
+        ) : (
+          <g id="vfx-cloud-drift-outdoor">
+            {CLOUDS.map((c) => {
+              const currentX =
+                ((c.seedX + frame * c.speed) % (canvasWidth + c.width + 100)) - c.width;
+              return (
+                <g
+                  key={c.id}
+                  transform={`translate(${currentX}, ${c.y})`}
+                  opacity={c.opacity}
+                >
+                  {/* Fluffy Cartoon Cloud Shape */}
+                  <ellipse cx={c.width * 0.5} cy={c.height * 0.6} rx={c.width * 0.45} ry={c.height * 0.35} fill="#FFFFFF" />
+                  <circle cx={c.width * 0.32} cy={c.height * 0.45} r={c.height * 0.35} fill="#FFFFFF" />
+                  <circle cx={c.width * 0.58} cy={c.height * 0.35} r={c.height * 0.42} fill="#FFFFFF" />
+                  <circle cx={c.width * 0.78} cy={c.height * 0.50} r={c.height * 0.30} fill="#FFFFFF" />
+                </g>
+              );
+            })}
+          </g>
+        )
       )}
 
       {/* =========================================================================
@@ -140,22 +181,36 @@ export const EnvironmentVfxLayer: React.FC<EnvironmentVfxLayerProps> = ({
           )}
 
           {/* B. CÁC DẢI GOD RAYS CHIẾU CHÉO ĐA TẦNG ALPHA */}
-          <g id="vfx-god-rays" opacity={0.70 + 0.15 * Math.sin(frame * 0.035)}>
-            {/* Chùm tia nắng 1 */}
-            <polygon
-              points="180,0 360,0 1250,1440 850,1440"
-              fill="url(#sunbeamsGradient)"
-            />
-            {/* Chùm tia nắng 2 */}
-            <polygon
-              points="620,0 820,0 1950,1440 1600,1440"
-              fill="url(#sunbeamsGradient)"
-            />
-            {/* Chùm tia nắng 3 */}
-            <polygon
-              points="1150,0 1280,0 2480,1440 2200,1440"
-              fill="url(#sunbeamsGradient)"
-            />
+          <g id="vfx-god-rays" opacity={0.65 + 0.15 * Math.sin(frame * 0.035)}>
+            {isIndoor ? (
+              <>
+                {/* Tia nắng chiếu chéo từ ô cửa sổ phòng khách xuống sàn */}
+                <polygon
+                  points="260,180 500,180 1380,1440 920,1440"
+                  fill="url(#sunbeamsGradient)"
+                />
+                <polygon
+                  points="450,200 680,200 1920,1440 1520,1440"
+                  fill="url(#sunbeamsGradient)"
+                />
+              </>
+            ) : (
+              <>
+                {/* Chùm tia nắng ngoài trời */}
+                <polygon
+                  points="180,0 360,0 1250,1440 850,1440"
+                  fill="url(#sunbeamsGradient)"
+                />
+                <polygon
+                  points="620,0 820,0 1950,1440 1600,1440"
+                  fill="url(#sunbeamsGradient)"
+                />
+                <polygon
+                  points="1150,0 1280,0 2480,1440 2200,1440"
+                  fill="url(#sunbeamsGradient)"
+                />
+              </>
+            )}
           </g>
         </g>
       )}
