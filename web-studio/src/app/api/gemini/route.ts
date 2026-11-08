@@ -12,6 +12,7 @@ import { generateVectorAsset } from "@/lib/vectorAssetGenerator";
 import { normalizePropAssetId } from "@/remotion/utils/propResolver";
 import { sanitizeSceneGraph } from "@/remotion/utils/sceneGraphSanitizer";
 
+// 2K 60FPS Explainer Video Director Prompt
 const SYSTEM_PROMPT = `
 You are the Lead 2D Animation Director and Spatial Scene Graph Architect for a 2K 60FPS Stickman Explainer Video Engine.
 Your job is to transform a story script into a precise, valid MasterSceneGraph JSON structure.
@@ -32,12 +33,12 @@ Strict Rules:
      * Living room slots: 'sofa.seat', 'sofa.left', 'sofa.right'
 5. CINEMATIC CAMERA ENGINE (CameraRig):
    - For dramatic close-ups or reveals, configure 'camera':
-     * Smooth Zoom: 'camera: { zoomFrom: 1.0, zoomTo: 2.15, focusSlot: "screen.centerCloseUp" }'
-     * Desk/Prop Focus: 'camera: { zoomFrom: 1.0, zoomTo: 1.4, focusSlot: "desk.seat" }'
+     * Close-up / Macro: 'camera: { zoom: 1.15, focusSlot: "screen.centerCloseUp" }' (DO NOT exceed 1.25 to prevent cutting off props)
+     * Desk/Prop Focus: 'camera: { zoom: 1.15, focusSlot: "desk.seat" }'
      * Normal Shot: 'camera: { zoom: 1.0, x: 1280, y: 720 }'
 6. PROCEDURAL ENVIRONMENT VFX & VOLUMETRIC LIGHTING:
    - 'environmentVfx': Array of visual effects to run automatically at 60 FPS:
-     * 'rainLoop': Angled rain streaks with parallax and surface ripples (for sad/thoughtful or stormy scenes).
+     * 'rainLoop': Angled rain streaks with parallax and surface ripples.
      * 'cloudDrift': Cartoon clouds drifting across the sky.
      * 'windBreeze': Soft curving wind trails blowing across the scene.
      * 'foliageSway': Outdoor bushes and trees swaying gently in the wind (ONLY for outdoor scenes like gardenDay, NEVER for indoor rooms).
@@ -63,15 +64,13 @@ Strict Rules:
      * Background furniture (sofa, desk): scale 1.0.
    - Origin Bottom-Center for floor/desk props (y is bottom touching floor or desk).
    - Origin Center for screen close-up props (y is center, anchorPoint: 'center').
-   - In close-up shots, DO NOT use scale from 0 to prevent white flash. Use pop or direct transition.
-9. Character Poses: 'standing', 'sittingBehindDesk', 'holdingObject', 'walking', 'pointing', 'shrugging'.
-   - When walking or stepping ("bước đi", "từ từ bước", "đi bộ", "dạo bước", "bước"): pose MUST be 'walking'!
-   - When a scene has no character (e.g. purely close-up of prop or diagram): set 'visible: false'!
-10. ACTION & MOTION RULES (NEVER LEAVE CHARACTER STATIC):
-   - When walking/stepping: add 'moveCharacter' keyframe in 'keyframes' with fromX and toX.
-   - When holding or carrying ("cầm", "giữ", "bê", "mang", "xách"): pose MUST be 'holdingObject'.
-   - When expression changes: add 'changeExpression' keyframe with target: 'character', frame, and params: { eyes, mouth, eyebrows, blush }.
-   - When prop scales or rotates: add 'scaleProp' with { fromScale, toScale } or 'rotateProp' with { fromDeg, toDeg }.
+9. CHARACTER POSES & VISIBILITY (CRITICAL):
+   - When a scene focuses purely on a prop close-up or diagram (e.g. Cảnh 2 cận cảnh lọ, Cảnh 3 biểu đồ): character MUST have 'visible: false'! NEVER place a character in front of or blocking close-up props/diagrams!
+   - When character is sitting at desk / working / studying: pose MUST be 'sittingBehindDesk' with slot 'desk.seat'!
+   - When character is walking: pose MUST be 'walking'!
+   - Standard poses: 'standing', 'sittingBehindDesk', 'holdingObject', 'walking', 'pointing', 'shrugging'.
+10. CONTAINMENT & OBJECT INTEGRITY:
+   - When an object/creature is inside a container (e.g. spider inside jar, fish in bowl): set 'properties: { hasSpiderInside: true, label: "Tám" }' on the container prop. NEVER add a duplicate freestanding spider prop outside the jar!
 11. Dynamic Asset Bank:
    - Standard built-in props: 'glassJar', 'spider', 'sofa', 'desk', 'deskLamp', 'gaugeMeter', 'pottedPlant', 'bush', 'chair', 'table', 'tv', 'pizza', 'apple', 'guitar', 'cat', 'tree', 'balloon', 'trophy', 'star', 'heart', 'whiteboard', 'laptop', 'coffeeCup', 'phone', 'book', 'clock', 'car'.
    - Background presets (SELECT STRICTLY BY THEME):
@@ -85,9 +84,9 @@ Strict Rules:
      * 'livingRoomNight': For nighttime cozy indoor scenes.
      * 'infographicStripes': For abstract metrics and presentations.
 12. SUBTITLES & SPOKEN NARRATION (CRITICAL):
-   - Every scene MUST include a 'subtitles' array with the exact narration sentence from the user's script:
+   - Every scene MUST include a 'subtitles' array with ONLY the spoken narration sentence from the user's script:
      'subtitles': [{ 'id': 'sub_1_0', 'text': 'Câu thoại/thuyết minh của cảnh này', 'startFrame': 5, 'endFrame': 210 }]
-   - NEVER leave 'subtitles' empty!
+   - NEVER include visual direction / camera notes (such as "Phóng cận cảnh vào...", "Minh họa biểu đồ...", "Cảnh 1:") in the 'subtitles' text! Only spoken dialogue.
 13. Output ONLY a valid JSON object matching the MasterSceneGraph schema. No markdown formatting.
 `;
 
@@ -471,11 +470,15 @@ export async function POST(req: NextRequest) {
       ];
     }
 
-    // Đưa requestedModel lên đầu nếu chưa có
-    if (!candidateModels.includes(requestedModel)) {
-      candidateModels.unshift(requestedModel);
+    // Khi người dùng yêu cầu gemini-3.8-flash: chỉ định danh sách duy nhất model này, không tự ý chuyển model khác
+    if (requestedModel === "gemini-3.8-flash") {
+      candidateModels = ["gemini-3.8-flash"];
     } else {
-      candidateModels = [requestedModel, ...candidateModels.filter((m) => m !== requestedModel)];
+      if (!candidateModels.includes(requestedModel)) {
+        candidateModels.unshift(requestedModel);
+      } else {
+        candidateModels = [requestedModel, ...candidateModels.filter((m) => m !== requestedModel)];
+      }
     }
 
     const genAI = new GoogleGenerativeAI(activeApiKey);
@@ -485,7 +488,7 @@ export async function POST(req: NextRequest) {
 
     for (const modelName of candidateModels) {
       try {
-        console.log(`[Gemini API] Đang kết nối tới model: ${modelName}...`);
+        console.log(`[Gemini API] Đang kết nối tới model: ${modelName} (Timeout 180s)...`);
         const model = genAI.getGenerativeModel(
           {
             model: modelName,
@@ -494,7 +497,7 @@ export async function POST(req: NextRequest) {
             },
             systemInstruction: SYSTEM_PROMPT,
           },
-          { timeout: 15000 }
+          { timeout: 180000 }
         );
 
         const result = await model.generateContent(
@@ -515,24 +518,39 @@ export async function POST(req: NextRequest) {
           err.message?.includes("API_KEY_INVALID") ||
           err.message?.includes("API key not valid")
         ) {
-          console.warn("[Gemini API] Key không hợp lệ -> Dùng Procedural Engine cho kịch bản.");
-          const proceduralGraph = generateProceduralSceneGraph(prompt);
           const latencyMs = Date.now() - startTime;
           const metadata: GenerationMetadata = {
             requestedModel,
-            resolvedModel: "procedural-script-engine",
-            provider: "procedural-fallback",
-            status: "draft_fallback",
+            resolvedModel: "none",
+            provider: "google-gemini",
+            status: "failed",
             latencyMs,
-            fallbackReason: "Invalid Gemini API Key. Generated draft procedural scene graph.",
+            fallbackReason: "Gemini API Key không hợp lệ. Vui lòng kiểm tra lại Key trong Cài đặt.",
           };
           return NextResponse.json({
-            success: true,
-            status: "draft_fallback",
+            success: false,
+            status: "failed",
             metadata,
-            modelUsed: "Procedural Script Engine (Key không hợp lệ)",
-            sceneGraph: proceduralGraph,
-          });
+            error: "Gemini API Key không hợp lệ. Vui lòng kiểm tra lại Key trong Cài đặt.",
+          }, { status: 400 });
+        }
+
+        if (requestedModel === "gemini-3.8-flash") {
+          // Báo lỗi rõ ràng cho model gemini-3.8-flash theo cam kết, không tự ý đổi model
+          const latencyMs = Date.now() - startTime;
+          return NextResponse.json({
+            success: false,
+            status: "failed",
+            metadata: {
+              requestedModel: "gemini-3.8-flash",
+              resolvedModel: "none",
+              provider: "google-gemini",
+              status: "failed",
+              latencyMs,
+              fallbackReason: `Model gemini-3.8-flash báo lỗi: ${err.message}`,
+            },
+            error: `Gọi model gemini-3.8-flash thất bại: ${err.message}`,
+          }, { status: 500 });
         }
 
         continue;

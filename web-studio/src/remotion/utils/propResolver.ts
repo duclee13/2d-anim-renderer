@@ -124,10 +124,11 @@ const EXACT_PROP_ALIASES: Record<string, CanonicalPropId> = {
 
   // 5. Bàn học / Bàn làm việc (Desk)
   "desk": "desk",
+  "furniture": "desk",
+  "study-desk": "desk",
+  "work-desk": "desk",
   "ban-hoc": "desk",
   "ban-lam-viec": "desk",
-  "work-desk": "desk",
-  "study-desk": "desk",
   "desk-front": "desk-front",
   "desk-back": "desk-back",
 
@@ -172,6 +173,7 @@ const EXACT_PROP_ALIASES: Record<string, CanonicalPropId> = {
   // 8. Lọ thủy tinh (Glass Jar)
   "glass-jar": "glass-jar",
   "glassjar": "glass-jar",
+  "container": "glass-jar",
   "jar": "glass-jar",
   "lo-thuy-tinh": "glass-jar",
   "chiec-lo": "glass-jar",
@@ -189,6 +191,7 @@ const EXACT_PROP_ALIASES: Record<string, CanonicalPropId> = {
   "desk-lamp": "desk-lamp",
   "desklamp": "desk-lamp",
   "lamp": "desk-lamp",
+  "light-source": "desk-lamp",
   "den-ban": "desk-lamp",
   "den-hoc": "desk-lamp",
   "den-ban-hoc": "desk-lamp",
@@ -198,6 +201,7 @@ const EXACT_PROP_ALIASES: Record<string, CanonicalPropId> = {
   "gauge-meter": "gauge-meter",
   "gaugemeter": "gauge-meter",
   "gauge": "gauge-meter",
+  "infographic-meter": "gauge-meter",
   "dong-ho-do": "gauge-meter",
   "trao-doi-chat": "gauge-meter",
   "speedometer": "gauge-meter",

@@ -216,27 +216,8 @@ export const EnvironmentVfxLayer: React.FC<EnvironmentVfxLayerProps> = ({
       )}
 
       {/* =========================================================================
-          3. WARM NIGHT LAMP (CHÓP SÁNG VÀNG ẤM VỚI FALLOFF MỀM MẠI TRÊN BÀN)
+          3. WARM NIGHT LAMP (Ánh sáng được neo trực tiếp theo tọa độ thực tế của đèn trong Composition)
          ========================================================================= */}
-      {hasWarmNightLamp && (
-        <g id="vfx-warm-night-lamp">
-          {/* Chóp nón ánh sáng tỏa từ đầu đèn bàn (x=800, y=560) xuống mặt bàn (y=760) */}
-          <polygon
-            points="810,540 830,540 1350,1120 480,1120"
-            fill="url(#lightConeGradient)"
-            opacity={0.88 + 0.06 * Math.sin(frame * 0.06)}
-          />
-          {/* Vệt sáng ấm hình oval tỏa tròn trên mặt bàn gỗ */}
-          <ellipse
-            cx={850}
-            cy={765}
-            rx={280}
-            ry={45}
-            fill="url(#tableSurfaceGlow)"
-            opacity={0.9}
-          />
-        </g>
-      )}
 
       {/* =========================================================================
           4. WIND BREEZE (LÀN GIÓ UỐN LƯỢN MỀM MẠI DÙNG STROKEDASHOFFSET)

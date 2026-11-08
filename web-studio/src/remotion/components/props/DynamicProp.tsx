@@ -187,7 +187,7 @@ export const DynamicProp: React.FC<DynamicPropProps> = ({
       // Các vật thể chuẩn (như lọ thủy tinh glass-jar, sofa, đèn bàn, v.v.)
       imageY = -height / 2;
       // Nhện nằm trong thân lọ thủy tinh tại vị trí cân đối
-      childrenY = isGlassJar ? Math.round(height * 0.12) : 0;
+      childrenY = isGlassJar ? 100 : 0;
       // Nhãn dán "TÁM" nằm ở 1/3 phía trên thân lọ, trên đầu con nhện
       labelY = isGlassJar ? -Math.round(height * 0.22) : -Math.round(height * 0.25);
     }
@@ -203,7 +203,7 @@ export const DynamicProp: React.FC<DynamicPropProps> = ({
       labelY = 0;
     } else {
       imageY = -height;
-      childrenY = -Math.round(height * 0.22);
+      childrenY = isGlassJar ? -85 : -Math.round(height * 0.22);
       labelY = isGlassJar ? -Math.round(height * 0.72) : -Math.round(height * 0.5);
     }
   }
@@ -345,12 +345,12 @@ export const DynamicProp: React.FC<DynamicPropProps> = ({
           {/* Lòng trong của lọ thủy tinh để cắt gọn gàng chân nhện, tuyệt đối không thò ra ngoài đáy hay thành lọ */}
           <clipPath id={`jar-inner-clip-${id}`}>
             <rect
-              x={-125}
-              y={effectiveAnchor === "center" ? -145 : -355}
-              width={250}
-              height={300}
-              rx={26}
-              ry={26}
+              x={-130}
+              y={effectiveAnchor === "center" ? -125 : -335}
+              width={260}
+              height={305}
+              rx={28}
+              ry={28}
             />
           </clipPath>
         </defs>
@@ -359,10 +359,11 @@ export const DynamicProp: React.FC<DynamicPropProps> = ({
       {children && (
         <g
           id={`prop-children-${id}`}
-          transform={`translate(0, ${childrenY})`}
           clipPath={isGlassJar ? `url(#jar-inner-clip-${id})` : undefined}
         >
-          {children}
+          <g transform={`translate(0, ${childrenY})`}>
+            {children}
+          </g>
         </g>
       )}
 

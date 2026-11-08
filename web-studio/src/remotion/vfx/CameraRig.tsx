@@ -57,25 +57,42 @@ export const CameraRig: React.FC<CameraRigProps> = ({
       targetPoint = slotPoint;
     }
   } else if (camera?.focusTarget) {
-    if (camera.focusTarget === "character" && character) {
+    if (camera.focusTarget === "character" && character && character.visible !== false) {
       targetPoint = {
         x: character.x,
         y: character.y - 420, // Focus vào ngực/khuôn mặt nhân vật
       };
     } else {
-      const foundProp = propsList.find((p) => p.id === camera.focusTarget);
+      const foundProp = propsList.find(
+        (p) => p.id === camera.focusTarget || p.type === camera.focusTarget
+      );
       if (foundProp) {
+        const propPos = resolveSemanticSlot(foundProp.slot, { x: foundProp.x, y: foundProp.y });
         targetPoint = {
-          x: foundProp.x,
-          y: foundProp.y - 150,
+          x: propPos.x,
+          y: propPos.y - (foundProp.anchorPoint === "center" ? 0 : 150),
         };
       }
     }
   }
 
   // 2. TÍNH TOÁN ZOOM DỰA TRÊN ZOOMFROM -> ZOOMTO HOẶC ZOOM TĨNH
-  const zoomFrom = camera?.zoomFrom ?? (camera?.zoom ?? 1.0);
-  const zoomTo = camera?.zoomTo ?? (camera?.zoom ?? 1.0);
+  const isCloseUpFocus =
+    camera?.focusSlot === "screen.centerCloseUp" ||
+    camera?.focusSlot === "screen.center" ||
+    propsList.some((p) => p.slot === "screen.centerCloseUp" || p.slot === "screen.center");
+
+  let rawZoomFrom = camera?.zoomFrom ?? (camera?.zoom ?? 1.0);
+  let rawZoomTo = camera?.zoomTo ?? (camera?.zoom ?? 1.0);
+
+  // CHỐNG PHÓNG ĐẠI QUÁ MỨC (Anti-Overzoom): Cảnh cận đạo cụ đã scale 1.7x nên zoom camera tối đa 1.15x
+  if (isCloseUpFocus) {
+    if (rawZoomFrom > 1.25) rawZoomFrom = 1.15;
+    if (rawZoomTo > 1.25) rawZoomTo = 1.15;
+  }
+
+  const zoomFrom = rawZoomFrom;
+  const zoomTo = rawZoomTo;
   const isZooming = camera?.zoomFrom !== undefined && camera?.zoomTo !== undefined;
 
   let currentZoom = zoomTo;
@@ -116,8 +133,8 @@ export const CameraRig: React.FC<CameraRigProps> = ({
     const maxFocalY = canvasHeight - halfVisibleY;
     currentFocalY = Math.max(minFocalY, Math.min(maxFocalY, currentFocalY));
 
-    // Đảm bảo nếu có nhân vật trong cảnh, đỉnh đầu nhân vật luôn >= 150px trong viewport
-    if (character && character.x > -9000) {
+    // Đảm bảo nếu có nhân vật hiển thị trong cảnh, đỉnh đầu nhân vật luôn >= 150px trong viewport
+    if (character && character.visible !== false && character.x > -9000) {
       const charHeadWorldY = character.y - 755; // Đỉnh đầu nhân vật
       const charHeadViewportY = (charHeadWorldY - currentFocalY) * currentZoom + centerY;
       if (charHeadViewportY < 150) {

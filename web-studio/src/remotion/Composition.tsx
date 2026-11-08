@@ -615,7 +615,7 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
             <g id="layer-character-seated">
               <StickmanRig
                 state={dynamicCharacterState}
-                renderPart="all"
+                renderPart="bodyOnly"
                 breathScaleY={humanBreathScaleY}
               />
             </g>
@@ -634,6 +634,43 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
             </g>
           )}
 
+          {/* LAYER 36: TAY NGƯỜI ĐẶT TRÊN MẶT BÀN */}
+          {isSitting && isCharacterVisible && (
+            <g id="layer-character-seated-arms">
+              <StickmanRig
+                state={dynamicCharacterState}
+                renderPart="armsOnly"
+                breathScaleY={humanBreathScaleY}
+              />
+            </g>
+          )}
+
+          {/* LAYER 37: VÙNG SÁNG CỦA ĐÈN BÀN NEO THEO TỌA ĐỘ THỰC TẾ CỦA ĐÈN */}
+          {(() => {
+            const lampProp = currentScene.props.find((p) => resolvePropAssetId(p.type) === "desk-lamp");
+            if (!lampProp) return null;
+            const lt = computePropTransform(lampProp);
+            return (
+              <g id="layer-lamp-glow-effect">
+                {/* Vệt sáng ấm hình oval tỏa tròn trên mặt bàn gỗ */}
+                <ellipse
+                  cx={lt.x + 35}
+                  cy={lt.y + 5}
+                  rx={260 * lt.scaleVal}
+                  ry={45 * lt.scaleVal}
+                  fill="url(#tableSurfaceGlow)"
+                  opacity={0.88 + 0.05 * Math.sin(frame * 0.06)}
+                />
+                {/* Nón sáng mềm mại tỏa từ đầu chụp đèn xuống mặt bàn */}
+                <polygon
+                  points={`${lt.x + 20 * lt.scaleVal},${lt.y - 115 * lt.scaleVal} ${lt.x - 180 * lt.scaleVal},${lt.y + 5} ${lt.x + 220 * lt.scaleVal},${lt.y + 5}`}
+                  fill="url(#lightConeGradient)"
+                  opacity={0.82 + 0.06 * Math.sin(frame * 0.06)}
+                />
+              </g>
+            );
+          })()}
+
           {/* LAYER 40: MIDGROUND FRONT LAYER (Đèn bàn, Lọ thủy tinh trên bàn/sàn) */}
           <g id="layer-midground-front">
             {currentScene.props
@@ -643,6 +680,11 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
                 const opacity = computeEntranceOpacity(prop);
                 const assetId = resolvePropAssetId(prop.type);
                 const hasSpider = prop.properties?.hasSpiderInside;
+                const propLabel =
+                  prop.properties?.label ||
+                  prop.properties?.labelText ||
+                  prop.properties?.title ||
+                  (prop as any).label;
                 const isScreenSlot = Boolean(prop.slot && prop.slot.startsWith("screen."));
                 const isExplicitCenter = prop.anchorPoint === "center" || prop.pivotPoint === "center" || isScreenSlot;
                 const propAnchor = isExplicitCenter ? "center" : "bottomCenter";
@@ -668,7 +710,7 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
                         pivotY={prop.pivotY}
                         needleAngle={t.needleAngle}
                         foliageSway={hasFoliageSway}
-                        label={prop.properties?.label}
+                        label={propLabel}
                         showPointerCallout={prop.properties?.showPointerCallout}
                         onAnchorsComputed={(anchors) => {
                           setActivePropAnchors((prev) => ({
