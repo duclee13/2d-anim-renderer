@@ -47,7 +47,7 @@ export const PreviewPlayer: React.FC<PreviewPlayerProps> = ({
 
   return (
     <div className="relative flex flex-col items-center justify-center rounded-2xl border border-[#232326] bg-[#121215] p-3 shadow-2xl">
-      {/* 2K Preview Monitor Frame */}
+      {/* 1080p Preview Monitor Frame */}
       <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-[#09090B] border border-[#1E1E22] shadow-inner">
         <Player
           key={`remotion-player-${sceneGraph?.title || "preview"}-${totalFrames}-${version}`}
@@ -56,8 +56,8 @@ export const PreviewPlayer: React.FC<PreviewPlayerProps> = ({
           inputProps={{ sceneGraph }}
           durationInFrames={totalFrames}
           fps={60}
-          compositionWidth={2560}
-          compositionHeight={1440}
+          compositionWidth={1920}
+          compositionHeight={1080}
           style={{
             width: "100%",
             height: "100%",
@@ -72,7 +72,7 @@ export const PreviewPlayer: React.FC<PreviewPlayerProps> = ({
       <div className="mt-3 flex w-full items-center justify-between px-2 text-xs text-[#8E8E93]">
         <div className="flex items-center space-x-2">
           <span className="inline-block h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
-          <span className="font-mono text-zinc-300">2560 x 1440 (2K QHD)</span>
+          <span className="font-mono text-zinc-300">1920 x 1080 (Full HD)</span>
           <span className="text-zinc-600">|</span>
           <span className="font-mono text-zinc-300">60.0 FPS</span>
           <span className="text-zinc-600">|</span>
@@ -102,7 +102,7 @@ export const PreviewPlayer: React.FC<PreviewPlayerProps> = ({
             </button>
           )}
 
-          <span className="text-[11px] text-zinc-500 hidden sm:inline">GPU Vector 2K</span>
+          <span className="text-[11px] text-zinc-500 hidden sm:inline">GPU Vector 1080p</span>
         </div>
       </div>
     </div>

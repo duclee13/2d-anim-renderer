@@ -1,4 +1,4 @@
-name: Distributed 2K 60FPS Video Renderer
+name: Distributed 1080p 60FPS Video Renderer
 
 on:
   workflow_dispatch:
@@ -164,7 +164,7 @@ jobs:
           retention-days: 1
 
   stitch-and-release:
-    name: Assemble & Publish 2K Video
+    name: Assemble & Publish 1080p Video
     needs: [prepare-matrix, render-chunk]
     if: always() && needs.prepare-matrix.result == 'success'
     runs-on: ubuntu-latest
@@ -209,23 +209,23 @@ jobs:
           fi
 
           # Tối ưu hóa FastStart cho Web Streaming
-          ffmpeg -i output/final_raw.mp4 -c copy -movflags +faststart output/story_${{ github.event.inputs.scriptId }}_2k60fps.mp4
+          ffmpeg -i output/final_raw.mp4 -c copy -movflags +faststart output/story_${{ github.event.inputs.scriptId }}_1080p60fps.mp4
 
-      - name: Create GitHub Release and Upload 2K Video
+      - name: Create GitHub Release and Upload 1080p Video
         id: create_release
         uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: render-${{ github.event.inputs.scriptId }}-${{ github.run_id }}
-          name: "Render 2K 60FPS: ${{ github.event.inputs.scriptId }}"
+          name: "Render 1080p 60FPS: ${{ github.event.inputs.scriptId }}"
           body: |
             ### Automated Render Completion
             - **Script ID:** `${{ github.event.inputs.scriptId }}`
-            - **Resolution:** `2560x1440 (2K QHD)`
+            - **Resolution:** `1920x1080 (Full HD)`
             - **Frame Rate:** `60 FPS`
             - **Total Frames:** `${{ github.event.inputs.totalFrames }}`
             - **Parallel Chunks:** `${{ github.event.inputs.chunkCount }}`
-          files: output/story_${{ github.event.inputs.scriptId }}_2k60fps.mp4
+          files: output/story_${{ github.event.inputs.scriptId }}_1080p60fps.mp4
           draft: false
           prerelease: false

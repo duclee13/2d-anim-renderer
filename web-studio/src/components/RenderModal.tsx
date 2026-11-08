@@ -200,7 +200,7 @@ export const RenderModal: React.FC<RenderModalProps> = ({
               }
 
               if (summary.isStitching) {
-                setWorkflowStatus("Ghép nối 15 chunks bằng FFmpeg và đóng gói video 2K...");
+                setWorkflowStatus("Ghép nối các chunks bằng FFmpeg và đóng gói video 1080p60...");
               } else if (summary.completedChunks > 0) {
                 setWorkflowStatus(
                   `Đã hoàn thành ${summary.completedChunks}/${summary.totalChunks} chunks (${summary.inProgressChunks} máy ảo đang render)...`
@@ -232,7 +232,7 @@ export const RenderModal: React.FC<RenderModalProps> = ({
                 const releaseData = await releaseRes.json();
                 if (releaseData.downloadUrl) {
                   setDownloadUrl(releaseData.downloadUrl);
-                  setWorkflowStatus("Video 2K (2560x1440) @ 60 FPS đã sẵn sàng!");
+                  setWorkflowStatus("Video Full HD (1920x1080) @ 60 FPS đã sẵn sàng!");
                   setIsRendering(false);
                 }
               } else {
@@ -263,7 +263,7 @@ export const RenderModal: React.FC<RenderModalProps> = ({
         <div className="flex items-center justify-between pb-4 border-b border-[#232326]">
           <div className="flex items-center space-x-2">
             <CloudLightning className="h-5 w-5 text-blue-400" />
-            <h3 className="text-sm font-semibold text-white">Render 2K @ 60FPS (Distributed Cloud)</h3>
+            <h3 className="text-sm font-semibold text-white">Render 1080p @ 60FPS (Distributed Cloud)</h3>
           </div>
           <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors">
             <X className="h-4 w-4" />
@@ -314,7 +314,7 @@ export const RenderModal: React.FC<RenderModalProps> = ({
           <div className="grid grid-cols-3 gap-2 rounded-xl bg-[#0E0E11] p-3 border border-[#232326]">
             <div>
               <span className="text-[10px] text-zinc-500">Độ phân giải</span>
-              <p className="font-semibold text-white">2560 x 1440 (2K)</p>
+              <p className="font-semibold text-white">1920 x 1080 (Full HD)</p>
             </div>
             <div>
               <span className="text-[10px] text-zinc-500">Khung hình</span>
@@ -334,7 +334,7 @@ export const RenderModal: React.FC<RenderModalProps> = ({
                 <span>Chưa có GitHub Token (PAT)</span>
               </div>
               <p className="text-[11px] text-amber-300/80 leading-relaxed">
-                Để kích hoạt cụm 10-15 máy ảo Ubuntu render video 2K trên GitHub Actions (miễn phí), hệ thống cần GitHub Token cá nhân của bạn có quyền <code>workflow</code> và <code>repo</code>.
+                Để kích hoạt cụm 10-15 máy ảo Ubuntu render video Full HD trên GitHub Actions (miễn phí), hệ thống cần GitHub Token cá nhân của bạn có quyền <code>workflow</code> và <code>repo</code>.
               </p>
               {onOpenSettings && (
                 <button
@@ -558,7 +558,7 @@ export const RenderModal: React.FC<RenderModalProps> = ({
               className="flex items-center justify-center space-x-2 rounded-xl bg-emerald-600 px-4 py-3 font-semibold text-white shadow-lg shadow-emerald-600/30 transition-all hover:bg-emerald-500 animate-bounce"
             >
               <Download className="h-4 w-4" />
-              <span>Tải Video Thành Phẩm 2K @ 60FPS (.MP4)</span>
+              <span>Tải Video Thành Phẩm 1080p @ 60FPS (.MP4)</span>
             </a>
           )}
         </div>

@@ -25,7 +25,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
           <div className="flex items-center space-x-2">
             <h1 className="text-sm font-semibold tracking-tight text-white">Stickman 2D Studio</h1>
             <span className="rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-medium text-blue-400 border border-blue-500/20">
-              2K QHD @ 60FPS
+              1080p Full HD @ 60FPS
             </span>
           </div>
           <p className="text-[11px] text-[#8E8E93]">Cloud Distributed Animation Engine</p>
@@ -57,7 +57,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
           className="flex items-center space-x-2 rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-1.5 text-xs font-semibold text-white shadow-md shadow-blue-600/20 transition-all hover:brightness-110 active:scale-95"
         >
           <CloudLightning className="h-4 w-4" />
-          <span>Render 2K @ 60FPS</span>
+          <span>Xuất Video 1080p60</span>
         </button>
       </div>
     </header>

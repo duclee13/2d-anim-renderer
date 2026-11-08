@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { Sparkles, Mic, FileText, Check, AlertCircle, Loader2 } from "lucide-react";
+import React, { useState, useRef } from "react";
+import { Sparkles, Mic, FileText, Check, AlertCircle, Loader2, X } from "lucide-react";
 import { MasterSceneGraph } from "../remotion/types/sceneGraph";
 
 interface ScriptEditorProps {
@@ -23,6 +23,7 @@ export const ScriptEditor: React.FC<ScriptEditorProps> = ({
   const [isLoadingTts, setIsLoadingTts] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const samplePrompts = [
     {
@@ -38,6 +39,15 @@ Cảnh 4: Buổi tối bình thường, tôi ngồi sau bàn học làm việc d
     },
   ];
 
+  const handleCancelGemini = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setIsLoadingGemini(false);
+    setStatusMessage("Đã hủy yêu cầu tạo Scene Graph. Kịch bản và phân cảnh trước đó được giữ nguyên.");
+  };
+
   const handleGenerateGemini = async () => {
     if (!script.trim()) {
       setErrorMessage("Vui lòng nhập nội dung kịch bản trước.");
@@ -46,13 +56,16 @@ Cảnh 4: Buổi tối bình thường, tôi ngồi sau bàn học làm việc d
 
     setIsLoadingGemini(true);
     setErrorMessage(null);
-    setStatusMessage("Gemini đang thiết kế Scene Graph 2K và tính toán tọa độ IK...");
+    setStatusMessage("Gemini đang thiết kế Scene Graph 1080p và tính toán tọa độ IK (hỗ trợ tự động thử lại nếu 503)...");
+
+    abortControllerRef.current = new AbortController();
 
     try {
       const res = await fetch("/api/gemini", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: script, apiKey }),
+        body: JSON.stringify({ prompt: script, apiKey, model: "gemini-3.8-flash" }),
+        signal: abortControllerRef.current.signal,
       });
 
       const data = await res.json();
@@ -63,9 +76,14 @@ Cảnh 4: Buổi tối bình thường, tôi ngồi sau bàn học làm việc d
       onSceneGraphGenerated(data.sceneGraph);
       setStatusMessage(`Đã tạo Scene Graph thành công qua model ${data.modelUsed || "Gemini"}! Live Preview đã cập nhật.`);
     } catch (err: any) {
-      setErrorMessage(err.message || "Lỗi kết nối Gemini API");
+      if (err.name === "AbortError") {
+        setStatusMessage("Đã hủy yêu cầu. Kịch bản và dữ liệu hiện tại được giữ nguyên.");
+      } else {
+        setErrorMessage(err.message || "Lỗi kết nối Gemini API. Kịch bản và dữ liệu trước đó được giữ nguyên.");
+      }
     } finally {
       setIsLoadingGemini(false);
+      abortControllerRef.current = null;
     }
   };
 
@@ -168,12 +186,23 @@ Cảnh 4: Buổi tối bình thường, tôi ngồi sau bàn học làm việc d
           ) : (
             <Sparkles className="h-4 w-4 text-blue-200" />
           )}
-          <span>Sinh Scene Graph với Gemini</span>
+          <span>{isLoadingGemini ? "Đang xử lý & thử lại tự động..." : "Sinh Scene Graph với Gemini"}</span>
         </button>
+
+        {isLoadingGemini && (
+          <button
+            type="button"
+            onClick={handleCancelGemini}
+            className="flex items-center space-x-1.5 rounded-xl border border-rose-500/40 bg-rose-950/60 px-4 py-2.5 text-xs font-semibold text-rose-200 hover:bg-rose-900/80 transition-colors shadow-sm"
+          >
+            <X className="h-4 w-4 text-rose-400" />
+            <span>Hủy</span>
+          </button>
+        )}
 
         <button
           onClick={handleGenerateEdgeTts}
-          disabled={isLoadingTts}
+          disabled={isLoadingTts || isLoadingGemini}
           className="flex w-full sm:w-auto items-center justify-center space-x-2 rounded-xl border border-[#27272A] bg-[#18181B] px-4 py-2.5 text-xs font-medium text-zinc-300 transition-colors hover:bg-[#222226] hover:text-white disabled:opacity-50"
         >
           {isLoadingTts ? (

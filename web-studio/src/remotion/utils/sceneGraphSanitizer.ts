@@ -285,15 +285,16 @@ export function sanitizeSceneGraph(
       preset === "infographicStripes";
 
     // Xác định visibility:
-    // Nếu explicit visible: false, hoặc pose: "offscreen" / "none", hoặc là cảnh cận/biểu đồ không nói về nhân vật
+    // Nếu pose: "offscreen" / "none", hoặc là cảnh cận/biểu đồ không có nhân vật tham gia: ẨN HOÀN TOÀN NHÂN VẬT
     let charVisible = true;
-    if (rawChar?.visible !== undefined) {
-      charVisible = Boolean(rawChar.visible);
-    } else if (rawChar?.pose === "offscreen" || rawChar?.pose === "none") {
+    if (rawChar?.pose === "offscreen" || rawChar?.pose === "none") {
       charVisible = false;
     } else if (isCloseUpScene || isDiagramScene) {
-      // Ở cảnh cận cảnh vật thể hoặc biểu đồ infographic: MẶC ĐỊNH ẨN NHÂN VẬT để tránh che khuất tiêu điểm
+      // Ở cảnh cận cảnh vật thể (screen.centerCloseUp) hoặc biểu đồ infographic (screen.center):
+      // BẮT BUỘC ẨN NHÂN VẬT để tiêu điểm đạo cụ/biểu đồ hiển thị trọn vẹn 100%, không bị nhân vật che khuất
       charVisible = false;
+    } else if (rawChar?.visible !== undefined) {
+      charVisible = Boolean(rawChar.visible);
     }
 
     // Phân giải tư thế Pose và Hướng nhìn
@@ -301,7 +302,17 @@ export function sanitizeSceneGraph(
     const rawPose = String(rawChar?.pose || "").toLowerCase();
     const hasWalkKeywords = /bước đi|từ từ bước|dạo bước|đi bộ|bước|đi dạo|chạy|di chuyển|ra vườn|walking|walk|stroll/i.test(sceneCombinedText);
 
-    if (/sit|ngồi|working|desk|writing/i.test(rawPose) || /ngồi|bàn học|làm việc|desk/i.test(sceneCombinedText)) {
+    // QUY TẮC TƯ THẾ NGỒI:
+    // Tuyệt đối không dùng 'working' hay 'writing' đơn lẻ để ép tư thế ngồi.
+    // Chỉ kích hoạt 'sittingBehindDesk' khi có từ khóa ngồi rõ ràng ('ngồi', 'sit', 'sitting')
+    // hoặc nhân vật được chỉ định rõ ràng vào slot ghế bàn học 'desk.seat'.
+    const isExplicitSitting =
+      /sit|ngồi/i.test(rawPose) ||
+      rawChar?.slot === "desk.seat" ||
+      s?.character?.slot === "desk.seat" ||
+      /ngồi\s*(?:sau|vào|bên|ở)?\s*(?:bàn|ghế)?/i.test(sceneCombinedText);
+
+    if (isExplicitSitting) {
       characterPose = "sittingBehindDesk";
     } else if (/walk|bước|đi/i.test(rawPose) || hasWalkKeywords) {
       characterPose = "walking";
@@ -412,7 +423,8 @@ export function sanitizeSceneGraph(
 
         let canonicalType = normalizePropAssetId(rawTypeStr);
 
-        // Nếu type rỗng, không xác định (unknown-prop) hoặc là từ khóa chung chung, tra cứu tiếp từ ID
+        // PHÂN GIẢI NGỮ NGHĨA CÓ ĐIỀU KIỆN (Không ánh xạ chung chung nếu thiếu thông tin):
+        // Nếu type rỗng, unknown-prop hoặc từ khóa chung chung, chỉ phân giải khi có đủ thông tin từ ID, properties hoặc ngữ cảnh
         if (
           !rawTypeStr ||
           canonicalType === "unknown-prop" ||
@@ -427,21 +439,61 @@ export function sanitizeSceneGraph(
           const idResolved = normalizePropAssetId(rawIdStr);
           if (idResolved !== "unknown-prop" && idResolved !== "prop") {
             canonicalType = idResolved;
-          } else if (rawTypeStr === "container") {
-            canonicalType = "glass-jar";
-          } else if (rawTypeStr === "furniture") {
-            canonicalType = "desk";
-          } else if (rawTypeStr === "light_source" || rawTypeStr === "light-source") {
-            canonicalType = "desk-lamp";
-          } else if (rawTypeStr === "infographic_meter" || rawTypeStr === "infographic-meter") {
-            canonicalType = "gauge-meter";
+          } else {
+            const propContext = `${rawIdStr} ${p?.properties?.title || ""} ${p?.properties?.label || ""} ${p?.name || ""}`.toLowerCase();
+
+            if (rawTypeStr === "container") {
+              // Chỉ ánh xạ thành glass-jar nếu có thông tin rõ ràng về lọ/hũ/thủy tinh
+              if (/jar|lo|hu|thuy-tinh|thuy\s*tinh|glass/i.test(propContext) || /lọ|hũ|thủy tinh|chiếc lọ/i.test(sceneCombinedText)) {
+                canonicalType = "glass-jar";
+              } else if (/box|hop|thung|carton|giay/i.test(propContext) || /hộp|thùng/i.test(sceneCombinedText)) {
+                canonicalType = "cardboard-box";
+              }
+              // Nếu không đủ thông tin, giữ nguyên type mà không ép sang glass-jar
+            } else if (rawTypeStr === "furniture") {
+              // Chỉ ánh xạ thành bàn học desk nếu có ngữ cảnh bàn học/làm việc
+              if (/desk|ban-hoc|ban-lam-viec|study/i.test(propContext) || /bàn học|bàn làm việc/i.test(sceneCombinedText)) {
+                canonicalType = "desk";
+              } else if (/table|ban-an|dining/i.test(propContext) || /bàn ăn|bàn trà/i.test(sceneCombinedText)) {
+                canonicalType = "table";
+              } else if (/sofa|couch|ghe-dai/i.test(propContext) || /sofa|ghế dài/i.test(sceneCombinedText)) {
+                canonicalType = "sofa";
+              } else if (/chair|ghe-don/i.test(propContext) || /ghế đơn|ghế/i.test(sceneCombinedText)) {
+                canonicalType = "chair";
+              }
+              // Nếu không đủ thông tin, giữ nguyên furniture
+            } else if (rawTypeStr === "light_source" || rawTypeStr === "light-source") {
+              // Chỉ ánh xạ thành desk-lamp nếu có ngữ cảnh đèn bàn/đèn học
+              if (/desk-lamp|lamp|den-ban|den-hoc|study/i.test(propContext) || /đèn bàn|đèn học/i.test(sceneCombinedText)) {
+                canonicalType = "desk-lamp";
+              }
+              // Nếu không đủ thông tin, giữ nguyên light-source
+            } else if (rawTypeStr === "infographic_meter" || rawTypeStr === "infographic-meter") {
+              canonicalType = "gauge-meter";
+            }
           }
         }
 
-        // BẢO VỆ CHỐNG DUPLICATE SPIDER (Ngăn nhện lơ lửng ngoài lọ):
-        // Nếu đã có lọ thủy tinh trong cảnh và nhện được yêu cầu nằm trong lọ, KHÔNG tạo một prop nhện tự do lơ lửng bên ngoài!
-        if (canonicalType === "spider" && hasJarInScene) {
-          return null; // Bỏ qua prop nhện độc lập vì nhện đã nằm trong lọ
+        // BẢO VỆ CHỐNG DUPLICATE SPIDER TRONG CÙNG VẬT CHỨA:
+        // Tuyệt đối KHÔNG tự ý xóa nhện ngoài lọ nếu đó là một đối tượng riêng biệt (khác slot, khác vị trí).
+        // Chỉ bỏ qua nếu prop nhện này được đánh dấu rõ ràng là trùng lặp của con nhện nằm bên trong lọ.
+        const jarProp = rawProps.find(
+          (other: any) =>
+            other !== p &&
+            other?.properties?.hasSpiderInside &&
+            (/glass-jar|jar|thuy-tinh/i.test(other?.type || "") || /glass_jar|jar/i.test(other?.id || ""))
+        );
+
+        if (canonicalType === "spider" && jarProp) {
+          const isExplicitSpiderInsideJar =
+            p?.properties?.insideJar === true ||
+            p?.slot === jarProp.slot ||
+            /inside_jar|in_jar|spider_in_glass/i.test(rawIdStr);
+
+          if (isExplicitSpiderInsideJar) {
+            return null; // Trùng lặp chính con nhện đã được vẽ bên trong lòng lọ
+          }
+          // Nếu là con nhện độc lập ở slot khác (ví dụ: đang bò trên sàn, trên tường): GIỮ NGUYÊN!
         }
 
         // Loại bỏ nội thất trong nhà khi ở cảnh ngoài trời gardenDay

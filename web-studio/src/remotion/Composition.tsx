@@ -463,6 +463,10 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
     (line) => frame >= line.startFrame && frame <= line.endFrame
   );
 
+  // Hệ tọa độ thiết kế chuẩn 2K (2560x1440), tự động scale đồng nhất sang Full HD 1080p (1920x1080) khi render
+  const DESIGN_WIDTH = 2560;
+  const DESIGN_HEIGHT = 1440;
+
   const anchorContext: AnchorResolverContext = {
     propAnchors: Object.fromEntries(
       Object.entries(activePropAnchors).map(([id, ports]) => [
@@ -477,7 +481,7 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
       ])
     ),
     characterAnchors: {},
-    canvasHeight: height,
+    canvasHeight: DESIGN_HEIGHT,
   };
 
   const resolveLineEndpoints = (
@@ -505,9 +509,10 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
   return (
     <AbsoluteFill style={{ width: "100%", height: "100%", backgroundColor: "#F8EFE3", overflow: "hidden" }}>
       <svg
-        viewBox={`0 0 ${width} ${height}`}
+        viewBox={`0 0 ${DESIGN_WIDTH} ${DESIGN_HEIGHT}`}
         className="w-full h-full select-none"
         style={{ width: "100%", height: "100%" }}
+        preserveAspectRatio="xMidYMid meet"
       >
         {/* ===============================================================
             1. THƯ VIỆN SHADER & GRADIENT ĐIỆN ẢNH (SVG DEFS LIBRARY)
@@ -523,8 +528,8 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
           durationInFrames={currentScene.durationInFrames}
           character={dynamicCharacterState}
           propsList={currentScene.props}
-          canvasWidth={width}
-          canvasHeight={height}
+          canvasWidth={DESIGN_WIDTH}
+          canvasHeight={DESIGN_HEIGHT}
         >
           {/* LAYER 10: DYNAMIC BACKGROUND */}
           <g id="layer-background">
@@ -538,8 +543,8 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
             backgroundPreset={currentScene.background.preset}
             frame={frame}
             fps={fps}
-            canvasWidth={width}
-            canvasHeight={height}
+            canvasWidth={DESIGN_WIDTH}
+            canvasHeight={DESIGN_HEIGHT}
           />
 
           {/* LAYER 20: MIDGROUND BACK LAYER (Sofa, Chân sau bàn học) */}
@@ -822,7 +827,11 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
             pointerEvents: "none",
           }}
         >
-          <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full select-none">
+          <svg
+            viewBox={`0 0 ${DESIGN_WIDTH} ${DESIGN_HEIGHT}`}
+            className="w-full h-full select-none"
+            preserveAspectRatio="xMidYMid meet"
+          >
             <SubtitleBox
               text={activeSubtitle.text}
               words={activeSubtitle.words}

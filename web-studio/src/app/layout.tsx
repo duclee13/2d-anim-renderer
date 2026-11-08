@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Stickman 2D Studio — 2K 60FPS Cloud Video Engine",
+  title: "Stickman 2D Studio — 1080p 60FPS Full HD Cloud Video Engine",
   description: "Web Studio & Distributed Cloud Renderer for 2D Stickman Explainer & Storytime Animations",
 };
 

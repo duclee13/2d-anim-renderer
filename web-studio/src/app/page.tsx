@@ -73,7 +73,7 @@ export default function StudioPage() {
       {/* Main Studio Workspace Grid */}
       <main className="flex-1 p-4 lg:p-6">
         <div className="mx-auto grid max-w-[1780px] grid-cols-1 gap-6 lg:grid-cols-12">
-          {/* Left Column: 2K 60FPS Live Preview Player (7 Cols) */}
+          {/* Left Column: 1080p 60FPS Live Preview Player (7 Cols) */}
           <div className="flex flex-col space-y-6 lg:col-span-7">
             <PreviewPlayer
               sceneGraph={sceneGraph}
@@ -101,7 +101,7 @@ export default function StudioPage() {
               </h3>
               <ul className="space-y-1.5 list-disc pl-4 text-[11px] leading-relaxed text-zinc-400">
                 <li>
-                  <strong className="text-zinc-200">CameraRig 2K:</strong> Zoom-in/zoom-out điện ảnh mượt mà kèm tự động bắt nét theo tiêu điểm <code className="text-blue-400">focusSlot</code>.
+                  <strong className="text-zinc-200">CameraRig 1080p:</strong> Zoom-in/zoom-out điện ảnh mượt mà kèm tự động bắt nét theo tiêu điểm <code className="text-blue-400">focusSlot</code>.
                 </li>
                 <li>
                   <strong className="text-zinc-200">Volumetric Falloff:</strong> Ánh đèn bàn đa tầng alpha <code className="text-amber-400">0.85 → 0.00</code> và tia nắng god rays chân thực, không viền cứng.

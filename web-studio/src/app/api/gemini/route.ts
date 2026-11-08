@@ -11,6 +11,7 @@ import {
 import { generateVectorAsset } from "@/lib/vectorAssetGenerator";
 import { normalizePropAssetId } from "@/remotion/utils/propResolver";
 import { sanitizeSceneGraph } from "@/remotion/utils/sceneGraphSanitizer";
+import { executeGeminiWithRetry, isRetryableGeminiError } from "@/lib/geminiRetry";
 
 // 2K 60FPS Explainer Video Director Prompt
 const SYSTEM_PROMPT = `
@@ -470,112 +471,99 @@ export async function POST(req: NextRequest) {
       ];
     }
 
-    // Khi người dùng yêu cầu gemini-3.8-flash: chỉ định danh sách duy nhất model này, không tự ý chuyển model khác
-    if (requestedModel === "gemini-3.8-flash") {
-      candidateModels = ["gemini-3.8-flash"];
-    } else {
-      if (!candidateModels.includes(requestedModel)) {
-        candidateModels.unshift(requestedModel);
-      } else {
-        candidateModels = [requestedModel, ...candidateModels.filter((m) => m !== requestedModel)];
-      }
-    }
-
+    // Giữ nguyên 100% model người dùng đã chọn (ví dụ: gemini-3.8-flash), tuyệt đối không tự ý chuyển model
+    const activeModelName = requestedModel || "gemini-3.8-flash";
     const genAI = new GoogleGenerativeAI(activeApiKey);
     let responseText = "";
-    let successfulModel = "";
-    let lastError: any = null;
 
-    for (const modelName of candidateModels) {
-      try {
-        console.log(`[Gemini API] Đang kết nối tới model: ${modelName} (Timeout 180s)...`);
-        const model = genAI.getGenerativeModel(
-          {
-            model: modelName,
-            generationConfig: {
-              responseMimeType: "application/json",
+    try {
+      console.log(`[Gemini API] Bắt đầu gọi model: ${activeModelName} với cơ chế retry tối đa 3 lần...`);
+
+      responseText = await executeGeminiWithRetry(
+        async (attempt) => {
+          console.log(`[Gemini API] Đang kết nối tới ${activeModelName} (Lần gọi ${attempt}/4)...`);
+          const model = genAI.getGenerativeModel(
+            {
+              model: activeModelName,
+              generationConfig: {
+                responseMimeType: "application/json",
+              },
+              systemInstruction: SYSTEM_PROMPT,
             },
-            systemInstruction: SYSTEM_PROMPT,
+            { timeout: 60000 }
+          );
+
+          const result = await model.generateContent(
+            `Tạo Scene Graph JSON cho kịch bản sau:\n\n${prompt}`
+          );
+
+          const text = result.response.text();
+          if (!text) {
+            throw new Error(`Model ${activeModelName} trả về phản hồi rỗng.`);
+          }
+          return text;
+        },
+        {
+          maxRetries: 3,
+          onRetry: (attempt, maxRetries, delayMs, err) => {
+            console.warn(
+              `[Gemini API] Lần gọi ${attempt} thất bại (${err.message}). Đang chờ ${(delayMs / 1000).toFixed(1)}s để thử lại lần ${attempt}/${maxRetries}...`
+            );
           },
-          { timeout: 180000 }
-        );
-
-        const result = await model.generateContent(
-          `Tạo Scene Graph JSON cho kịch bản sau:\n\n${prompt}`
-        );
-
-        responseText = result.response.text();
-        if (responseText) {
-          successfulModel = modelName;
-          console.log(`[Gemini API] ✅ Thành công với model: ${modelName}`);
-          break;
         }
-      } catch (err: any) {
-        lastError = err;
-        console.warn(`[Gemini API] Model ${modelName} thất bại:`, err.message);
+      );
+    } catch (err: any) {
+      const latencyMs = Date.now() - startTime;
+      const is503OrOverload = isRetryableGeminiError(err);
+      const isKeyInvalid =
+        err.message?.includes("API_KEY_INVALID") ||
+        err.message?.includes("API key not valid") ||
+        err.status === 400 ||
+        err.status === 401 ||
+        err.status === 403;
 
-        if (
-          err.message?.includes("API_KEY_INVALID") ||
-          err.message?.includes("API key not valid")
-        ) {
-          const latencyMs = Date.now() - startTime;
-          const metadata: GenerationMetadata = {
-            requestedModel,
-            resolvedModel: "none",
-            provider: "google-gemini",
-            status: "failed",
-            latencyMs,
-            fallbackReason: "Gemini API Key không hợp lệ. Vui lòng kiểm tra lại Key trong Cài đặt.",
-          };
-          return NextResponse.json({
-            success: false,
-            status: "failed",
-            metadata,
-            error: "Gemini API Key không hợp lệ. Vui lòng kiểm tra lại Key trong Cài đặt.",
-          }, { status: 400 });
-        }
+      console.error(`[Gemini API] Gọi model ${activeModelName} thất bại hoàn toàn:`, err.message);
 
-        if (requestedModel === "gemini-3.8-flash") {
-          // Báo lỗi rõ ràng cho model gemini-3.8-flash theo cam kết, không tự ý đổi model
-          const latencyMs = Date.now() - startTime;
-          return NextResponse.json({
+      if (isKeyInvalid) {
+        return NextResponse.json(
+          {
             success: false,
             status: "failed",
             metadata: {
-              requestedModel: "gemini-3.8-flash",
+              requestedModel: activeModelName,
               resolvedModel: "none",
               provider: "google-gemini",
               status: "failed",
               latencyMs,
-              fallbackReason: `Model gemini-3.8-flash báo lỗi: ${err.message}`,
+              fallbackReason: "Gemini API Key không hợp lệ hoặc thiếu quyền truy cập.",
             },
-            error: `Gọi model gemini-3.8-flash thất bại: ${err.message}`,
-          }, { status: 500 });
-        }
-
-        continue;
+            error: "Gemini API Key không hợp lệ hoặc thiếu quyền truy cập. Vui lòng kiểm tra lại trong mục Cài đặt.",
+          },
+          { status: 400 }
+        );
       }
-    }
 
-    if (!responseText) {
-      console.warn("[Gemini API] Gemini quá tải/lỗi -> Dùng Procedural Engine tạo Scene Graph từ kịch bản.");
-      const proceduralGraph = generateProceduralSceneGraph(prompt);
-      const latencyMs = Date.now() - startTime;
-      const metadata: GenerationMetadata = {
-        requestedModel,
-        resolvedModel: "procedural-script-engine",
-        provider: "procedural-fallback",
-        status: "draft_fallback",
-        latencyMs,
-        fallbackReason: `Gemini API call failed (${lastError?.message || "All candidate models exhausted"}). Generated draft procedural scene graph.`,
-      };
-      return NextResponse.json({
-        success: true,
-        status: "draft_fallback",
-        metadata,
-        modelUsed: "Procedural Script Engine (Fallback do Gemini lỗi/quá tải)",
-        sceneGraph: proceduralGraph,
-      });
+      // Khi thất bại sau 3 lần retry: Giữ nguyên kịch bản và kết quả trước đó, báo lỗi rõ ràng, KHÔNG trả fallback giả làm thành công
+      return NextResponse.json(
+        {
+          success: false,
+          status: "failed",
+          is503: is503OrOverload,
+          retriesExhausted: true,
+          metadata: {
+            requestedModel: activeModelName,
+            resolvedModel: "none",
+            provider: "google-gemini",
+            status: "failed",
+            latencyMs,
+            fallbackReason: `Model ${activeModelName} gặp lỗi sau 3 lần thử lại: ${err.message}`,
+          },
+          error: is503OrOverload
+            ? `Model ${activeModelName} hiện đang quá tải (503 Service Unavailable). Hệ thống đã tự động thử lại 3 lần nhưng server Google chưa phản hồi. Kịch bản và dữ liệu trước đó của bạn được giữ nguyên.`
+            : `Không thể kết nối tới Gemini API (${activeModelName}): ${err.message}. Kịch bản và dữ liệu trước đó của bạn được giữ nguyên.`,
+        },
+        { status: is503OrOverload ? 503 : 500 }
+      );
     }
 
     let cleanText = responseText.trim();
@@ -612,7 +600,7 @@ export async function POST(req: NextRequest) {
     const latencyMs = Date.now() - startTime;
     const metadata: GenerationMetadata = {
       requestedModel,
-      resolvedModel: successfulModel,
+      resolvedModel: activeModelName,
       provider: "google-gemini",
       status: "ready",
       latencyMs,
@@ -623,7 +611,7 @@ export async function POST(req: NextRequest) {
       success: true,
       status: "ready",
       metadata,
-      modelUsed: successfulModel,
+      modelUsed: activeModelName,
       sceneGraph: parsedGraph,
       autoGeneratedAssets: generatedAssets,
     });

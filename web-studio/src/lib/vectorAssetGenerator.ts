@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { executeGeminiWithRetry } from "./geminiRetry";
 
 export interface GenerateAssetResult {
   id: string;
@@ -74,21 +75,13 @@ export async function generateVectorAsset(
   let width = 300;
   let height = 300;
 
-  // 1. TẠO BẰNG GEMINI FLASH VỚI PROMPT VECTO CHUYÊN DỤNG
+  // 1. TẠO BẰNG GEMINI FLASH VỚI PROMPT VECTO CHUYÊN DỤNG VÀ RETRY 3 LẦN
   if (geminiApiKey) {
-    const candidateModels = [
-      "gemini-3.8-flash",
-      "gemini-3.1-flash-lite-preview",
-      "gemini-2.5-flash",
-      "gemini-1.5-flash",
-    ];
+    const targetModel = "gemini-3.8-flash";
+    try {
+      const genAI = new GoogleGenerativeAI(geminiApiKey);
 
-    for (const modelName of candidateModels) {
-      try {
-        const genAI = new GoogleGenerativeAI(geminiApiKey);
-        const model = genAI.getGenerativeModel({ model: modelName });
-
-        const systemPrompt = `You are a Principal 2D Vector Graphic Illustrator for an animation studio producing high quality 2K stickman videos.
+      const systemPrompt = `You are a Principal 2D Vector Graphic Illustrator for an animation studio producing high quality 1080p stickman videos.
 Generate a valid, beautiful, clean standalone SVG representing the object described.
 Strict Rules:
 - Output ONLY the raw <svg>...</svg> XML markup. Do NOT use markdown code blocks (\`\`\`xml or \`\`\`).
@@ -97,20 +90,32 @@ Strict Rules:
 - Viewport: Perfectly centered around (0, 0), with viewBox="-150 -150 300 300", width="300", height="300".
 - Must include xmlns="http://www.w3.org/2000/svg".`;
 
-        const result = await model.generateContent(`${systemPrompt}\n\nObject description: ${prompt} (${safeId})`);
-        let rawText = result.response.text().trim();
-        rawText = rawText.replace(/^```(?:svg|xml|html)?\n?/i, "").replace(/\n?```$/i, "").trim();
+      svgContent = await executeGeminiWithRetry(
+        async (attempt) => {
+          console.log(`[VectorAssetGenerator] Đang gọi ${targetModel} cho '${safeId}' (Lần ${attempt}/4)...`);
+          const model = genAI.getGenerativeModel({ model: targetModel });
+          const result = await model.generateContent(`${systemPrompt}\n\nObject description: ${prompt} (${safeId})`);
+          let rawText = result.response.text().trim();
+          rawText = rawText.replace(/^```(?:svg|xml|html)?\n?/i, "").replace(/\n?```$/i, "").trim();
 
-        if (rawText && rawText.includes("<svg") && rawText.includes("</svg>")) {
-          // Bóc tách đúng đoạn <svg>...</svg>
-          const startIdx = rawText.indexOf("<svg");
-          const endIdx = rawText.lastIndexOf("</svg>") + 6;
-          svgContent = rawText.substring(startIdx, endIdx);
-          break;
+          if (rawText && rawText.includes("<svg") && rawText.includes("</svg>")) {
+            const startIdx = rawText.indexOf("<svg");
+            const endIdx = rawText.lastIndexOf("</svg>") + 6;
+            return rawText.substring(startIdx, endIdx);
+          }
+          throw new Error("Không nhận diện được thẻ <svg> hợp lệ trong phản hồi.");
+        },
+        {
+          maxRetries: 3,
+          onRetry: (attempt, maxRetries, delayMs, err) => {
+            console.warn(
+              `[VectorAssetGenerator] Model ${targetModel} thất bại (${err.message}). Đang chờ ${(delayMs / 1000).toFixed(1)}s để thử lại lần ${attempt}/${maxRetries}...`
+            );
+          },
         }
-      } catch (err: any) {
-        console.warn(`[VectorAssetGenerator] Gemini ${modelName} error for '${safeId}':`, err.message);
-      }
+      );
+    } catch (err: any) {
+      console.warn(`[VectorAssetGenerator] Gemini ${targetModel} thất bại sau 3 lần thử lại cho '${safeId}':`, err.message);
     }
   }
 

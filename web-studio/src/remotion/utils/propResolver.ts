@@ -124,7 +124,6 @@ const EXACT_PROP_ALIASES: Record<string, CanonicalPropId> = {
 
   // 5. Bàn học / Bàn làm việc (Desk)
   "desk": "desk",
-  "furniture": "desk",
   "study-desk": "desk",
   "work-desk": "desk",
   "ban-hoc": "desk",
@@ -173,7 +172,6 @@ const EXACT_PROP_ALIASES: Record<string, CanonicalPropId> = {
   // 8. Lọ thủy tinh (Glass Jar)
   "glass-jar": "glass-jar",
   "glassjar": "glass-jar",
-  "container": "glass-jar",
   "jar": "glass-jar",
   "lo-thuy-tinh": "glass-jar",
   "chiec-lo": "glass-jar",
@@ -191,7 +189,6 @@ const EXACT_PROP_ALIASES: Record<string, CanonicalPropId> = {
   "desk-lamp": "desk-lamp",
   "desklamp": "desk-lamp",
   "lamp": "desk-lamp",
-  "light-source": "desk-lamp",
   "den-ban": "desk-lamp",
   "den-hoc": "desk-lamp",
   "den-ban-hoc": "desk-lamp",
@@ -308,8 +305,10 @@ const TOKEN_BOUNDARIES: Array<{ regex: RegExp; canonicalId: CanonicalPropId }> =
   { regex: /(?:^|-)(?:tree|cay-xanh|cay-to|cay-lon|cay-co-thu)(?:-|$)/i, canonicalId: "tree" },
   // Bàn ăn (tránh ban an -> desk)
   { regex: /(?:^|-)(?:table|ban-an|ban-tron|dining-table)(?:-|$)/i, canonicalId: "table" },
+  // Đèn bàn (Ưu tiên cao trước bàn học desk để tránh desk-lamp dính sang desk)
+  { regex: /(?:^|-)(?:desk-lamp|desklamp|den-ban|den-hoc|reading-lamp)(?:-|$)/i, canonicalId: "desk-lamp" },
   // Bàn học
-  { regex: /(?:^|-)(?:desk-front|desk-back|desk-lamp)(?:-|$)/i, canonicalId: "desk" },
+  { regex: /(?:^|-)(?:desk-front|desk-back)(?:-|$)/i, canonicalId: "desk" },
   { regex: /(?:^|-)(?:desk|ban-hoc|ban-lam-viec)(?:-|$)/i, canonicalId: "desk" },
   // Chậu cây
   { regex: /(?:^|-)(?:potted-plant|chau-cay|chau-hoa|chau-canh|cay-canh)(?:-|$)/i, canonicalId: "potted-plant" },

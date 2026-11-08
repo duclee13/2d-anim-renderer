@@ -45,8 +45,7 @@ const calculateMetadata: CalculateMetadataFunction<any> = async ({ props }) => {
 
   const requestedTotal = Number(props?.totalFrames) || 0;
   const sceneDuration = scenesEnd || Number(graph?.totalDurationInFrames) || 480;
-  // BẢO VỆ CHỐNG OUT-OF-BOUNDS: Composition duration luôn bao phủ cả sceneDuration lẫn requestedTotal
-  // Đảm bảo không một runner nào bị lỗi out-of-bounds dù được chỉ định render range frame nào
+  // Đảm bảo video xuất ra chuẩn Full HD 1080p60 (1920x1080 @ 60fps)
   const actualDuration = Math.max(60, sceneDuration, requestedTotal);
 
   return {
@@ -56,6 +55,9 @@ const calculateMetadata: CalculateMetadataFunction<any> = async ({ props }) => {
       sceneGraph: graph,
       scenes: graph.scenes,
       totalFrames: actualDuration,
+      width: 1920,
+      height: 1080,
+      fps: 60,
     },
   };
 };
@@ -68,8 +70,8 @@ export const RemotionRoot: React.FC = () => {
         component={MainScene}
         durationInFrames={480}
         fps={60}
-        width={2560}
-        height={1440}
+        width={1920}
+        height={1080}
         calculateMetadata={calculateMetadata}
       />
     </>
