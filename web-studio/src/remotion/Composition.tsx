@@ -45,8 +45,23 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
   const { fps, width, height } = useVideoConfig();
 
   // Xác định Scene Graph linh hoạt (hỗ trợ cả props.sceneGraph lẫn root props)
-  const effectiveGraph: MasterSceneGraph =
-    props.sceneGraph || (props.scenes ? (props as unknown as MasterSceneGraph) : defaultMockSceneGraph);
+  const effectiveGraph: MasterSceneGraph = useMemo(() => {
+    if (props.sceneGraph && props.sceneGraph !== defaultMockSceneGraph) {
+      return props.sceneGraph;
+    }
+    if (props.scenes && Array.isArray(props.scenes) && props.scenes.length > 0) {
+      return {
+        version: "3.1.0",
+        title: "Stickman 2D Explainer Video",
+        width: 2560,
+        height: 1440,
+        fps: 60,
+        totalDurationInFrames: props.totalFrames || 480,
+        scenes: props.scenes,
+      } as MasterSceneGraph;
+    }
+    return props.sceneGraph || defaultMockSceneGraph;
+  }, [props.sceneGraph, props.scenes, props.totalFrames]);
 
   // Lưu trữ cổng neo của đạo cụ được active để phục vụ Auto-Anchoring IK
   const [activePropAnchors, setActivePropAnchors] = useState<

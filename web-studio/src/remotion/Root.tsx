@@ -11,11 +11,29 @@ export interface RemotionProps {
 }
 
 const calculateMetadata: CalculateMetadataFunction<any> = async ({ props }) => {
-  let graph = props?.sceneGraph as MasterSceneGraph | undefined;
+  let graph: MasterSceneGraph | undefined;
 
-  // Handle case where raw sceneGraph object was passed at root of props
-  if (!graph && props?.scenes && Array.isArray(props.scenes)) {
-    graph = props as unknown as MasterSceneGraph;
+  // 1. Ưu tiên cao nhất: Nếu props có sceneGraph rõ ràng và khác defaultMockSceneGraph
+  if (props?.sceneGraph && props.sceneGraph !== defaultMockSceneGraph) {
+    graph = props.sceneGraph as MasterSceneGraph;
+  }
+  // 2. Nếu props truyền trực tiếp danh sách scenes của kịch bản người dùng
+  else if (props?.scenes && Array.isArray(props.scenes) && props.scenes.length > 0) {
+    graph = {
+      version: (props.version as string) || "3.1.0",
+      title: (props.title as string) || "Stickman 2D Explainer Video",
+      width: Number(props.width) || 2560,
+      height: Number(props.height) || 1440,
+      fps: Number(props.fps) || 60,
+      totalDurationInFrames: Number(props.totalDurationInFrames) || Number(props.totalFrames) || 480,
+      scenes: props.scenes,
+    };
+  }
+  // 3. Fallback: Nếu có sceneGraph
+  else if (props?.sceneGraph) {
+    graph = props.sceneGraph as MasterSceneGraph;
+  } else {
+    graph = defaultMockSceneGraph;
   }
 
   const safeScenes = Array.isArray(graph?.scenes) ? graph.scenes : defaultMockSceneGraph.scenes;
@@ -35,7 +53,8 @@ const calculateMetadata: CalculateMetadataFunction<any> = async ({ props }) => {
     durationInFrames: actualDuration,
     props: {
       ...props,
-      sceneGraph: graph || defaultMockSceneGraph,
+      sceneGraph: graph,
+      scenes: graph.scenes,
       totalFrames: actualDuration,
     },
   };
@@ -51,9 +70,6 @@ export const RemotionRoot: React.FC = () => {
         fps={60}
         width={2560}
         height={1440}
-        defaultProps={{
-          sceneGraph: defaultMockSceneGraph,
-        }}
         calculateMetadata={calculateMetadata}
       />
     </>

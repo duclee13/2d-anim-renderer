@@ -22,6 +22,9 @@ export default function StudioPage() {
   const [githubOwner, setGithubOwner] = useState("duclee13");
   const [githubRepo, setGithubRepo] = useState("2d-anim-renderer");
 
+  const [lastGeneratedScript, setLastGeneratedScript] = useState<string>(script);
+  const isScriptOutOfSync = script.trim() !== lastGeneratedScript.trim();
+
   const [sceneVersion, setSceneVersion] = useState<number>(Date.now());
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isRenderModalOpen, setIsRenderModalOpen] = useState(false);
@@ -38,6 +41,7 @@ export default function StudioPage() {
 
   const handleSceneGraphGenerated = (newGraph: MasterSceneGraph) => {
     setSceneGraph(newGraph);
+    setLastGeneratedScript(script);
     setSceneVersion(Date.now());
     setTimeout(() => {
       if (playerRef.current) {
@@ -86,6 +90,7 @@ export default function StudioPage() {
               script={script}
               setScript={setScript}
               apiKey={geminiKey}
+              isScriptOutOfSync={isScriptOutOfSync}
               onSceneGraphGenerated={handleSceneGraphGenerated}
             />
 
@@ -136,6 +141,10 @@ export default function StudioPage() {
         githubToken={githubToken}
         githubOwner={githubOwner}
         githubRepo={githubRepo}
+        isScriptOutOfSync={isScriptOutOfSync}
+        currentScript={script}
+        geminiKey={geminiKey}
+        onSceneGraphGenerated={handleSceneGraphGenerated}
       />
     </div>
   );

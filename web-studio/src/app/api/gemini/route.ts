@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import fs from "fs";
 import path from "path";
-import { MasterSceneGraph } from "@/remotion/types/sceneGraph";
+import { MasterSceneGraph, SceneGraphScene, EnvironmentVfxType } from "@/remotion/types/sceneGraph";
 import { sampleScriptSceneGraph } from "@/remotion/data/sampleScript";
 import { generateVectorAsset } from "@/lib/vectorAssetGenerator";
 import { normalizePropAssetId } from "@/remotion/utils/propResolver";
@@ -317,16 +317,278 @@ function sanitizeSceneGraph(raw: any): MasterSceneGraph {
   };
 }
 
+/**
+ * Bộ tạo Scene Graph từ Kịch bản theo thuật toán suy luận (Procedural Fallback Engine)
+ * Phân tích trực tiếp câu chữ tiếng Việt của người dùng để dựng cảnh, phụ đề, đạo cụ và nhân vật
+ * khi chưa có Gemini API Key hoặc khi mạng bị gián đoạn. Không bao giờ để rơi về kịch bản nhện cũ!
+ */
+function generateProceduralSceneGraph(prompt: string): MasterSceneGraph {
+  const cleanPrompt = (prompt || "").trim();
+  const lines = cleanPrompt
+    .split(/\n+/)
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0);
+
+  let rawScenes: Array<{ name: string; text: string }> = [];
+
+  for (const line of lines) {
+    const match = line.match(/^(?:Cảnh|Scene)\s*(\d+)[\s:.-]*(.*)$/i);
+    if (match) {
+      rawScenes.push({
+        name: `Cảnh ${match[1]}`,
+        text: match[2]?.trim() || line,
+      });
+    } else if (rawScenes.length > 0) {
+      rawScenes[rawScenes.length - 1].text += ` ${line}`;
+    } else {
+      rawScenes.push({
+        name: `Cảnh ${rawScenes.length + 1}`,
+        text: line,
+      });
+    }
+  }
+
+  if (rawScenes.length === 0) {
+    rawScenes = [{ name: "Cảnh 1", text: cleanPrompt || "Buổi sáng bình thường." }];
+  }
+
+  let currentStart = 0;
+  const scenes: SceneGraphScene[] = rawScenes.map((s, idx) => {
+    const text = s.text;
+    const lower = text.toLowerCase();
+    const wordCount = text.split(/\s+/).filter(Boolean).length;
+    const dur = Math.max(90, Math.round((wordCount / 2.8) * 60) + 30);
+    const start = currentStart;
+    currentStart = start + dur;
+
+    // Phân tích bối cảnh Background
+    let preset: "livingRoomDay" | "livingRoomNight" | "gardenDay" | "infographicStripes" = "livingRoomDay";
+    if (/vườn|ngoài trời|cỏ|sân|garden|park|bush|hoa/i.test(lower)) {
+      preset = "gardenDay";
+    } else if (/tối|đêm|khuya|trăng|night|moon|bàn học|làm việc/i.test(lower)) {
+      preset = "livingRoomNight";
+    } else if (/biểu đồ|đo|chỉ số|infographic|đồng hồ đo|trao đổi/i.test(lower)) {
+      preset = "infographicStripes";
+    }
+
+    // Phân tích tư thế nhân vật Pose
+    let pose: "standing" | "sittingBehindDesk" | "holdingObject" | "walking" | "pointing" = "standing";
+    if (/ngồi|bàn học|làm việc|desk/i.test(lower)) {
+      pose = "sittingBehindDesk";
+    } else if (/cầm|bê|mang|giữ|xách|nâng|holding|carry/i.test(lower)) {
+      pose = "holdingObject";
+    } else if (/đi|bước|chạy|ra vườn|walk|run/i.test(lower)) {
+      pose = "walking";
+    }
+
+    // Tự động nhận diện đạo cụ từ kịch bản người dùng
+    const detectedProps: any[] = [];
+
+    if (/mèo|cat/i.test(lower)) {
+      detectedProps.push({
+        id: `prop_${idx}_cat`,
+        type: "cat",
+        slot: "sofa.seat",
+        layer: "midgroundFrontLayer",
+        x: 1850,
+        y: 1040,
+        scale: 0.85,
+      });
+    }
+
+    if (/nhện|spider|tám/i.test(lower)) {
+      detectedProps.push({
+        id: `prop_${idx}_spider`,
+        type: "spider",
+        slot: "screen.centerCloseUp",
+        layer: "midgroundFrontLayer",
+        x: 1280,
+        y: 720,
+        scale: 0.9,
+      });
+    }
+
+    if (/lọ|hũ|thủy tinh|jar/i.test(lower)) {
+      const isCloseUp = /cận cảnh|phóng cận|zoom/i.test(lower);
+      detectedProps.push({
+        id: `prop_${idx}_jar`,
+        type: "glass-jar",
+        slot: isCloseUp ? "screen.centerCloseUp" : pose === "sittingBehindDesk" ? "desk.topRight" : "floor.left",
+        layer: "midgroundFrontLayer",
+        x: isCloseUp ? 1280 : 850,
+        y: isCloseUp ? 720 : 1120,
+        scale: isCloseUp ? 1.7 : 0.72,
+        properties: {
+          hasSpiderInside: /nhện|spider|tám/i.test(lower),
+        },
+      });
+    }
+
+    if (/sofa|ghế dài/i.test(lower)) {
+      detectedProps.push({
+        id: `prop_${idx}_sofa`,
+        type: "sofa",
+        layer: "midgroundBackLayer",
+        x: 1850,
+        y: 1120,
+        scale: 1.0,
+      });
+    }
+
+    if (/bàn|desk/i.test(lower) && pose !== "sittingBehindDesk") {
+      detectedProps.push({
+        id: `prop_${idx}_desk`,
+        type: "desk",
+        layer: "midgroundBackLayer",
+        x: 1280,
+        y: 1120,
+        scale: 1.0,
+      });
+    }
+
+    if (/bụi cây|bụi|bush/i.test(lower) || (preset === "gardenDay" && detectedProps.length === 0)) {
+      detectedProps.push({
+        id: `prop_${idx}_bush`,
+        type: "bush",
+        slot: "floor.farLeft",
+        layer: "midgroundBackLayer",
+        x: 450,
+        y: 1120,
+        scale: 1.0,
+      });
+    }
+
+    if (/cây cảnh|chậu|plant|hoa/i.test(lower)) {
+      detectedProps.push({
+        id: `prop_${idx}_plant`,
+        type: "potted-plant",
+        slot: "floor.left",
+        layer: "midgroundBackLayer",
+        x: 580,
+        y: 1120,
+        scale: 0.85,
+      });
+    }
+
+    if (/pizza/i.test(lower)) {
+      detectedProps.push({
+        id: `prop_${idx}_pizza`,
+        type: "pizza",
+        slot: "floor.center",
+        layer: "midgroundFrontLayer",
+        x: 1280,
+        y: 1120,
+        scale: 0.85,
+      });
+    }
+
+    if (/táo|apple/i.test(lower)) {
+      detectedProps.push({
+        id: `prop_${idx}_apple`,
+        type: "apple",
+        slot: "floor.center",
+        layer: "midgroundFrontLayer",
+        x: 1280,
+        y: 1120,
+        scale: 0.85,
+      });
+    }
+
+    if (/laptop|máy tính/i.test(lower)) {
+      detectedProps.push({
+        id: `prop_${idx}_laptop`,
+        type: "laptop",
+        slot: "desk.topCenter",
+        layer: "midgroundFrontLayer",
+        x: 1280,
+        y: 760,
+        scale: 0.65,
+      });
+    }
+
+    // Camera
+    const isCloseUp = /cận cảnh|phóng cận|zoom/i.test(lower);
+    const camera = isCloseUp
+      ? { zoomFrom: 1.0, zoomTo: 2.1, focusSlot: "screen.centerCloseUp" }
+      : { zoom: 1.0, x: 1280, y: 720 };
+
+    // Subtitles chuẩn xác câu của người dùng
+    const subtitles = [
+      {
+        id: `sub_${idx}_0`,
+        text: text,
+        startFrame: start + 5,
+        endFrame: start + dur - 5,
+      },
+    ];
+
+    // Speech bubble nếu có ngoặc kép
+    const quoteMatch = text.match(/['"“](.+?)['"”]/);
+    const speechBubbles = quoteMatch
+      ? [
+          {
+            id: `bubble_${idx}_0`,
+            text: quoteMatch[1],
+            position: { x: 1620, y: 340 },
+            tailAnchor: { x: 60, y: 40 },
+            startFrame: start + 15,
+            endFrame: start + dur - 10,
+          },
+        ]
+      : [];
+
+    return {
+      id: `scene_${idx + 1}`,
+      name: s.name,
+      startFrame: start,
+      durationInFrames: dur,
+      background: { preset },
+      camera,
+      character: {
+        slot: pose === "sittingBehindDesk" ? "desk.seat" : "floor.center",
+        x: 1280,
+        y: 1120,
+        scale: 1.0,
+        facing: "right" as const,
+        pose,
+        eyes: "neutral" as const,
+        eyebrows: "neutral" as const,
+        mouth: "smile" as const,
+      },
+      props: detectedProps,
+      subtitles,
+      speechBubbles,
+      environmentVfx: (preset === "gardenDay"
+        ? ["cloudDrift", "sunbeams"]
+        : ["cloudDrift"]) as EnvironmentVfxType[],
+    };
+  });
+
+  return {
+    version: "3.1.0",
+    title: rawScenes[0]?.name || "Stickman 2D Explainer Video",
+    width: 2560,
+    height: 1440,
+    fps: 60,
+    totalDurationInFrames: Math.max(60, currentStart),
+    scenes,
+  };
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { prompt, apiKey } = await req.json();
 
     const activeApiKey = apiKey || process.env.GEMINI_API_KEY;
     if (!activeApiKey) {
-      return NextResponse.json(
-        { error: "Vui lòng nhập Google Gemini API Key trong phần Cài đặt." },
-        { status: 400 }
-      );
+      // Khi người dùng chưa nhập key, tự động dùng Procedural Script Engine để chuyển kịch bản của họ thành cảnh hoạt họa thật!
+      console.log("[Gemini API] Chưa có API Key -> Kích hoạt Procedural Engine cho kịch bản của người dùng...");
+      const proceduralGraph = generateProceduralSceneGraph(prompt);
+      return NextResponse.json({
+        success: true,
+        modelUsed: "Procedural Script Engine (Chưa nhập Gemini Key)",
+        sceneGraph: proceduralGraph,
+      });
     }
 
     let candidateModels = await fetchAccountModels(activeApiKey);
@@ -375,7 +637,13 @@ export async function POST(req: NextRequest) {
           err.message?.includes("API_KEY_INVALID") ||
           err.message?.includes("API key not valid")
         ) {
-          throw new Error("Google Gemini API Key không hợp lệ. Vui lòng kiểm tra lại key trong mục Cài đặt.");
+          console.warn("[Gemini API] Key không hợp lệ -> Dùng Procedural Engine cho kịch bản.");
+          const proceduralGraph = generateProceduralSceneGraph(prompt);
+          return NextResponse.json({
+            success: true,
+            modelUsed: "Procedural Script Engine (Key không hợp lệ)",
+            sceneGraph: proceduralGraph,
+          });
         }
 
         continue;
@@ -383,10 +651,13 @@ export async function POST(req: NextRequest) {
     }
 
     if (!responseText) {
-      throw (
-        lastError ||
-        new Error("Tất cả các model Gemini đang quá tải. Vui lòng thử lại sau giây lát.")
-      );
+      console.warn("[Gemini API] Gemini quá tải -> Dùng Procedural Engine tạo Scene Graph từ kịch bản.");
+      const proceduralGraph = generateProceduralSceneGraph(prompt);
+      return NextResponse.json({
+        success: true,
+        modelUsed: "Procedural Script Engine (Fallback do Gemini quá tải)",
+        sceneGraph: proceduralGraph,
+      });
     }
 
     let cleanText = responseText.trim();

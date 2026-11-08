@@ -13,6 +13,7 @@ import {
   Cpu,
   Check,
   Key,
+  Sparkles,
 } from "lucide-react";
 import { MasterSceneGraph } from "../remotion/types/sceneGraph";
 
@@ -43,6 +44,10 @@ interface RenderModalProps {
   githubToken: string;
   githubOwner: string;
   githubRepo: string;
+  isScriptOutOfSync?: boolean;
+  currentScript?: string;
+  geminiKey?: string;
+  onSceneGraphGenerated?: (graph: MasterSceneGraph) => void;
 }
 
 export const RenderModal: React.FC<RenderModalProps> = ({
@@ -53,10 +58,15 @@ export const RenderModal: React.FC<RenderModalProps> = ({
   githubToken,
   githubOwner,
   githubRepo,
+  isScriptOutOfSync = false,
+  currentScript = "",
+  geminiKey = "",
+  onSceneGraphGenerated,
 }) => {
   const [chunkCount, setChunkCount] = useState(1);
   const [isDispatching, setIsDispatching] = useState(false);
   const [isRendering, setIsRendering] = useState(false);
+  const [isUpdatingScript, setIsUpdatingScript] = useState(false);
   const [workflowStatus, setWorkflowStatus] = useState<string | null>(null);
   const [runUrl, setRunUrl] = useState<string | null>(null);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
@@ -261,6 +271,45 @@ export const RenderModal: React.FC<RenderModalProps> = ({
         </div>
 
         <div className="flex flex-col space-y-4 py-4 text-xs">
+          {/* Cảnh báo Kịch bản chưa được cập nhật vào Scene Graph */}
+          {isScriptOutOfSync && !isRendering && !downloadUrl && (
+            <div className="flex flex-col space-y-2 rounded-xl bg-orange-950/50 p-3.5 border border-orange-500/40 text-orange-200">
+              <div className="flex items-center space-x-2 font-medium">
+                <AlertCircle className="h-4 w-4 text-orange-400 shrink-0" />
+                <span>Kịch bản nhập liệu vừa được sửa đổi nhưng chưa cập nhật vào Scene Graph!</span>
+              </div>
+              <p className="text-[11px] text-orange-300/80 leading-relaxed">
+                Nếu render ngay bây giờ, video xuất ra sẽ là phân cảnh cũ trước đó. Hãy bấm nút bên dưới để tự động cập nhật phân cảnh từ kịch bản mới trước khi render:
+              </p>
+              <button
+                type="button"
+                disabled={isUpdatingScript}
+                onClick={async () => {
+                  setIsUpdatingScript(true);
+                  try {
+                    const res = await fetch("/api/gemini", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ prompt: currentScript, apiKey: geminiKey }),
+                    });
+                    const data = await res.json();
+                    if (data.success && data.sceneGraph && onSceneGraphGenerated) {
+                      onSceneGraphGenerated(data.sceneGraph);
+                    }
+                  } catch (e) {
+                    console.error("Auto sync script error", e);
+                  } finally {
+                    setIsUpdatingScript(false);
+                  }
+                }}
+                className="self-start mt-1 flex items-center space-x-1.5 rounded-lg bg-orange-600 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-orange-500 transition-colors shadow-sm disabled:opacity-50"
+              >
+                {isUpdatingScript ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                <span>{isUpdatingScript ? "Đang đồng bộ..." : "Cập nhật Scene Graph cho kịch bản mới ngay"}</span>
+              </button>
+            </div>
+          )}
+
           {/* Spec summary box */}
           <div className="grid grid-cols-3 gap-2 rounded-xl bg-[#0E0E11] p-3 border border-[#232326]">
             <div>

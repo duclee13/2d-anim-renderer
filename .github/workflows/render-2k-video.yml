@@ -124,7 +124,12 @@ jobs:
             let payload = { totalFrames: total };
             if (raw.trim().startsWith('{')) {
               try {
-                payload = { ...JSON.parse(raw), totalFrames: total };
+                const parsed = JSON.parse(raw);
+                payload = {
+                  totalFrames: total,
+                  sceneGraph: parsed,
+                  ...parsed,
+                };
               } catch (e) {
                 console.warn('Fallback to default props:', e.message);
               }

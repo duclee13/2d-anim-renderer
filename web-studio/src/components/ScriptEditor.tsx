@@ -8,6 +8,7 @@ interface ScriptEditorProps {
   script: string;
   setScript: (s: string) => void;
   apiKey: string;
+  isScriptOutOfSync?: boolean;
   onSceneGraphGenerated: (graph: MasterSceneGraph) => void;
 }
 
@@ -15,6 +16,7 @@ export const ScriptEditor: React.FC<ScriptEditorProps> = ({
   script,
   setScript,
   apiKey,
+  isScriptOutOfSync = false,
   onSceneGraphGenerated,
 }) => {
   const [isLoadingGemini, setIsLoadingGemini] = useState(false);
@@ -143,6 +145,14 @@ Cảnh 4: Buổi tối bình thường, tôi ngồi sau bàn học làm việc d
         <div className="flex items-center space-x-2 rounded-lg bg-rose-950/40 border border-rose-500/20 px-3 py-2 text-xs text-rose-300">
           <AlertCircle className="h-4 w-4 shrink-0 text-rose-400" />
           <span>{errorMessage}</span>
+        </div>
+      )}
+
+      {/* Notice khi kịch bản được thay đổi nhưng chưa bấm Sinh Scene Graph */}
+      {isScriptOutOfSync && !statusMessage && !errorMessage && (
+        <div className="flex items-center space-x-2 rounded-lg bg-amber-950/40 border border-amber-500/30 px-3 py-2 text-xs text-amber-200 animate-pulse">
+          <AlertCircle className="h-4 w-4 shrink-0 text-amber-400" />
+          <span>Kịch bản vừa được sửa đổi! Bấm <strong>&quot;Sinh Scene Graph&quot;</strong> bên dưới để cập nhật video.</span>
         </div>
       )}
 
