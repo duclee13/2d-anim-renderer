@@ -60,12 +60,17 @@ Strict Rules:
    - Origin Center for screen close-up props (y is center, anchorPoint: 'center').
    - In close-up shots, DO NOT use scale from 0 to prevent white flash. Use pop or direct transition.
 9. Character Poses: 'standing', 'sittingBehindDesk', 'holdingObject', 'walking', 'pointing', 'shrugging'.
+   - When walking or stepping ("bước đi", "từ từ bước", "đi bộ", "dạo bước", "bước"): pose MUST be 'walking'!
 10. ACTION & MOTION RULES (NEVER LEAVE CHARACTER STATIC):
+   - When walking/stepping: add 'moveCharacter' keyframe in 'keyframes' from x=600 to x=1850.
    - When holding or carrying ("cầm", "giữ", "bê", "mang", "xách"): pose MUST be 'holdingObject'.
-   - When moving or walking ("mang ra", "bước", "đi", "chạy"): add 'moveCharacter' keyframe in 'keyframes'.
 11. Dynamic Asset Bank:
    - Standard built-in props: 'glassJar', 'spider', 'sofa', 'desk', 'deskLamp', 'gaugeMeter', 'pottedPlant', 'bush', 'chair', 'table', 'tv', 'pizza', 'apple', 'guitar', 'cat', 'tree', 'balloon', 'trophy', 'star', 'heart', 'whiteboard', 'laptop', 'coffeeCup', 'phone', 'book', 'clock'.
-   - Background presets: 'livingRoomDay', 'livingRoomNight', 'gardenDay', 'infographicStripes'.
+   - Background presets (SELECT STRICTLY BY THEME):
+     * 'gardenDay': For ANY outdoor scene, meadow, lawn, grass, park, field, nature, blue sky, white clouds, sunshine ('đồng cỏ', 'cỏ xanh', 'vườn', 'sân vườn', 'ngoài trời', 'thiên nhiên', 'bầu trời', 'mây trắng', 'nắng vàng').
+     * 'livingRoomDay': For daytime indoor scenes, living room, study room ('trong nhà', 'phòng khách', 'nhà').
+     * 'livingRoomNight': For nighttime scenes ('ban đêm', 'tối', 'khuya', 'đêm', 'trăng').
+     * 'infographicStripes': For abstract metrics and presentations.
 12. SUBTITLES & SPOKEN NARRATION (CRITICAL):
    - Every scene MUST include a 'subtitles' array with the exact narration sentence from the user's script:
      'subtitles': [{ 'id': 'sub_1_0', 'text': 'Câu thoại/thuyết minh của cảnh này', 'startFrame': 5, 'endFrame': 210 }]
@@ -173,27 +178,72 @@ function sanitizeSceneGraph(raw: any, userPrompt?: string): MasterSceneGraph {
     const start = currentStart;
     currentStart = start + dur;
 
+    const sceneCombinedText = `${s?.name || ""} ${subTexts} ${promptSceneTexts[idx] || ""}`.toLowerCase();
+
+    // 1. Phân giải bối cảnh Background Preset chính xác
+    let preset: "livingRoomDay" | "livingRoomNight" | "gardenDay" | "infographicStripes" =
+      s?.background?.preset || "livingRoomDay";
+    const isOutdoor =
+      /đồng cỏ|bãi cỏ|cỏ xanh|thảo nguyên|vườn|sân vườn|công viên|ngoài trời|thiên nhiên|bầu trời|mây trắng|nắng vàng|cây xanh|rừng|garden|park|meadow|grass|lawn|outdoor|sky/i.test(sceneCombinedText) &&
+      !/trong nhà|phòng khách|bàn học|ghế sofa|indoor|living\s*room/i.test(sceneCombinedText);
+    const isNight = /ban đêm|tối|khuya|đêm|trăng|sao|night|moonlight/i.test(sceneCombinedText);
+
+    if (isOutdoor) {
+      preset = "gardenDay";
+    } else if (isNight) {
+      preset = "livingRoomNight";
+    }
+
+    // 2. Phân giải tư thế Pose và Hướng nhìn
     let characterPose = s?.character?.pose || "standing";
-    const sceneCombinedText = `${s?.name || ""} ${subTexts}`.toLowerCase();
+    const hasWalkKeywords = /bước đi|từ từ bước|dạo bước|đi bộ|bước|đi dạo|chạy|di chuyển|ra vườn|walking|walk|stroll/i.test(sceneCombinedText);
 
     if (/cầm|bê|mang|xách|giữ|nâng|holding|carry/i.test(sceneCombinedText) && characterPose === "standing") {
       characterPose = "holdingObject";
+    } else if (hasWalkKeywords && characterPose === "standing") {
+      characterPose = "walking";
     }
 
-    let finalKeyframes = Array.isArray(s?.keyframes) ? s.keyframes : [];
-    if (finalKeyframes.length === 0 && /mang ra|bước|đi bộ|chạy|di chuyển|walk|ra vườn/i.test(sceneCombinedText)) {
+    let finalKeyframes = Array.isArray(s?.keyframes) && s.keyframes.length > 0
+      ? s.keyframes.map((kf: any) => ({
+          action: String(kf?.action || kf?.type || "moveCharacter"),
+          target: String(kf?.target || kf?.targetId || "character"),
+          frame: Number(kf?.frame !== undefined ? kf.frame : kf?.startFrame !== undefined ? kf.startFrame : 0),
+          params: {
+            fromX: kf?.params?.fromX !== undefined ? Number(kf.params.fromX) : kf?.fromX !== undefined ? Number(kf.fromX) : 600,
+            toX: kf?.params?.toX !== undefined ? Number(kf.params.toX) : kf?.toX !== undefined ? Number(kf.toX) : 1850,
+            fromY: kf?.params?.fromY !== undefined ? Number(kf.params.fromY) : kf?.fromY !== undefined ? Number(kf.fromY) : undefined,
+            toY: kf?.params?.toY !== undefined ? Number(kf.params.toY) : kf?.toY !== undefined ? Number(kf.toY) : undefined,
+          },
+        }))
+      : [];
+
+    if (finalKeyframes.length === 0 && hasWalkKeywords) {
       finalKeyframes = [
         {
           action: "moveCharacter",
           target: "character",
           frame: 0,
           params: {
-            fromX: 680,
-            toX: 1680,
+            fromX: 600,
+            toX: 1850,
           },
         },
       ];
     }
+
+    // 3. Environment VFX & Lighting
+    let envVfx: EnvironmentVfxType[] = Array.isArray(s?.environmentVfx) ? [...s.environmentVfx] : [];
+    if (preset === "gardenDay") {
+      if (!envVfx.includes("cloudDrift")) envVfx.push("cloudDrift");
+      if (!envVfx.includes("sunbeams")) envVfx.push("sunbeams");
+      if (!envVfx.includes("windBreeze")) envVfx.push("windBreeze");
+      if (!envVfx.includes("foliageSway")) envVfx.push("foliageSway");
+    } else if (preset === "livingRoomNight" && !envVfx.includes("cloudDrift")) {
+      envVfx.push("cloudDrift");
+    }
+
+    const lighting = s?.lighting || (preset === "gardenDay" ? "sunbeams" : isNight ? "moonlight" : "neutral");
 
     let charSlot = s?.character?.slot;
     if (!charSlot) {
@@ -212,7 +262,7 @@ function sanitizeSceneGraph(raw: any, userPrompt?: string): MasterSceneGraph {
       startFrame: start,
       durationInFrames: dur,
       background: {
-        preset: s?.background?.preset || "livingRoomDay",
+        preset,
       },
       camera: {
         x: Number(s?.camera?.x) || 1280,
@@ -233,55 +283,64 @@ function sanitizeSceneGraph(raw: any, userPrompt?: string): MasterSceneGraph {
         eyes: s?.character?.eyes || "neutral",
         eyebrows: s?.character?.eyebrows || "neutral",
         mouth: s?.character?.mouth || "smile",
-        pupilGaze: s?.character?.pupilGaze || { x: 0, y: 0 },
+        pupilGaze: characterPose === "walking" ? { x: 0.6, y: 0 } : (s?.character?.pupilGaze || { x: 0, y: 0 }),
       },
       props: Array.isArray(s?.props)
-        ? s.props.map((p: any, pIdx: number) => {
-            const rawPropType = String(p?.type || p?.id || "prop");
-            const canonicalType = getStandardPropFileName(rawPropType);
-            let propScale = Number(p?.scale) || 1.0;
-            const isScreenSlot = Boolean(p?.slot && String(p.slot).startsWith("screen."));
+        ? s.props
+            .map((p: any, pIdx: number) => {
+              const rawPropType = String(p?.type || p?.id || "prop");
+              const canonicalType = getStandardPropFileName(rawPropType);
 
-            // Tự động chuẩn hóa tỷ lệ scale thực tế đạt 280px - 320px ở cảnh toàn (chuẩn 2K)
-            if (canonicalType === "glass-jar") {
-              if (isScreenSlot) {
-                if (propScale > 1.8) propScale = 1.7;
-              } else if (p?.slot === "desk.topRight" || p?.slot === "desk.topLeft") {
-                propScale = 0.68; // ~285px trên mặt bàn
-              } else {
-                propScale = 0.72; // ~302px trên sàn nhà (gấp 2.2x trước đây)
+              // Nếu bối cảnh là ngoài trời (gardenDay), loại bỏ đồ nội thất trong nhà nếu không được nhắc tới
+              if (preset === "gardenDay" && ["sofa", "desk", "desk-lamp", "desk-front", "desk-back"].includes(canonicalType)) {
+                if (!/sofa|bàn học|ghế|đèn bàn/i.test(sceneCombinedText)) {
+                  return null;
+                }
               }
-            }
 
-            const sceneCombinedText = `${s?.name || ""} ${subTexts}`.toLowerCase();
-            const hasSpider =
-              canonicalType === "glass-jar" &&
-              (/nhện|spider|tám/i.test(sceneCombinedText) || p?.properties?.hasSpiderInside === true);
+              let propScale = Number(p?.scale) || 1.0;
+              const isScreenSlot = Boolean(p?.slot && String(p.slot).startsWith("screen."));
 
-            return {
-              id: String(p?.id || `prop_${idx}_${pIdx}`),
-              type: canonicalType,
-              slot: p?.slot || undefined,
-              layer: p?.layer === "midgroundBackLayer" ? ("midgroundBackLayer" as const) : ("midgroundFrontLayer" as const),
-              x: Number(p?.x) || 1280,
-              y: Number(p?.y) || 1120,
-              scale: propScale,
-              scaleX: p?.scaleX !== undefined ? Number(p.scaleX) : 1,
-              scaleY: p?.scaleY !== undefined ? Number(p.scaleY) : 1,
-              rotation: Number(p?.rotation) || 0,
-              opacity: p?.opacity !== undefined ? Number(p.opacity) : 1,
-              alphaConfig: p?.alphaConfig || undefined,
-              anchorPoint: p?.anchorPoint || (isScreenSlot ? ("center" as const) : undefined),
-              pivotPoint: p?.pivotPoint || (isScreenSlot ? ("center" as const) : undefined),
-              pivotX: p?.pivotX !== undefined ? Number(p.pivotX) : undefined,
-              pivotY: p?.pivotY !== undefined ? Number(p.pivotY) : undefined,
-              properties: {
-                hasSpiderInside: hasSpider ? true : undefined,
-                ...p?.properties,
-              },
-              entrance: p?.entrance || undefined,
-            };
-          })
+              // Tự động chuẩn hóa tỷ lệ scale thực tế đạt 280px - 320px ở cảnh toàn (chuẩn 2K)
+              if (canonicalType === "glass-jar") {
+                if (isScreenSlot) {
+                  if (propScale > 1.8) propScale = 1.7;
+                } else if (p?.slot === "desk.topRight" || p?.slot === "desk.topLeft") {
+                  propScale = 0.68; // ~285px trên mặt bàn
+                } else {
+                  propScale = 0.72; // ~302px trên sàn nhà (gấp 2.2x trước đây)
+                }
+              }
+
+              const hasSpider =
+                canonicalType === "glass-jar" &&
+                (/nhện|spider|tám/i.test(sceneCombinedText) || p?.properties?.hasSpiderInside === true);
+
+              return {
+                id: String(p?.id || `prop_${idx}_${pIdx}`),
+                type: canonicalType,
+                slot: p?.slot || undefined,
+                layer: p?.layer === "midgroundBackLayer" ? ("midgroundBackLayer" as const) : ("midgroundFrontLayer" as const),
+                x: Number(p?.x) || 1280,
+                y: Number(p?.y) || 1120,
+                scale: propScale,
+                scaleX: p?.scaleX !== undefined ? Number(p.scaleX) : 1,
+                scaleY: p?.scaleY !== undefined ? Number(p.scaleY) : 1,
+                rotation: Number(p?.rotation) || 0,
+                opacity: p?.opacity !== undefined ? Number(p.opacity) : 1,
+                alphaConfig: p?.alphaConfig || undefined,
+                anchorPoint: p?.anchorPoint || (isScreenSlot ? ("center" as const) : undefined),
+                pivotPoint: p?.pivotPoint || (isScreenSlot ? ("center" as const) : undefined),
+                pivotX: p?.pivotX !== undefined ? Number(p.pivotX) : undefined,
+                pivotY: p?.pivotY !== undefined ? Number(p.pivotY) : undefined,
+                properties: {
+                  hasSpiderInside: hasSpider ? true : undefined,
+                  ...p?.properties,
+                },
+                entrance: p?.entrance || undefined,
+              };
+            })
+            .filter(Boolean)
         : [],
       subtitles:
         existingSubs.length > 0
@@ -339,8 +398,8 @@ function sanitizeSceneGraph(raw: any, userPrompt?: string): MasterSceneGraph {
           })(),
       keyframes: finalKeyframes,
       lines: Array.isArray(s?.lines) ? s.lines : [],
-      environmentVfx: Array.isArray(s?.environmentVfx) ? s.environmentVfx : undefined,
-      lighting: s?.lighting || undefined,
+      environmentVfx: envVfx.length > 0 ? envVfx : undefined,
+      lighting: lighting,
       propAnimations: Array.isArray(s?.propAnimations) ? s.propAnimations : undefined,
     };
   });

@@ -88,16 +88,28 @@ export const StickmanRig: React.FC<StickmanRigProps> = ({
 
   const flipSign = facing === "left" ? -1 : 1;
 
+  // Trọng số bước đi và trạng thái đang bước đi
+  const weight = state.walkWeight !== undefined ? state.walkWeight : 1.0;
+  const isWalking = (pose === "walking" || walkCycleProgress > 0) && weight > 0.02;
+
   // =========================================================================
   // 1. TÍNH TOÁN CÁNH TAY (ARMS & HANDS)
   // Tư thế đứng A-pose tự nhiên: mở 25-30 độ so với thân, cong nhẹ khuỷu tay
+  // Tự động vung tay nhịp nhàng khi bước đi (isWalking)
   // =========================================================================
   let leftElbow: Point2D = { x: -65, y: neck.y + 130 };
   let leftHand: Point2D = { x: -95, y: neck.y + 265 };
   let rightElbow: Point2D = { x: 65, y: neck.y + 130 };
   let rightHand: Point2D = { x: 95, y: neck.y + 265 };
 
-  if (pose === "holdingObject" && holdingTarget) {
+  if (isWalking && pose !== "holdingObject" && !holdingTarget) {
+    // Vung tay tự nhiên đối xứng với bước chân (bước êm, không gượng)
+    const armSwing = Math.sin(walkCycleProgress * Math.PI * 2) * (36 * weight);
+    leftElbow = { x: -55 - armSwing * 0.7, y: neck.y + 130 };
+    leftHand = { x: -80 - armSwing * 1.3, y: neck.y + 260 - Math.abs(armSwing) * 0.15 };
+    rightElbow = { x: 55 + armSwing * 0.7, y: neck.y + 130 };
+    rightHand = { x: 80 + armSwing * 1.3, y: neck.y + 260 - Math.abs(armSwing) * 0.15 };
+  } else if (pose === "holdingObject" && holdingTarget) {
     const targetLeftLocal: Point2D = {
       x: ((holdingTarget.leftGrip.x - x) / scale) * flipSign,
       y: (holdingTarget.leftGrip.y - y) / scale,
@@ -151,9 +163,6 @@ export const StickmanRig: React.FC<StickmanRigProps> = ({
   let rightKnee: Point2D = { x: 35, y: -175 };
   let leftFoot: Point2D = { x: -45, y: 0 };
   let rightFoot: Point2D = { x: 45, y: 0 };
-
-  const weight = state.walkWeight !== undefined ? state.walkWeight : 1.0;
-  const isWalking = (pose === "walking" || walkCycleProgress > 0) && weight > 0.02;
 
   if (isWalking) {
     const stride = 65 * weight;

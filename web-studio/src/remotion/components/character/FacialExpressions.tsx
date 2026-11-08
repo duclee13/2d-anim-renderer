@@ -42,6 +42,11 @@ export const FacialExpressions: React.FC<FacialExpressionsProps> = ({
   const leftEyeCenter = { x: -eyeDistance + gazeX, y: eyeY + gazeY };
   const rightEyeCenter = { x: eyeDistance + gazeX, y: eyeY + gazeY };
 
+  // 1 Lông mày duy nhất (nét thẳng đơn giản, đặt tự nhiên trên mắt chính theo hướng nhìn)
+  const isRightFacing = facing !== "left";
+  const browX1 = isRightFacing ? eyeDistance - 15 : -eyeDistance - 17;
+  const browX2 = isRightFacing ? eyeDistance + 17 : -eyeDistance + 15;
+
   return (
     <g className="stickman-face">
       {/* Blush cheeks */}
@@ -52,22 +57,22 @@ export const FacialExpressions: React.FC<FacialExpressionsProps> = ({
         </g>
       )}
 
-      {/* 1 LÔNG MÀY DUY NHẤT (Nét thẳng đơn giản, dịch xuống sát mắt) */}
-      <g stroke={strokeColor} strokeWidth={7} strokeLinecap="round" strokeLinejoin="round" fill="none">
+      {/* 1 LÔNG MÀY DUY NHẤT (Nét thẳng đơn giản trên mắt chính, không nối cầu giữa 2 mắt) */}
+      <g stroke={strokeColor} strokeWidth={6} strokeLinecap="round" strokeLinejoin="round" fill="none">
         {eyebrows === "neutral" && (
-          <line x1={-38} y1={browY} x2={38} y2={browY} />
+          <line x1={browX1} y1={browY} x2={browX2} y2={browY} />
         )}
         {eyebrows === "raised" && (
-          <line x1={-38} y1={browY - 10} x2={38} y2={browY - 10} />
+          <line x1={browX1} y1={browY - 10} x2={browX2} y2={browY - 10} />
         )}
         {eyebrows === "inquisitive" && (
-          <line x1={-38} y1={browY + 4} x2={38} y2={browY - 8} />
+          <line x1={browX1} y1={browY + 3} x2={browX2} y2={browY - 7} />
         )}
         {eyebrows === "worried" && (
-          <line x1={-38} y1={browY - 8} x2={38} y2={browY + 4} />
+          <line x1={browX1} y1={browY - 7} x2={browX2} y2={browY + 3} />
         )}
         {eyebrows === "furrowed" && (
-          <line x1={-38} y1={browY + 6} x2={38} y2={browY + 6} />
+          <line x1={browX1} y1={browY + 5} x2={browX2} y2={browY + 5} />
         )}
       </g>
 

@@ -143,77 +143,104 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
 
   // --- Áp dụng keyframe "moveCharacter" hoặc tự động bước đi khi có keyword walk ---
   // TÍNH TOÁN VẬN TỐC THỰC TẾ & CHỈ BƯỚC ĐI KHI ĐANG DI CHUYỂN
-  const moveCharKf = activeKeyframes.find(
-    (kf) => kf.action === "moveCharacter" && kf.target === "character"
+  const isWalkingPose = dynamicCharacterState.pose === "walking" || hasWalkAction;
+  const moveCharKf: any = activeKeyframes.find(
+    (kf: any) =>
+      (kf.action === "moveCharacter" || kf.type === "moveCharacter") &&
+      (kf.target === "character" || kf.targetId === "stickman_main" || !kf.target)
   );
   let charVelocity = 0;
 
-  if (moveCharKf && isCharacterVisible) {
-    const { fromX, toX, fromY, toY } = moveCharKf.params;
-    // BẮT BUỘC: overshootClamping: true để người đi tới đích không bao giờ bị nảy quá trớn rồi trượt lùi lại!
-    const cfg = {
-      damping: 18,
-      stiffness: 70,
-      mass: 0.8,
-      ...moveCharKf.springConfig,
-      overshootClamping: true,
-    };
-    if (fromX !== undefined && toX !== undefined) {
-      dynamicCharacterState.x = springMove(
-        sceneLocalFrame,
-        fps,
-        fromX,
-        toX,
-        moveCharKf.frame,
-        cfg
+  if (isCharacterVisible) {
+    if (isWalkingPose) {
+      // 1. DI CHUYỂN BƯỚC ĐI TỰ NHIÊN: Trải đều êm ái xuyên suốt thời lượng cảnh (không dùng spring giật cục)
+      const walkStartFrame = Number(moveCharKf?.frame ?? moveCharKf?.startFrame ?? 0);
+      const walkDuration = Math.max(90, Math.min(currentScene.durationInFrames * 0.85, 420));
+
+      const defaultStartX = dynamicCharacterState.facing === "left" ? 1800 : 650;
+      const defaultEndX = dynamicCharacterState.facing === "left" ? 750 : 1850;
+
+      const rawFromX = moveCharKf?.params?.fromX ?? moveCharKf?.fromX;
+      const rawToX = moveCharKf?.params?.toX ?? moveCharKf?.toX;
+
+      const fromX = rawFromX !== undefined ? Number(rawFromX) : defaultStartX;
+      const toX = rawToX !== undefined ? Number(rawToX) : defaultEndX;
+
+      const walkLocalProgress = Math.min(1, Math.max(0, (sceneLocalFrame - walkStartFrame) / walkDuration));
+
+      const easedProgress = interpolate(
+        walkLocalProgress,
+        [0, 1],
+        [0, 1],
+        {
+          extrapolateLeft: "clamp",
+          extrapolateRight: "clamp",
+          easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+        }
       );
-      // Tính độ chênh lệch vị trí giữa 2 frame liên tiếp để xác định vận tốc thực
-      const nextX = springMove(
-        sceneLocalFrame + 1,
-        fps,
-        fromX,
-        toX,
-        moveCharKf.frame,
-        cfg
-      );
-      charVelocity = Math.abs(nextX - dynamicCharacterState.x);
+
+      dynamicCharacterState.x = interpolate(easedProgress, [0, 1], [fromX, toX]);
+
+      // Khi đang trong thời gian bước đi: vận tốc ổn định để duy trì walk cycle
+      if (sceneLocalFrame >= walkStartFrame && sceneLocalFrame < walkStartFrame + walkDuration) {
+        charVelocity = 2.0;
+      } else {
+        charVelocity = 0;
+      }
+    } else if (moveCharKf) {
+      // 2. Chuyển động khác (bật nảy, phản xạ) dùng springMove
+      const rawParams = moveCharKf.params || moveCharKf;
+      const { fromX, toX, fromY, toY } = rawParams;
+      const cfg = {
+        damping: 18,
+        stiffness: 70,
+        mass: 0.8,
+        ...moveCharKf.springConfig,
+        overshootClamping: true,
+      };
+      const kfFrame = Number(moveCharKf.frame ?? moveCharKf.startFrame ?? 0);
+      if (fromX !== undefined && toX !== undefined) {
+        dynamicCharacterState.x = springMove(
+          sceneLocalFrame,
+          fps,
+          fromX,
+          toX,
+          kfFrame,
+          cfg
+        );
+        const nextX = springMove(
+          sceneLocalFrame + 1,
+          fps,
+          fromX,
+          toX,
+          kfFrame,
+          cfg
+        );
+        charVelocity = Math.abs(nextX - dynamicCharacterState.x);
+      }
+      if (fromY !== undefined && toY !== undefined) {
+        dynamicCharacterState.y = springMove(
+          sceneLocalFrame,
+          fps,
+          fromY,
+          toY,
+          kfFrame,
+          cfg
+        );
+      }
     }
-    if (fromY !== undefined && toY !== undefined) {
-      dynamicCharacterState.y = springMove(
-        sceneLocalFrame,
-        fps,
-        fromY,
-        toY,
-        moveCharKf.frame,
-        cfg
-      );
-    }
-  } else if (hasWalkAction && isCharacterVisible && currentScene.durationInFrames > 60) {
-    const walkDuration = currentScene.durationInFrames * 0.85;
-    if (sceneLocalFrame < walkDuration) {
-      charVelocity = 2.0;
-    }
-    const startX = currentScene.character.facing === "left" ? 1700 : 700;
-    const endX = currentScene.character.facing === "left" ? 900 : 1700;
-    const walkProgress = Math.min(1, sceneLocalFrame / walkDuration);
-    dynamicCharacterState.x = interpolate(walkProgress, [0, 1], [startX, endX]);
   }
 
   // --- Hiệu ứng bước chân (Walk Cycle Animation) KHI VÀ CHỈ KHI ĐANG DI CHUYỂN ---
-  // Trọng số bước đi (Deceleration Smooth Weight): khi vận tốc giảm dần về 0, sải chân & độ cao nhấc chân
-  // thu hẹp êm ái về 0 và tiếp đất tự nhiên, LOẠI BỎ HOÀN TOÀN hiện tượng giật cục hay đổi hướng khi dừng.
-  const isWalkingActive = dynamicCharacterState.pose === "walking" || charVelocity > 0.08;
-  const walkWeight = dynamicCharacterState.pose === "walking"
-    ? 1.0
-    : Math.min(1.0, Math.max(0, (charVelocity - 0.08) / 1.2));
-
+  const isWalkingActive = isWalkingPose && charVelocity > 0.08;
+  const walkWeight = isWalkingActive ? 1.0 : 0;
   dynamicCharacterState.walkWeight = walkWeight;
 
-  if (isWalkingActive && walkWeight > 0.02) {
-    // Tốc độ bước tự nhiên: ~0.95s cho 1 chu kỳ 2 bước (~57 frames @ 60 FPS = multiplier 0.0175)
-    dynamicCharacterState.walkCycleProgress = (sceneLocalFrame * 0.0175) % 1;
-    // Nhấp nhô hông tự nhiên theo tỷ lệ vận tốc thực
-    const walkBobY = Math.abs(Math.sin(sceneLocalFrame * 0.0175 * Math.PI * 2)) * (5.5 * walkWeight);
+  if (isWalkingActive) {
+    // Tốc độ bước tự nhiên: ~0.95s cho 1 chu kỳ 2 bước (~55 frames @ 60 FPS)
+    dynamicCharacterState.walkCycleProgress = (sceneLocalFrame * 0.018) % 1;
+    // Nhấp nhô hông tự nhiên theo bước đi
+    const walkBobY = Math.abs(Math.sin(sceneLocalFrame * 0.018 * Math.PI * 2)) * 6.0;
     dynamicCharacterState.y = (dynamicCharacterState.y || STAGE_CONFIG.floorY) - walkBobY;
   } else {
     // Khi đứng yên: CHÂN ĐỨNG IM CHẠM ĐẤT 100%, không đạp chân
