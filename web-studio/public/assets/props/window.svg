@@ -1,0 +1,37 @@
+<svg viewBox="0 0 400 400" width="400" height="400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="woodGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#8B4513;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#5D2E0A;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="glassGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#E0F7FA;stop-opacity:0.8" />
+      <stop offset="100%" style="stop-color:#B2EBF2;stop-opacity:0.6" />
+    </linearGradient>
+  </defs>
+
+  <!-- Layer 1: Ground Shadow -->
+  <ellipse cx="200" cy="380" rx="90" ry="15" fill="#000000" opacity="0.2"/>
+
+  <!-- Layer 2: Main Window Frame (Outer) -->
+  <rect x="110" y="100" width="180" height="280" rx="10" ry="10" fill="url(#woodGrad)" stroke="#1A1A1A" stroke-width="10" stroke-linejoin="round"/>
+
+  <!-- Layer 3: Inner Panes -->
+  <rect x="135" y="125" width="60" height="110" fill="url(#glassGrad)" stroke="#1A1A1A" stroke-width="6"/>
+  <rect x="205" y="125" width="60" height="110" fill="url(#glassGrad)" stroke="#1A1A1A" stroke-width="6"/>
+  <rect x="135" y="245" width="60" height="110" fill="url(#glassGrad)" stroke="#1A1A1A" stroke-width="6"/>
+  <rect x="205" y="245" width="60" height="110" fill="url(#glassGrad)" stroke="#1A1A1A" stroke-width="6"/>
+
+  <!-- Layer 4: Ambient Occlusion (Darkened edges) -->
+  <path d="M115 375 L285 375 L285 105 L115 105 Z" fill="none" stroke="#000" stroke-opacity="0.1" stroke-width="15"/>
+
+  <!-- Layer 5: Specular Highlights -->
+  <path d="M140 130 L185 130 L140 175 Z" fill="#FFFFFF" opacity="0.3"/>
+  <path d="M210 250 L255 250 L210 295 Z" fill="#FFFFFF" opacity="0.3"/>
+
+  <!-- Layer 6: Accent Details (Sill and Handle) -->
+  <rect x="100" y="365" width="200" height="15" rx="5" fill="#5D2E0A" stroke="#1A1A1A" stroke-width="6"/>
+  <circle cx="190" cy="240" r="8" fill="#FFD700" stroke="#1A1A1A" stroke-width="3"/>
+  <circle cx="210" cy="240" r="8" fill="#FFD700" stroke="#1A1A1A" stroke-width="3"/>
+
+</svg>

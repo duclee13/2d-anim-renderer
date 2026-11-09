@@ -1,0 +1,39 @@
+<svg viewBox="0 0 400 400" width="400" height="400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="stickerGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFD700;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FFB900;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="4"/>
+      <feOffset dx="2" dy="2" result="offsetblur"/>
+      <feComponentTransfer><feFuncA type="linear" slope="0.3"/></feComponentTransfer>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Layer 1: Ground contact shadow -->
+  <ellipse cx="200" cy="380" rx="90" ry="15" fill="#000000" opacity="0.15"/>
+
+  <g filter="url(#shadow)" transform="translate(0, 0)">
+    <!-- Layer 2: Main Body -->
+    <path d="M110,200 Q110,180 130,180 L270,180 Q290,180 290,200 L290,360 Q290,380 270,380 L130,380 Q110,380 110,360 Z" 
+          fill="url(#stickerGrad)" stroke="#1A1A1A" stroke-width="10" stroke-linejoin="round"/>
+
+    <!-- Layer 3: Ambient Occlusion & 3D Depth -->
+    <path d="M115,200 Q115,185 130,185 L270,185 Q285,185 285,200 L285,360 Q285,375 270,375 L130,375 Q115,375 115,360 Z" 
+          fill="none" stroke="#E6A600" stroke-width="4" opacity="0.4"/>
+
+    <!-- Layer 4: Specular Highlights -->
+    <path d="M125,200 L125,360 Q125,370 135,370 L145,370 Q135,370 135,360 L135,200 Z" 
+          fill="#FFFFFF" opacity="0.3"/>
+
+    <!-- Layer 5: Accent Details (Label Lines) -->
+    <g stroke="#1A1A1A" stroke-width="4" stroke-linecap="round">
+      <path d="M150,230 L250,230"/>
+      <path d="M150,270 L250,270"/>
+      <path d="M150,310 L250,310"/>
+      <circle cx="200" cy="340" r="15" fill="#FF5252" stroke="#1A1A1A" stroke-width="6"/>
+    </g>
+  </g>
+</svg>

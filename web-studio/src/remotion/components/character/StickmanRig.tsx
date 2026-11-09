@@ -1,6 +1,10 @@
 import React from "react";
 import { StickmanState, Point2D, StickmanAnchors } from "../../types/character";
-import { solveTwoBoneIK, calculateWalkCycle, calculateSegmentAngle } from "./Kinematics";
+import {
+  solveTwoBoneIKHierarchical,
+  calculateWalkCycleHierarchical,
+  calculateLocalAngle,
+} from "./Kinematics";
 import { FacialExpressions } from "./FacialExpressions";
 
 export interface StickmanBodyParts {
@@ -30,16 +34,14 @@ export interface StickmanRigProps {
 }
 
 /**
- * StickmanRig: Khung Xương Động 2K 60FPS (Connected Topology & Bottom-Center Origin)
+ * StickmanRig: Khung Xương Phả Hệ Cha - Con Độc Lập 2K (Hierarchical Nested Rigging)
  * 
- * QUY CHUẨN TỌA ĐỘ GỐC (ORIGIN = BOTTOM-CENTER):
- * - Điểm (x, y) truyền vào là điểm chính giữa 2 bàn chân chạm sàn (floor baseline).
- * - Bàn chân chạm đất tại y = 0 trong hệ tọa độ cục bộ.
- * - Đầu gối tại y = -175.
- * - Khớp hông (Hip) tại y = -350 (đáy cột sống).
- * - Đốt sống cổ (Neck) tại y = -350 - spineLength (~ -660).
- * - Tâm đầu (HeadCenter) tại y = -660 - headRadius (~ -755).
- * - Cả 2 chân và 2 tay đều hội tụ 100% tại 1 điểm duy nhất (Connected Topology).
+ * NGUYÊN TẮC BẤT DI BẤT DỊCH:
+ * 1. Mọi bộ phận nối tiếp nhau PHẢI được lồng trực tiếp vào trong thẻ <g> của bộ phận cha.
+ *    - Khớp Vai -> Bắp tay -> Khớp Cùi chỏ (Elbow) -> Cẳng tay -> Khớp Cổ tay -> Bàn tay.
+ *    - Khớp Hông -> Đùi -> Khớp Đầu gối (Knee) -> Cẳng chân -> Khớp Cổ chân -> Bàn chân.
+ * 2. Tuyệt đối không dùng tọa độ rời rạc (KHÔNG BAO GIỜ ĐỨT KHỚP).
+ * 3. Hỗ trợ thay thế từng bộ phận độc lập qua props `parts` (Custom Skins / Assets).
  */
 export const StickmanRig: React.FC<StickmanRigProps> = ({
   state,
@@ -58,6 +60,7 @@ export const StickmanRig: React.FC<StickmanRigProps> = ({
     holdingTarget,
     pointingTarget,
     walkCycleProgress = 0,
+    limbAngles,
   } = state;
 
   // Kích thước chuẩn xương que 2K (Canvas 2560x1440, tổng chiều cao ~750px - 850px)
@@ -72,11 +75,11 @@ export const StickmanRig: React.FC<StickmanRigProps> = ({
   const effectiveSpineLength = spineLength * breathScale;
 
   // =========================================================================
-  // KHỚP GỐC: HÔNG VÀ CỔ (Connected Topology - 100% hội tụ trục thân)
+  // GỐC TOÀN CỤC KHỚP XƯƠNG (CONNECTED TOPOLOGY - HỘI TỤ 100% VÀO TRỤC THÂN)
   // =========================================================================
   const hip: Point2D = { x: 0, y: -350 };
   const neck: Point2D = { x: 0, y: -350 - effectiveSpineLength };
-  const headCenter: Point2D = { x: 0, y: -350 - effectiveSpineLength - headRadius };
+  const headCenter: Point2D = { x: 0, y: neck.y - headRadius };
 
   // Cả hai vai hội tụ chính xác tại 1 điểm duy nhất trên đốt sống cổ
   const leftShoulder: Point2D = { x: 0, y: neck.y };
@@ -93,22 +96,36 @@ export const StickmanRig: React.FC<StickmanRigProps> = ({
   const isWalking = (pose === "walking" || walkCycleProgress > 0) && weight > 0.02;
 
   // =========================================================================
-  // 1. TÍNH TOÁN CÁNH TAY (ARMS & HANDS)
-  // Tư thế đứng A-pose tự nhiên: mở 25-30 độ so với thân, cong nhẹ khuỷu tay
-  // Tự động vung tay nhịp nhàng khi bước đi (isWalking)
+  // 1. TÍNH TOÁN GÓC XOAY KHỚP TAY (HIERARCHICAL ARM ANGLES)
+  // Gồm: upperArmAngle (Góc toàn cục) và lowerArmLocalAngle (Góc cục bộ bên trong bắp tay)
   // =========================================================================
-  let leftElbow: Point2D = { x: -65, y: neck.y + 130 };
-  let leftHand: Point2D = { x: -95, y: neck.y + 265 };
-  let rightElbow: Point2D = { x: 65, y: neck.y + 130 };
-  let rightHand: Point2D = { x: 95, y: neck.y + 265 };
+  let leftUpperArmAngle = -28;
+  let leftLowerArmLocalAngle = 14;
+  let leftHandLocalAngle = 0;
+
+  let rightUpperArmAngle = 28;
+  let rightLowerArmLocalAngle = -14;
+  let rightHandLocalAngle = 0;
 
   if (isWalking && pose !== "holdingObject" && !holdingTarget) {
-    // Vung tay tự nhiên đối xứng với bước chân (bước êm, không gượng)
-    const armSwing = Math.sin(walkCycleProgress * Math.PI * 2) * (36 * weight);
-    leftElbow = { x: -55 - armSwing * 0.7, y: neck.y + 130 };
-    leftHand = { x: -80 - armSwing * 1.3, y: neck.y + 260 - Math.abs(armSwing) * 0.15 };
-    rightElbow = { x: 55 + armSwing * 0.7, y: neck.y + 130 };
-    rightHand = { x: 80 + armSwing * 1.3, y: neck.y + 260 - Math.abs(armSwing) * 0.15 };
+    // Vung tay tự nhiên đối xứng với bước chân
+    const armSwing = Math.sin(walkCycleProgress * Math.PI * 2) * (34 * weight);
+    leftUpperArmAngle = -16 - armSwing;
+    leftLowerArmLocalAngle = 18 + Math.abs(armSwing) * 0.35;
+
+    rightUpperArmAngle = 16 + armSwing;
+    rightLowerArmLocalAngle = 18 + Math.abs(armSwing) * 0.35;
+  } else if (pose === "waving") {
+    // Tay trái ở tư thế nghỉ tự nhiên
+    leftUpperArmAngle = -28;
+    leftLowerArmLocalAngle = 14;
+
+    // Tay phải giơ cao vẫy tay nhịp nhàng qua khớp cùi chỏ
+    rightUpperArmAngle = -135; // Giơ xéo lên trên về phía trước
+    const waveProgress = walkCycleProgress || 0;
+    const waveSway = Math.sin(waveProgress * Math.PI * 8) * 28;
+    rightLowerArmLocalAngle = -35 + waveSway;
+    rightHandLocalAngle = 12;
   } else if (pose === "holdingObject" && holdingTarget) {
     const targetLeftLocal: Point2D = {
       x: ((holdingTarget.leftGrip.x - x) / scale) * flipSign,
@@ -119,74 +136,149 @@ export const StickmanRig: React.FC<StickmanRigProps> = ({
       y: (holdingTarget.rightGrip.y - y) / scale,
     };
 
-    const leftArmIK = solveTwoBoneIK(leftShoulder, targetLeftLocal, upperArmLength, forearmLength, false);
-    const rightArmIK = solveTwoBoneIK(rightShoulder, targetRightLocal, upperArmLength, forearmLength, true);
+    const leftIK = solveTwoBoneIKHierarchical(leftShoulder, targetLeftLocal, upperArmLength, forearmLength, false);
+    const rightIK = solveTwoBoneIKHierarchical(rightShoulder, targetRightLocal, upperArmLength, forearmLength, true);
 
-    leftElbow = leftArmIK.joint;
-    leftHand = leftArmIK.reachedTarget;
-    rightElbow = rightArmIK.joint;
-    rightHand = rightArmIK.reachedTarget;
+    leftUpperArmAngle = leftIK.upperAngleDeg;
+    leftLowerArmLocalAngle = leftIK.lowerLocalAngleDeg;
+    rightUpperArmAngle = rightIK.upperAngleDeg;
+    rightLowerArmLocalAngle = rightIK.lowerLocalAngleDeg;
   } else if (pose === "holdingObject") {
-    leftElbow = { x: -75, y: neck.y + 115 };
-    rightElbow = { x: 75, y: neck.y + 115 };
-    leftHand = { x: -40, y: neck.y + 160 };
-    rightHand = { x: 40, y: neck.y + 160 };
+    leftUpperArmAngle = -42;
+    leftLowerArmLocalAngle = 68;
+    rightUpperArmAngle = 42;
+    rightLowerArmLocalAngle = -68;
   } else if (pose === "sittingBehindDesk") {
-    // Hai tay xuôi tự nhiên từ vai (y = neck.y) và đặt nhẹ bàn tay lên mặt bàn (tabletop tại y = -360)
-    leftElbow = { x: -65, y: -455 };
-    rightElbow = { x: 65, y: -455 };
-    leftHand = { x: -90, y: -360 };
-    rightHand = { x: 90, y: -360 };
+    // Hai tay xuôi tự nhiên từ vai và đặt nhẹ bàn tay lên mặt bàn
+    leftUpperArmAngle = -22;
+    leftLowerArmLocalAngle = 72;
+    rightUpperArmAngle = 22;
+    rightLowerArmLocalAngle = 72;
   } else if (pose === "pointing" && pointingTarget) {
     const targetLocal: Point2D = {
       x: ((pointingTarget.x - x) / scale) * flipSign,
       y: (pointingTarget.y - y) / scale,
     };
-    const pointIK = solveTwoBoneIK(rightShoulder, targetLocal, upperArmLength, forearmLength, true);
-    rightElbow = pointIK.joint;
-    rightHand = pointIK.reachedTarget;
+    const pointIK = solveTwoBoneIKHierarchical(rightShoulder, targetLocal, upperArmLength, forearmLength, true);
+    rightUpperArmAngle = pointIK.upperAngleDeg;
+    rightLowerArmLocalAngle = pointIK.lowerLocalAngleDeg;
+
+    leftUpperArmAngle = -28;
+    leftLowerArmLocalAngle = 14;
+  } else if (pose === "pointing") {
+    rightUpperArmAngle = -75;
+    rightLowerArmLocalAngle = 15;
+    leftUpperArmAngle = -28;
+    leftLowerArmLocalAngle = 14;
+  } else if (pose === "shrugging") {
+    leftUpperArmAngle = -52;
+    leftLowerArmLocalAngle = 92;
+    rightUpperArmAngle = 52;
+    rightLowerArmLocalAngle = -92;
   }
 
-  const leftUpperArmAngle = calculateSegmentAngle(leftShoulder, leftElbow, "downwards");
-  const leftLowerArmAngle = calculateSegmentAngle(leftElbow, leftHand, "downwards");
-  const leftHandAngle = leftLowerArmAngle;
-
-  const rightUpperArmAngle = calculateSegmentAngle(rightShoulder, rightElbow, "downwards");
-  const rightLowerArmAngle = calculateSegmentAngle(rightElbow, rightHand, "downwards");
-  const rightHandAngle = rightLowerArmAngle;
+  // Áp dụng ghi đè góc chi tiết (nếu có từ Animation Keyframes)
+  if (limbAngles?.leftUpperArm !== undefined) leftUpperArmAngle = limbAngles.leftUpperArm;
+  if (limbAngles?.leftLowerArm !== undefined) leftLowerArmLocalAngle = limbAngles.leftLowerArm;
+  if (limbAngles?.leftHand !== undefined) leftHandLocalAngle = limbAngles.leftHand;
+  if (limbAngles?.rightUpperArm !== undefined) rightUpperArmAngle = limbAngles.rightUpperArm;
+  if (limbAngles?.rightLowerArm !== undefined) rightLowerArmLocalAngle = limbAngles.rightLowerArm;
+  if (limbAngles?.rightHand !== undefined) rightHandLocalAngle = limbAngles.rightHand;
 
   // =========================================================================
-  // 2. TÍNH TOÁN CHÂN (LEGS & FEET)
-  // Bàn chân chạm đất tại y = 0, gối tại y = -175, hông tại y = -350
+  // 2. TÍNH TOÁN GÓC XOAY KHỚP CHÂN (HIERARCHICAL LEG ANGLES)
+  // Gồm: thighAngle (Toàn cục), calfLocalAngle (Cục bộ đùi) và footLocalAngle (Cục bộ cẳng chân)
   // =========================================================================
-  let leftKnee: Point2D = { x: -35, y: -175 };
-  let rightKnee: Point2D = { x: 35, y: -175 };
-  let leftFoot: Point2D = { x: -45, y: 0 };
-  let rightFoot: Point2D = { x: 45, y: 0 };
+  let leftThighAngle = -6;
+  let leftCalfLocalAngle = 6;
+  let leftFootLocalAngle = 0;
+
+  let rightThighAngle = 6;
+  let rightCalfLocalAngle = -6;
+  let rightFootLocalAngle = 0;
 
   if (isWalking) {
     const stride = 65 * weight;
     const stepH = 22 * weight;
-    const walkData = calculateWalkCycle(hip, walkCycleProgress, stride, stepH);
-    leftKnee = walkData.leftKnee;
-    rightKnee = walkData.rightKnee;
-    leftFoot = walkData.leftFoot;
-    rightFoot = walkData.rightFoot;
+    const walkData = calculateWalkCycleHierarchical(
+      hip,
+      walkCycleProgress,
+      stride,
+      stepH,
+      thighLength,
+      calfLength
+    );
+    leftThighAngle = walkData.leftThighAngle;
+    leftCalfLocalAngle = walkData.leftCalfLocalAngle;
+    leftFootLocalAngle = walkData.leftFootLocalAngle;
+    rightThighAngle = walkData.rightThighAngle;
+    rightCalfLocalAngle = walkData.rightCalfLocalAngle;
+    rightFootLocalAngle = walkData.rightFootLocalAngle;
   } else if (pose === "sittingBehindDesk") {
-    // Khi ngồi sau bàn, chân ẩn sau mặt bàn
-    leftKnee = { x: -35, y: -260 };
-    rightKnee = { x: 35, y: -260 };
-    leftFoot = { x: -35, y: -120 };
-    rightFoot = { x: 35, y: -120 };
+    leftThighAngle = -85;
+    leftCalfLocalAngle = 85;
+    leftFootLocalAngle = 0;
+    rightThighAngle = 85;
+    rightCalfLocalAngle = -85;
+    rightFootLocalAngle = 0;
   }
 
-  const leftThighAngle = calculateSegmentAngle(leftHipJoint, leftKnee, "downwards");
-  const leftCalfAngle = calculateSegmentAngle(leftKnee, leftFoot, "downwards");
-  const leftFootAngle = 0;
+  if (limbAngles?.leftThigh !== undefined) leftThighAngle = limbAngles.leftThigh;
+  if (limbAngles?.leftCalf !== undefined) leftCalfLocalAngle = limbAngles.leftCalf;
+  if (limbAngles?.leftFoot !== undefined) leftFootLocalAngle = limbAngles.leftFoot;
+  if (limbAngles?.rightThigh !== undefined) rightThighAngle = limbAngles.rightThigh;
+  if (limbAngles?.rightCalf !== undefined) rightCalfLocalAngle = limbAngles.rightCalf;
+  if (limbAngles?.rightFoot !== undefined) rightFootLocalAngle = limbAngles.rightFoot;
 
-  const rightThighAngle = calculateSegmentAngle(rightHipJoint, rightKnee, "downwards");
-  const rightCalfAngle = calculateSegmentAngle(rightKnee, rightFoot, "downwards");
-  const rightFootAngle = 0;
+  const headAngle = limbAngles?.head ?? 0;
+
+  // =========================================================================
+  // 3. TÍNH TOÁN TỌA ĐỘ TIÊU ĐIỂM (FORWARD KINEMATICS FOR ANCHORS)
+  // Trong hệ tọa độ SVG: Điểm (0, L) quay góc theta sẽ có x = -L * sin(theta), y = L * cos(theta)
+  // =========================================================================
+  const leftUpperRad = (leftUpperArmAngle * Math.PI) / 180;
+  const leftLowerGlobalRad = ((leftUpperArmAngle + leftLowerArmLocalAngle) * Math.PI) / 180;
+  const leftElbow: Point2D = {
+    x: leftShoulder.x - Math.sin(leftUpperRad) * upperArmLength,
+    y: leftShoulder.y + Math.cos(leftUpperRad) * upperArmLength,
+  };
+  const leftHand: Point2D = {
+    x: leftElbow.x - Math.sin(leftLowerGlobalRad) * forearmLength,
+    y: leftElbow.y + Math.cos(leftLowerGlobalRad) * forearmLength,
+  };
+
+  const rightUpperRad = (rightUpperArmAngle * Math.PI) / 180;
+  const rightLowerGlobalRad = ((rightUpperArmAngle + rightLowerArmLocalAngle) * Math.PI) / 180;
+  const rightElbow: Point2D = {
+    x: rightShoulder.x - Math.sin(rightUpperRad) * upperArmLength,
+    y: rightShoulder.y + Math.cos(rightUpperRad) * upperArmLength,
+  };
+  const rightHand: Point2D = {
+    x: rightElbow.x - Math.sin(rightLowerGlobalRad) * forearmLength,
+    y: rightElbow.y + Math.cos(rightLowerGlobalRad) * forearmLength,
+  };
+
+  const leftThighRad = (leftThighAngle * Math.PI) / 180;
+  const leftCalfGlobalRad = ((leftThighAngle + leftCalfLocalAngle) * Math.PI) / 180;
+  const leftKnee: Point2D = {
+    x: leftHipJoint.x - Math.sin(leftThighRad) * thighLength,
+    y: leftHipJoint.y + Math.cos(leftThighRad) * thighLength,
+  };
+  const leftFoot: Point2D = {
+    x: leftKnee.x - Math.sin(leftCalfGlobalRad) * calfLength,
+    y: leftKnee.y + Math.cos(leftCalfGlobalRad) * calfLength,
+  };
+
+  const rightThighRad = (rightThighAngle * Math.PI) / 180;
+  const rightCalfGlobalRad = ((rightThighAngle + rightCalfLocalAngle) * Math.PI) / 180;
+  const rightKnee: Point2D = {
+    x: rightHipJoint.x - Math.sin(rightThighRad) * thighLength,
+    y: rightHipJoint.y + Math.cos(rightThighRad) * thighLength,
+  };
+  const rightFoot: Point2D = {
+    x: rightKnee.x - Math.sin(rightCalfGlobalRad) * calfLength,
+    y: rightKnee.y + Math.cos(rightCalfGlobalRad) * calfLength,
+  };
 
   React.useEffect(() => {
     if (onAnchorsComputed) {
@@ -209,7 +301,25 @@ export const StickmanRig: React.FC<StickmanRigProps> = ({
         rightFoot: { x: x + rightFoot.x * scale * flipSign, y: y + rightFoot.y * scale },
       });
     }
-  }, [x, y, scale, pose, holdingTarget, pointingTarget, walkCycleProgress, effectiveSpineLength, facing]);
+  }, [
+    x,
+    y,
+    scale,
+    pose,
+    holdingTarget,
+    pointingTarget,
+    walkCycleProgress,
+    effectiveSpineLength,
+    facing,
+    leftUpperArmAngle,
+    leftLowerArmLocalAngle,
+    rightUpperArmAngle,
+    rightLowerArmLocalAngle,
+    leftThighAngle,
+    leftCalfLocalAngle,
+    rightThighAngle,
+    rightCalfLocalAngle,
+  ]);
 
   const flipTransform = facing === "left" ? "scale(-1, 1)" : "";
   const isSitting = pose === "sittingBehindDesk";
@@ -221,7 +331,7 @@ export const StickmanRig: React.FC<StickmanRigProps> = ({
       data-character-pose={pose}
       clipPath={isSitting ? "url(#seated-desk-clip)" : undefined}
     >
-      {/* ClipPath cắt phẳng toàn bộ phần dưới mặt bàn (y > -358) khi ngồi làm việc */}
+      {/* ClipPath cắt phẳng toàn bộ phần dưới mặt bàn khi ngồi làm việc */}
       {isSitting && (
         <defs>
           <clipPath id="seated-desk-clip">
@@ -231,58 +341,165 @@ export const StickmanRig: React.FC<StickmanRigProps> = ({
       )}
 
       {/* =========================================================================
-          LAYER A: CHÂN (LEGS & FEET) - ẨN 100% KHI NGỒI SAU BÀN
+          LAYER A: CHÂN (HIERARCHICAL NESTED LEGS: HIP -> THIGH -> KNEE -> CALF -> FOOT)
+          Ẩn 100% khi ngồi sau bàn
          ========================================================================= */}
       {(renderPart === "all" || renderPart === "legsOnly") && !isSitting && (
         <g id="layer-character-legs">
           {/* CHÂN TRÁI */}
-          <g id="bone-left-thigh" transform={`translate(${leftHipJoint.x}, ${leftHipJoint.y}) rotate(${leftThighAngle})`}>
-            {parts?.leftThigh ? parts.leftThigh : (
-              <line x1={0} y1={0} x2={0} y2={thighLength} stroke="#141414" strokeWidth={14} strokeLinecap="round" strokeLinejoin="round" />
-            )}
-          </g>
+          <g id="left-hip-cluster" transform={`translate(${leftHipJoint.x}, ${leftHipJoint.y})`}>
+            {/* Đùi trái: Xoay quanh khớp hông (0, 0) */}
+            <g id="bone-left-thigh" transform={`rotate(${leftThighAngle})`}>
+              {parts?.leftThigh ? (
+                parts.leftThigh
+              ) : (
+                <g id="default-left-thigh">
+                  <circle cx={0} cy={0} r={8} fill="#141414" />
+                  <line
+                    x1={0}
+                    y1={0}
+                    x2={0}
+                    y2={thighLength}
+                    stroke="#141414"
+                    strokeWidth={14}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </g>
+              )}
 
-          <g id="bone-left-calf" transform={`translate(${leftKnee.x}, ${leftKnee.y}) rotate(${leftCalfAngle})`}>
-            {parts?.leftCalf ? parts.leftCalf : (
-              <line x1={0} y1={0} x2={0} y2={calfLength} stroke="#141414" strokeWidth={14} strokeLinecap="round" strokeLinejoin="round" />
-            )}
-          </g>
+              {/* Khớp đầu gối (Left Knee Joint): Nằm chính xác tại đầu mút đùi (0, thighLength) */}
+              <g id="left-knee-cluster" transform={`translate(0, ${thighLength})`}>
+                {/* Cẳng chân trái: Xoay cục bộ quanh đầu gối */}
+                <g id="bone-left-calf" transform={`rotate(${leftCalfLocalAngle})`}>
+                  {parts?.leftCalf ? (
+                    parts.leftCalf
+                  ) : (
+                    <g id="default-left-calf">
+                      <circle cx={0} cy={0} r={7.5} fill="#141414" />
+                      <line
+                        x1={0}
+                        y1={0}
+                        x2={0}
+                        y2={calfLength}
+                        stroke="#141414"
+                        strokeWidth={14}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </g>
+                  )}
 
-          <g id="bone-left-foot" transform={`translate(${leftFoot.x}, ${leftFoot.y}) rotate(${leftFootAngle})`}>
-            {parts?.leftFoot ? parts.leftFoot : (
-              <line x1={0} y1={0} x2={-28} y2={0} stroke="#141414" strokeWidth={14} strokeLinecap="round" strokeLinejoin="round" />
-            )}
+                  {/* Khớp cổ chân & Bàn chân (Left Foot Joint): Nằm tại mút cẳng chân (0, calfLength) */}
+                  <g id="left-foot-cluster" transform={`translate(0, ${calfLength})`}>
+                    <g id="bone-left-foot" transform={`rotate(${leftFootLocalAngle})`}>
+                      {parts?.leftFoot ? (
+                        parts.leftFoot
+                      ) : (
+                        <g id="default-left-foot">
+                          <circle cx={0} cy={0} r={7} fill="#141414" />
+                          <line
+                            x1={0}
+                            y1={0}
+                            x2={-28}
+                            y2={0}
+                            stroke="#141414"
+                            strokeWidth={14}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </g>
+                      )}
+                    </g>
+                  </g>
+                </g>
+              </g>
+            </g>
           </g>
 
           {/* CHÂN PHẢI */}
-          <g id="bone-right-thigh" transform={`translate(${rightHipJoint.x}, ${rightHipJoint.y}) rotate(${rightThighAngle})`}>
-            {parts?.rightThigh ? parts.rightThigh : (
-              <line x1={0} y1={0} x2={0} y2={thighLength} stroke="#141414" strokeWidth={14} strokeLinecap="round" strokeLinejoin="round" />
-            )}
-          </g>
+          <g id="right-hip-cluster" transform={`translate(${rightHipJoint.x}, ${rightHipJoint.y})`}>
+            {/* Đùi phải: Xoay quanh khớp hông (0, 0) */}
+            <g id="bone-right-thigh" transform={`rotate(${rightThighAngle})`}>
+              {parts?.rightThigh ? (
+                parts.rightThigh
+              ) : (
+                <g id="default-right-thigh">
+                  <circle cx={0} cy={0} r={8} fill="#141414" />
+                  <line
+                    x1={0}
+                    y1={0}
+                    x2={0}
+                    y2={thighLength}
+                    stroke="#141414"
+                    strokeWidth={14}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </g>
+              )}
 
-          <g id="bone-right-calf" transform={`translate(${rightKnee.x}, ${rightKnee.y}) rotate(${rightCalfAngle})`}>
-            {parts?.rightCalf ? parts.rightCalf : (
-              <line x1={0} y1={0} x2={0} y2={calfLength} stroke="#141414" strokeWidth={14} strokeLinecap="round" strokeLinejoin="round" />
-            )}
-          </g>
+              {/* Khớp đầu gối (Right Knee Joint): Nằm chính xác tại đầu mút đùi (0, thighLength) */}
+              <g id="right-knee-cluster" transform={`translate(0, ${thighLength})`}>
+                {/* Cẳng chân phải: Xoay cục bộ quanh đầu gối */}
+                <g id="bone-right-calf" transform={`rotate(${rightCalfLocalAngle})`}>
+                  {parts?.rightCalf ? (
+                    parts.rightCalf
+                  ) : (
+                    <g id="default-right-calf">
+                      <circle cx={0} cy={0} r={7.5} fill="#141414" />
+                      <line
+                        x1={0}
+                        y1={0}
+                        x2={0}
+                        y2={calfLength}
+                        stroke="#141414"
+                        strokeWidth={14}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </g>
+                  )}
 
-          <g id="bone-right-foot" transform={`translate(${rightFoot.x}, ${rightFoot.y}) rotate(${rightFootAngle})`}>
-            {parts?.rightFoot ? parts.rightFoot : (
-              <line x1={0} y1={0} x2={28} y2={0} stroke="#141414" strokeWidth={14} strokeLinecap="round" strokeLinejoin="round" />
-            )}
+                  {/* Khớp cổ chân & Bàn chân (Right Foot Joint): Nằm tại mút cẳng chân (0, calfLength) */}
+                  <g id="right-foot-cluster" transform={`translate(0, ${calfLength})`}>
+                    <g id="bone-right-foot" transform={`rotate(${rightFootLocalAngle})`}>
+                      {parts?.rightFoot ? (
+                        parts.rightFoot
+                      ) : (
+                        <g id="default-right-foot">
+                          <circle cx={0} cy={0} r={7} fill="#141414" />
+                          <line
+                            x1={0}
+                            y1={0}
+                            x2={28}
+                            y2={0}
+                            stroke="#141414"
+                            strokeWidth={14}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </g>
+                      )}
+                    </g>
+                  </g>
+                </g>
+              </g>
+            </g>
           </g>
         </g>
       )}
 
       {/* =========================================================================
-          LAYER B: THÂN & ĐẦU (TORSO & HEAD)
+          LAYER B: THÂN & ĐẦU (TORSO & HEAD - HỘI TỤ ĐỐT SỐNG CỔ)
          ========================================================================= */}
       {(renderPart === "all" || renderPart === "bodyOnly") && (
         <g id="layer-character-torso-head">
-          {/* CỘT SỐNG (TORSO) - Nối từ hip (y = -350) lên cổ neck (y = -350 - spineLength) */}
+          {/* CỘT SỐNG (TORSO) - Nối từ hip (y = -350) lên cổ neck */}
           <g id="bone-torso">
-            {parts?.torso ? parts.torso : (
+            {parts?.torso ? (
+              parts.torso
+            ) : (
               <line
                 x1={0}
                 y1={hip.y}
@@ -296,68 +513,152 @@ export const StickmanRig: React.FC<StickmanRigProps> = ({
             )}
           </g>
 
-          {/* ĐẦU & BIỂU CẢM KHUÔN MẶT */}
-          <g id="bone-head" transform={`translate(${headCenter.x}, ${headCenter.y})`}>
-            {parts?.head ? parts.head : (
-              <g id="default-stickman-head">
-                <circle cx={0} cy={0} r={headRadius} fill="#FFFFFF" stroke="#141414" strokeWidth={14} />
-                <FacialExpressions
-                  headRadius={headRadius}
-                  facing={facing}
-                  eyes={state.eyes}
-                  eyebrows={state.eyebrows}
-                  mouth={state.mouth}
-                  pupilGaze={state.pupilGaze}
-                  blush={state.blush}
-                  sweatDrop={state.sweatDrop}
-                />
-              </g>
-            )}
+          {/* ĐẦU & BIỂU CẢM KHUÔN MẶT - Lồng tại đỉnh đốt sống cổ neck (y = neck.y) */}
+          <g id="neck-head-cluster" transform={`translate(0, ${neck.y})`}>
+            <g id="bone-head" transform={`translate(0, ${-headRadius}) rotate(${headAngle})`}>
+              {parts?.head ? (
+                parts.head
+              ) : (
+                <g id="default-stickman-head">
+                  <circle cx={0} cy={0} r={headRadius} fill="#FFFFFF" stroke="#141414" strokeWidth={14} />
+                  <FacialExpressions
+                    headRadius={headRadius}
+                    facing={facing}
+                    eyes={state.eyes}
+                    eyebrows={state.eyebrows}
+                    mouth={state.mouth}
+                    pupilGaze={state.pupilGaze}
+                    blush={state.blush}
+                    sweatDrop={state.sweatDrop}
+                  />
+                </g>
+              )}
+            </g>
           </g>
         </g>
       )}
 
       {/* =========================================================================
-          LAYER C: TAY VÀ BÀN TAY (ARMS & HANDS - ĐƯỢC IK TỰ ĐỘNG XOAY)
+          LAYER C: CÁNH TAY (HIERARCHICAL NESTED ARMS: SHOULDER -> UPPER ARM -> ELBOW -> LOWER ARM -> HAND)
          ========================================================================= */}
       {(renderPart === "all" || renderPart === "armsOnly") && (
         <g id="layer-character-arms">
-          {/* TAY TRÁI */}
-          <g id="bone-left-upper-arm" transform={`translate(${leftShoulder.x}, ${leftShoulder.y}) rotate(${leftUpperArmAngle})`}>
-            {parts?.leftUpperArm ? parts.leftUpperArm : (
-              <line x1={0} y1={0} x2={0} y2={upperArmLength} stroke="#141414" strokeWidth={14} strokeLinecap="round" strokeLinejoin="round" />
-            )}
+          {/* CÁNH TAY TRÁI (LEFT ARM CLUSTER) */}
+          <g id="left-shoulder-cluster" transform={`translate(${leftShoulder.x}, ${leftShoulder.y})`}>
+            {/* Bắp tay trái: Xoay quanh góc (0, 0) của vai */}
+            <g id="bone-left-upper-arm" transform={`rotate(${leftUpperArmAngle})`}>
+              {parts?.leftUpperArm ? (
+                parts.leftUpperArm
+              ) : (
+                <g id="default-left-upper-arm">
+                  <circle cx={0} cy={0} r={8} fill="#141414" />
+                  <line
+                    x1={0}
+                    y1={0}
+                    x2={0}
+                    y2={upperArmLength}
+                    stroke="#141414"
+                    strokeWidth={14}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </g>
+              )}
+
+              {/* Khớp cùi chỏ (Left Elbow Joint): Nằm ngay tại đầu mút bắp tay (0, upperArmLength) */}
+              <g id="left-elbow-cluster" transform={`translate(0, ${upperArmLength})`}>
+                {/* Cẳng tay trái: Xoay cục bộ quanh khớp cùi chỏ (0, 0) */}
+                <g id="bone-left-lower-arm" transform={`rotate(${leftLowerArmLocalAngle})`}>
+                  {parts?.leftLowerArm ? (
+                    parts.leftLowerArm
+                  ) : (
+                    <g id="default-left-lower-arm">
+                      <circle cx={0} cy={0} r={7.5} fill="#141414" />
+                      <line
+                        x1={0}
+                        y1={0}
+                        x2={0}
+                        y2={forearmLength}
+                        stroke="#141414"
+                        strokeWidth={14}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </g>
+                  )}
+
+                  {/* Khớp cổ tay & Bàn tay: Nằm tại đầu mút cẳng tay (0, forearmLength) */}
+                  <g id="left-hand-cluster" transform={`translate(0, ${forearmLength})`}>
+                    <g id="bone-left-hand" transform={`rotate(${leftHandLocalAngle})`}>
+                      {parts?.leftHand ? (
+                        parts.leftHand
+                      ) : (
+                        <circle cx={0} cy={2} r={12} fill="#141414" />
+                      )}
+                    </g>
+                  </g>
+                </g>
+              </g>
+            </g>
           </g>
 
-          <g id="bone-left-lower-arm" transform={`translate(${leftElbow.x}, ${leftElbow.y}) rotate(${leftLowerArmAngle})`}>
-            {parts?.leftLowerArm ? parts.leftLowerArm : (
-              <line x1={0} y1={0} x2={0} y2={forearmLength} stroke="#141414" strokeWidth={14} strokeLinecap="round" strokeLinejoin="round" />
-            )}
-          </g>
+          {/* CÁNH TAY PHẢI (RIGHT ARM CLUSTER) */}
+          <g id="right-shoulder-cluster" transform={`translate(${rightShoulder.x}, ${rightShoulder.y})`}>
+            {/* Bắp tay phải: Xoay quanh góc (0, 0) của vai */}
+            <g id="bone-right-upper-arm" transform={`rotate(${rightUpperArmAngle})`}>
+              {parts?.rightUpperArm ? (
+                parts.rightUpperArm
+              ) : (
+                <g id="default-right-upper-arm">
+                  <circle cx={0} cy={0} r={8} fill="#141414" />
+                  <line
+                    x1={0}
+                    y1={0}
+                    x2={0}
+                    y2={upperArmLength}
+                    stroke="#141414"
+                    strokeWidth={14}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </g>
+              )}
 
-          <g id="bone-left-hand" transform={`translate(${leftHand.x}, ${leftHand.y}) rotate(${leftHandAngle})`}>
-            {parts?.leftHand ? parts.leftHand : (
-              <circle cx={0} cy={0} r={10} fill="#141414" />
-            )}
-          </g>
+              {/* Khớp cùi chỏ (Right Elbow Joint): Nằm ngay tại đầu mút bắp tay (0, upperArmLength) */}
+              <g id="right-elbow-cluster" transform={`translate(0, ${upperArmLength})`}>
+                {/* Cẳng tay phải: Xoay cục bộ quanh khớp cùi chỏ (0, 0) */}
+                <g id="bone-right-lower-arm" transform={`rotate(${rightLowerArmLocalAngle})`}>
+                  {parts?.rightLowerArm ? (
+                    parts.rightLowerArm
+                  ) : (
+                    <g id="default-right-lower-arm">
+                      <circle cx={0} cy={0} r={7.5} fill="#141414" />
+                      <line
+                        x1={0}
+                        y1={0}
+                        x2={0}
+                        y2={forearmLength}
+                        stroke="#141414"
+                        strokeWidth={14}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </g>
+                  )}
 
-          {/* TAY PHẢI */}
-          <g id="bone-right-upper-arm" transform={`translate(${rightShoulder.x}, ${rightShoulder.y}) rotate(${rightUpperArmAngle})`}>
-            {parts?.rightUpperArm ? parts.rightUpperArm : (
-              <line x1={0} y1={0} x2={0} y2={upperArmLength} stroke="#141414" strokeWidth={14} strokeLinecap="round" strokeLinejoin="round" />
-            )}
-          </g>
-
-          <g id="bone-right-lower-arm" transform={`translate(${rightElbow.x}, ${rightElbow.y}) rotate(${rightLowerArmAngle})`}>
-            {parts?.rightLowerArm ? parts.rightLowerArm : (
-              <line x1={0} y1={0} x2={0} y2={forearmLength} stroke="#141414" strokeWidth={14} strokeLinecap="round" strokeLinejoin="round" />
-            )}
-          </g>
-
-          <g id="bone-right-hand" transform={`translate(${rightHand.x}, ${rightHand.y}) rotate(${rightHandAngle})`}>
-            {parts?.rightHand ? parts.rightHand : (
-              <circle cx={0} cy={0} r={10} fill="#141414" />
-            )}
+                  {/* Khớp cổ tay & Bàn tay: Nằm tại đầu mút cẳng tay (0, forearmLength) */}
+                  <g id="right-hand-cluster" transform={`translate(0, ${forearmLength})`}>
+                    <g id="bone-right-hand" transform={`rotate(${rightHandLocalAngle})`}>
+                      {parts?.rightHand ? (
+                        parts.rightHand
+                      ) : (
+                        <circle cx={0} cy={2} r={12} fill="#141414" />
+                      )}
+                    </g>
+                  </g>
+                </g>
+              </g>
+            </g>
           </g>
         </g>
       )}

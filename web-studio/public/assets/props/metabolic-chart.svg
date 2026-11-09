@@ -1,0 +1,37 @@
+<svg viewBox="0 0 400 400" width="400" height="400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="chartBodyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#fefefe;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#e0e0e0;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="screenGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#a8e6cf;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#56ab91;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Layer 1: Ground contact shadow -->
+  <ellipse cx="200" cy="380" rx="90" ry="12" fill="#000000" opacity="0.15"/>
+
+  <!-- Layer 2: Main Body -->
+  <path d="M120 380 L280 380 L290 120 L110 120 Z" fill="url(#chartBodyGrad)" stroke="#1A1A1A" stroke-width="10" stroke-linejoin="round"/>
+  
+  <!-- Layer 3: Screen Area -->
+  <rect x="140" y="150" width="120" height="180" fill="url(#screenGrad)" stroke="#1A1A1A" stroke-width="8" rx="5"/>
+  
+  <!-- Layer 4: Ambient occlusion/Shadow -->
+  <path d="M115 125 L285 125 L290 120 L110 120 Z" fill="#000000" opacity="0.2"/>
+  
+  <!-- Layer 5: Chart Lines (Data) -->
+  <path d="M150 280 C 170 270, 190 300, 210 250 C 230 200, 240 220, 250 180" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" opacity="0.8"/>
+  <path d="M150 280 C 170 270, 190 300, 210 250 C 230 200, 240 220, 250 180" fill="none" stroke="#2c3e50" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Layer 6: Details/Buttons -->
+  <circle cx="160" cy="355" r="8" fill="#1A1A1A"/>
+  <circle cx="200" cy="355" r="8" fill="#1A1A1A"/>
+  <circle cx="240" cy="355" r="8" fill="#1A1A1A"/>
+  
+  <!-- Layer 7: Specular Highlights -->
+  <path d="M120 125 L280 125 L275 135 L125 135 Z" fill="#ffffff" opacity="0.3"/>
+  <path d="M145 155 L255 155 L255 165 L145 165 Z" fill="#ffffff" opacity="0.2"/>
+</svg>

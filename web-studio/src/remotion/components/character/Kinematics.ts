@@ -142,3 +142,106 @@ export function calculateSegmentAngle(
   return defaultOrientation === "downwards" ? angleDeg - 90 : angleDeg;
 }
 
+/**
+ * Calculates the child's local rotation angle inside parent's rotated coordinate frame.
+ * Normalized to [-180, 180] degrees.
+ */
+export function calculateLocalAngle(
+  parentGlobalAngleDeg: number,
+  childGlobalAngleDeg: number
+): number {
+  let diff = (childGlobalAngleDeg - parentGlobalAngleDeg) % 360;
+  if (diff > 180) diff -= 360;
+  if (diff < -180) diff += 360;
+  return diff;
+}
+
+export interface HierarchicalTwoBoneResult {
+  upperAngleDeg: number;       // Global rotation of upper bone (0 deg = +Y downwards)
+  lowerLocalAngleDeg: number;  // Local rotation of lower bone relative to upper bone
+  lowerGlobalAngleDeg: number; // Global rotation of lower bone
+  joint: Point2D;              // Joint (elbow/knee) position in root coordinates
+  reachedTarget: Point2D;      // End effector (hand/foot) position in root coordinates
+}
+
+/**
+ * Solves 2-bone Inverse Kinematics returning both global and local angles
+ * for hierarchical nested SVG groups (<g> within <g>).
+ */
+export function solveTwoBoneIKHierarchical(
+  root: Point2D,
+  target: Point2D,
+  length1: number,
+  length2: number,
+  bendPositive: boolean = true
+): HierarchicalTwoBoneResult {
+  const { joint, reachedTarget } = solveTwoBoneIK(root, target, length1, length2, bendPositive);
+  const upperAngleDeg = calculateSegmentAngle(root, joint, "downwards");
+  const lowerGlobalAngleDeg = calculateSegmentAngle(joint, reachedTarget, "downwards");
+  const lowerLocalAngleDeg = calculateLocalAngle(upperAngleDeg, lowerGlobalAngleDeg);
+
+  return {
+    upperAngleDeg,
+    lowerLocalAngleDeg,
+    lowerGlobalAngleDeg,
+    joint,
+    reachedTarget,
+  };
+}
+
+export interface HierarchicalWalkCycleResult {
+  leftThighAngle: number;
+  leftCalfLocalAngle: number;
+  leftFootLocalAngle: number;
+  rightThighAngle: number;
+  rightCalfLocalAngle: number;
+  rightFootLocalAngle: number;
+  leftKnee: Point2D;
+  rightKnee: Point2D;
+  leftFoot: Point2D;
+  rightFoot: Point2D;
+}
+
+/**
+ * Calculates procedural walk cycle angles for hierarchical nested leg groups.
+ * Both legs branch from the exact same hip pivot (0, 0), and knees/feet are nested children.
+ */
+export function calculateWalkCycleHierarchical(
+  hip: Point2D,
+  progress: number,
+  strideWidth: number = 65,
+  stepHeight: number = 22,
+  thighLength: number = 175,
+  calfLength: number = 175
+): HierarchicalWalkCycleResult {
+  const { leftFoot, rightFoot, leftKnee, rightKnee } = calculateWalkCycle(
+    hip,
+    progress,
+    strideWidth,
+    stepHeight
+  );
+
+  const leftIK = solveTwoBoneIKHierarchical(hip, leftFoot, thighLength, calfLength, false);
+  const rightIK = solveTwoBoneIKHierarchical(hip, rightFoot, thighLength, calfLength, false);
+
+  // Bàn chân tiếp đất tự nhiên (hơi chếch gót khi chạm đất, thẳng khi đạp lùi)
+  const leftFootGlobalAngle = 0;
+  const leftFootLocalAngle = calculateLocalAngle(leftIK.lowerGlobalAngleDeg, leftFootGlobalAngle);
+
+  const rightFootGlobalAngle = 0;
+  const rightFootLocalAngle = calculateLocalAngle(rightIK.lowerGlobalAngleDeg, rightFootGlobalAngle);
+
+  return {
+    leftThighAngle: leftIK.upperAngleDeg,
+    leftCalfLocalAngle: leftIK.lowerLocalAngleDeg,
+    leftFootLocalAngle,
+    rightThighAngle: rightIK.upperAngleDeg,
+    rightCalfLocalAngle: rightIK.lowerLocalAngleDeg,
+    rightFootLocalAngle,
+    leftKnee,
+    rightKnee,
+    leftFoot,
+    rightFoot,
+  };
+}
+

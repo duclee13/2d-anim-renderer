@@ -4,7 +4,8 @@ export type StickmanPoseType =
   | "holdingObject"
   | "walking"
   | "pointing"
-  | "shrugging";
+  | "shrugging"
+  | "waving";
 
 export type EyeExpression =
   | "neutral"
@@ -52,6 +53,22 @@ export interface StickmanAnchors {
   rightFoot: Point2D;
 }
 
+export interface LimbAngleOverrides {
+  leftUpperArm?: number;
+  leftLowerArm?: number;
+  leftHand?: number;
+  rightUpperArm?: number;
+  rightLowerArm?: number;
+  rightHand?: number;
+  leftThigh?: number;
+  leftCalf?: number;
+  leftFoot?: number;
+  rightThigh?: number;
+  rightCalf?: number;
+  rightFoot?: number;
+  head?: number;
+}
+
 export interface StickmanState {
   visible?: boolean;
   x: number;
@@ -74,6 +91,7 @@ export interface StickmanState {
   pointingTarget?: Point2D;
   walkCycleProgress?: number; // 0 to 1 for continuous walk
   walkWeight?: number; // 0 (standing flat) to 1 (full stride) for smooth deceleration
+  limbAngles?: LimbAngleOverrides;
 }
 
 export interface PropAnchorPorts {
