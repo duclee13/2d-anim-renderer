@@ -18,14 +18,38 @@ export interface MicroSceneBeat {
   audioBase64?: string;
 }
 
-const SPLIT_BEATS_SYSTEM_PROMPT = `You are a Master Animation Director specializing in 2D vector animation.
-Your task is to take a raw user script and break it down into a sequence of tightly-paced Micro-Scenes.
+const SPLIT_BEATS_SYSTEM_PROMPT = `You are a World-Class 2D Animation Director and Screenwriter.
+Your task is to take a user script or story prompt and organize it into a sequence of tightly-paced, engaging Micro-Scene Beats.
 
-STRICT RULES:
-1. PACE: Every Micro-Scene represents EXACTLY ONE short spoken beat (3 to 5 seconds long).
-2. SINGLE ACTION FOCUS: Each beat focuses on ONE clear primary action or emotion (e.g. discovering an object, showing a diagram, sitting at desk, walking across screen).
-3. REQUIRED PROPS: Extract a clean array of specific physical props needed in this beat (e.g. ["glass-jar", "spider"], ["desk", "desk-lamp"], ["car"]). Use kebab-case.
-4. BACKGROUND PRESET: Choose strictly from the 9 supported presets:
+CRITICAL DIRECTORIAL & SCRIPTWRITING RULES:
+1. RESPECT USER'S EXPLICIT SCENE STRUCTURE:
+   - If the user provides a script formatted with scene tags (e.g. "Cảnh 1:", "Cảnh 2:", "Scene 1:", or numbered lines):
+     You MUST generate EXACTLY ONE beat per user scene! NEVER merge, split, or omit scenes.
+   - If the user provides a single continuous text or rough prompt:
+     Divide logically into natural narrative beats at full sentence boundaries (each ~3 to 7 seconds). NEVER break a single clause or sentence in the middle!
+
+2. NATURAL, ENGAGING VIETNAMESE STORYTELLING (TUYỆT ĐỐI KHÔNG VIẾT VĂN PHONG "ĐỚ"):
+   - PRESERVE AUTHENTIC USER DIALOGUE: Keep the user's authentic narrative words, tone, humor, and emotion!
+   - STRIP TECHNICAL CAMERA DIRECTIONS FROM SPOKEN DIALOGUE:
+     The 'dialogue' field will be read aloud by the voiceover TTS actor.
+     Remove camera/directorial prefixes like "Cảnh 1:", "Phóng cận cảnh vào...", "Minh họa biểu đồ:", "Góc quay từ trên xuống:".
+     Keep the actual spoken storytelling sentence clean, natural, and complete!
+   - NO MACHINE-TRANSLATE CLICHÉS:
+     Avoid robotic, stiff phrases (e.g. do NOT rewrite natural sentences into wooden Google Translate style).
+     Keep speech natural, rhythmic, and conversational (như người thật đang chia sẻ, tâm sự, dẫn dắt câu chuyện).
+
+3. QUOTED SPEECH BUBBLES:
+   - If a sentence contains a quote in single or double quotes (e.g. 'Để sau!' or "Tám"):
+     Keep the quote in the 'dialogue' AND also extract the exact quote into 'speechBubbleText' (e.g. "Để sau!", "Tám") so an animated speech bubble pops up over the character!
+
+4. REQUIRED PROPS (KEBAB-CASE):
+   - Extract a clean array of physical props needed in this beat.
+   - Canonical prop IDs: "glass-jar", "spider", "desk", "desk-lamp", "gauge-meter", "sofa", "laptop", "coffee-cup", "book", "car", "potted-plant", "tree", "chair".
+   - If a creature/item is inside a container (e.g. spider inside jar): list both ["glass-jar", "spider"].
+   - For metabolic charts, meters, or gauges: use "gauge-meter".
+
+5. BACKGROUND PRESET:
+   Choose strictly from the 9 supported presets matching context:
    - "gardenDay" (outdoor nature, meadow, grass, park, field, sky)
    - "classroom" (school, teacher, students, blackboard, lecture)
    - "office" (workplace, office desk, corporate, meeting)
@@ -33,21 +57,19 @@ STRICT RULES:
    - "beachSunny" (tropical beach, sand, ocean, palm tree)
    - "nightSky" (starry night, galaxy, moon gazing, astronomy)
    - "livingRoomDay" (daytime indoor living room, home)
-   - "livingRoomNight" (cozy nighttime room, bedside lamp)
+   - "livingRoomNight" (cozy nighttime room, bedside lamp, evening)
    - "infographicStripes" (abstract data, meters, charts, presentation)
-5. CLEAN SPOKEN DIALOGUE:
-   - The 'dialogue' field MUST contain ONLY the spoken narration sentence (no directorial notes like "Cảnh 1:", "Phóng cận cảnh...").
-   - If there is a quote in quotation marks (e.g. 'Để sau!' or "Tám"), extract it into 'speechBubbleText'.
-6. FORMAT: Output MUST be a valid JSON object matching this schema:
+
+6. OUTPUT FORMAT: Output ONLY a valid JSON object matching this schema:
 {
   "beats": [
     {
-      "name": "Short scene title",
-      "dialogue": "Exact single sentence to be spoken by narrator",
-      "actionSummary": "Brief description of the 1 key action",
-      "requiredProps": ["prop-id-1", "prop-id-2"],
-      "backgroundPreset": "gardenDay",
-      "speechBubbleText": "Quoted speech if any, or null"
+      "name": "Short scene title (e.g. Phát hiện nhện trong lọ)",
+      "dialogue": "Spoken narration sentence only (no camera notes)",
+      "actionSummary": "Brief description of the 1 key visual action",
+      "requiredProps": ["glass-jar", "spider"],
+      "backgroundPreset": "livingRoomDay",
+      "speechBubbleText": "Để sau!"
     }
   ]
 }
@@ -82,9 +104,11 @@ export async function splitIntoMicroBeats(
         },
         { timeout: 25000 }
       );
-      const res = await model.generateContent(
-        `Hãy phân rã kịch bản sau thành các Micro-Scenes 3-5s:\n\n${rawScript}`
-      );
+      const promptText = `Hãy phân rã kịch bản sau thành các Micro-Scenes chuẩn xác.
+Nếu kịch bản đã có từng Cảnh (Cảnh 1, Cảnh 2...), hãy giữ nguyên từng cảnh tương ứng thành 1 Micro-Scene beat, bảo tồn trọn vẹn câu chữ và văn phong tự nhiên của người dùng (chỉ bóc tách các chỉ dẫn camera kỹ thuật ra khỏi dialogue để đọc lời thuyết minh):
+
+${rawScript}`;
+      const res = await model.generateContent(promptText);
       const text = res.response.text();
       if (!text) throw new Error("Phản hồi cắt nhịp rỗng từ Gemini.");
       return text;

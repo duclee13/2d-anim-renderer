@@ -3,8 +3,8 @@ import { executeGeminiWithRetry } from "../geminiRetry";
 import { MicroSceneBeat } from "./splitIntoMicroBeats";
 import { SceneGraphScene, PropItem, SceneKeyframe } from "../../remotion/types/sceneGraph";
 
-const DIRECT_SCENE_SYSTEM_PROMPT = `You are an Expert Animation Scene Director directing a single 3-to-5 second animated micro-scene.
-You are given the exact duration in frames (calculated from real voiceover audio), the dialogue sentence, the required props, and the background preset.
+const DIRECT_SCENE_SYSTEM_PROMPT = `You are an Expert Animation Scene Director directing a single animated micro-scene (3 to 7 seconds).
+You are given the exact duration in frames (calculated from real voiceover audio), the spoken dialogue sentence, the required props, and the background preset.
 
 MANDATORY DIRECTORIAL RULES:
 1. SEMANTIC SLOTS (ZERO PIXEL GUESSING):
@@ -13,16 +13,23 @@ MANDATORY DIRECTORIAL RULES:
      * Desk/Tabletop: "surface.topLeft", "surface.topCenter", "surface.topRight", "desk.topLeft", "desk.topRight", "desk.seat"
      * Container: "container.inside" (for props inside a jar/box)
      * Screen close-ups: "screen.centerCloseUp", "screen.center"
-2. 3 KEYFRAME STATES FOR THE 3-5 SECOND TIMELINE:
-   Divide the scene's durationInFrames into 3 clear animation phases:
-   - Phase 1 (0% to 25% duration): Anticipation / Entrance (e.g. character walks into view, or turns toward prop).
-   - Phase 2 (25% to 75% duration): Main Action / Hold with micro-motion (e.g. gesture, hold, pointing, talk).
-   - Phase 3 (75% to 100% duration): Reaction / Settle (e.g. settle into final pose, satisfied expression).
-3. CHARACTER VISIBILITY & POSES:
+2. STABLE CHARACTER STAGING (STABILITY BY DEFAULT - NO ERRATIC SLIDING):
+   - By default, character stands or sits stably at their assigned slot (e.g. "floor.center", "floor.right", "desk.seat").
+   - DO NOT make character walk, slide, or run across the screen unless the beat EXPLICITLY requires locomotion (e.g. "walking into the room", "running away").
+   - Default keyframes: [] (stable staging). Most scenes should have empty keyframes array [].
+3. CHARACTER VISIBILITY, FACING & POSES:
    - If the scene is a macro close-up of a prop or an abstract diagram ("screen.centerCloseUp" or "screen.center"): character "visible" MUST be false.
-   - Poses: "standing", "walking", "sittingBehindDesk", "holdingObject", "pointing", "shrugging".
+   - Poses: "standing", "sittingBehindDesk", "holdingObject", "pointing", "shrugging", "waving", "walking".
    - Only use "sittingBehindDesk" if the script explicitly mentions sitting or the slot is "desk.seat".
-4. OUTPUT SCHEMA:
+   - Facing: Character should face toward the primary prop of interest!
+     * If prop is at "floor.left" and character is at "floor.right" or "floor.center": character "facing": "left".
+     * If prop is at "floor.right" and character is at "floor.left": character "facing": "right".
+4. CAMERA RIGGING:
+   - For macro prop close-up: { "zoom": 1.15, "focusSlot": "screen.centerCloseUp" }
+   - For diagram/infographic: { "zoom": 1.0, "focusSlot": "screen.center" }
+   - For desk scene: { "zoom": 1.15, "focusSlot": "desk.seat" }
+   - For wide scene: { "zoom": 1.0, "focusSlot": "floor.center" }
+5. OUTPUT SCHEMA:
    Output ONLY a valid JSON object matching this schema:
 {
   "character": {
@@ -47,14 +54,7 @@ MANDATORY DIRECTORIAL RULES:
     "zoom": 1.0,
     "focusSlot": "floor.center"
   },
-  "keyframes": [
-    {
-      "action": "moveCharacter",
-      "target": "character",
-      "frame": 0,
-      "params": { "fromSlot": "floor.farLeft", "toSlot": "floor.center" }
-    }
-  ]
+  "keyframes": []
 }
 Output ONLY raw JSON.`;
 
@@ -106,14 +106,17 @@ export async function directMicroScene(
   // Fallback định hướng thủ công an toàn nếu không gọi được AI
   if (!directedData || typeof directedData !== "object") {
     const isCloseUp = /cận cảnh|phóng cận|zoom|lọ/i.test(beat.actionSummary) && beat.requiredProps.includes("glass-jar");
-    const isWalking = /bước|đi|walk|chạy/i.test(beat.actionSummary);
-    const isSitting = /ngồi|bàn/i.test(beat.actionSummary);
+    const isDiagram = /biểu đồ|đồng hồ|trao đổi chất|infographic|gauge/i.test(beat.actionSummary) || beat.requiredProps.includes("gauge-meter");
+    const isSitting = /ngồi|bàn|desk/i.test(beat.actionSummary) || beat.requiredProps.includes("desk");
+    const isWalking = /(?:bước đi từ|đi bộ từ|chạy từ)/i.test(beat.actionSummary);
+
+    const hasLeftProp = beat.requiredProps.length > 0 && !isSitting && !isCloseUp && !isDiagram;
 
     directedData = {
       character: {
-        slot: isSitting ? "desk.seat" : isWalking ? "floor.center" : "floor.center",
-        visible: !isCloseUp,
-        facing: "right",
+        slot: isSitting ? "desk.seat" : hasLeftProp ? "floor.right" : "floor.center",
+        visible: !isCloseUp && !isDiagram,
+        facing: hasLeftProp ? "left" : "right",
         pose: isSitting ? "sittingBehindDesk" : isWalking ? "walking" : "standing",
         eyes: "neutral",
         eyebrows: "neutral",
@@ -122,23 +125,14 @@ export async function directMicroScene(
       props: beat.requiredProps.map((p, pIdx) => ({
         id: `prop_${beat.index}_${pIdx}`,
         type: p,
-        slot: isCloseUp ? "screen.centerCloseUp" : isSitting ? "desk.topLeft" : "floor.left",
-        scale: isCloseUp ? 1.7 : isSitting ? 0.38 : 1.0,
+        slot: isCloseUp ? "screen.centerCloseUp" : isDiagram ? "screen.center" : isSitting ? (p.includes("lamp") ? "desk.topLeft" : "floor.center") : "floor.left",
+        scale: isCloseUp ? 1.7 : isDiagram ? 1.6 : isSitting ? (p.includes("lamp") ? 1.15 : 1.0) : 1.0,
       })),
       camera: {
         zoom: isCloseUp ? 1.15 : 1.0,
-        focusSlot: isCloseUp ? "screen.centerCloseUp" : "floor.center",
+        focusSlot: isCloseUp ? "screen.centerCloseUp" : isDiagram ? "screen.center" : isSitting ? "desk.seat" : "floor.center",
       },
-      keyframes: isWalking
-        ? [
-            {
-              action: "moveCharacter",
-              target: "character",
-              frame: 0,
-              params: { fromX: 600, toX: 1850 },
-            },
-          ]
-        : [],
+      keyframes: [],
     };
   }
 

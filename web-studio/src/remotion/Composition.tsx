@@ -117,7 +117,6 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
   // =========================================================================
   const sceneText = `${currentScene.name || ""} ${safeSubtitles.map((s) => s.text).join(" ")}`.toLowerCase();
   const hasHoldAction = /cầm|bê|mang|xách|giữ|nâng|holding|carry/i.test(sceneText);
-  const hasWalkAction = /mang ra|bước|đi bộ|chạy|di chuyển|walk|going/i.test(sceneText);
 
   const isSitting = currentScene.character.pose === "sittingBehindDesk";
   const isHolding =
@@ -142,9 +141,9 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
     dynamicCharacterState.pose = "holdingObject";
   }
 
-  // --- Áp dụng keyframe "moveCharacter" hoặc tự động bước đi khi có keyword walk ---
+  // --- Áp dụng keyframe "moveCharacter" NẾU VÀ CHỈ NẾU có keyframe rõ ràng ---
   // TÍNH TOÁN VẬN TỐC THỰC TẾ & CHỈ BƯỚC ĐI KHI ĐANG DI CHUYỂN
-  const isWalkingPose = dynamicCharacterState.pose === "walking" || hasWalkAction;
+  const isWalkingPose = dynamicCharacterState.pose === "walking";
   const moveCharKf: any = activeKeyframes.find(
     (kf: any) =>
       (kf.action === "moveCharacter" || kf.type === "moveCharacter") &&
@@ -153,96 +152,64 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
   let charVelocity = 0;
 
   if (isCharacterVisible) {
-    if (isWalkingPose) {
-      // 1. DI CHUYỂN BƯỚC ĐI TỰ NHIÊN: Trải đều êm ái xuyên suốt thời lượng cảnh (không dùng spring giật cục)
-      const walkStartFrame = Number(moveCharKf?.frame ?? moveCharKf?.startFrame ?? 0);
-      const walkDuration = Math.max(90, Math.min(currentScene.durationInFrames * 0.85, 420));
+    if (moveCharKf) {
+      const rawParams = moveCharKf.params || moveCharKf;
+      const resolvedFrom = rawParams.fromSlot ? resolveSemanticSlot(rawParams.fromSlot, baseCharPos) : undefined;
+      const resolvedTo = rawParams.toSlot ? resolveSemanticSlot(rawParams.toSlot, baseCharPos) : undefined;
 
-      const defaultStartX = dynamicCharacterState.facing === "left" ? 1800 : 650;
-      const defaultEndX = dynamicCharacterState.facing === "left" ? 750 : 1850;
+      const fromX = rawParams.fromX !== undefined ? Number(rawParams.fromX) : (resolvedFrom?.x ?? baseCharPos.x);
+      const toX = rawParams.toX !== undefined ? Number(rawParams.toX) : (resolvedTo?.x ?? baseCharPos.x);
 
-      const rawFromX = moveCharKf?.params?.fromX ?? moveCharKf?.fromX;
-      const rawToX = moveCharKf?.params?.toX ?? moveCharKf?.toX;
+      // Nếu điểm đến khác điểm đi: Di chuyển mượt mà và kích hoạt bước đi
+      if (Math.abs(toX - fromX) > 10) {
+        const walkStartFrame = Number(moveCharKf?.frame ?? moveCharKf?.startFrame ?? 0);
+        const walkDuration = Math.max(60, Math.min(Number(rawParams.durationFrames) || (currentScene.durationInFrames * 0.8), 300));
+        const walkLocalProgress = Math.min(1, Math.max(0, (sceneLocalFrame - walkStartFrame) / walkDuration));
 
-      const fromX = rawFromX !== undefined ? Number(rawFromX) : defaultStartX;
-      const toX = rawToX !== undefined ? Number(rawToX) : defaultEndX;
+        const easedProgress = interpolate(
+          walkLocalProgress,
+          [0, 1],
+          [0, 1],
+          {
+            extrapolateLeft: "clamp",
+            extrapolateRight: "clamp",
+            easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+          }
+        );
 
-      const walkLocalProgress = Math.min(1, Math.max(0, (sceneLocalFrame - walkStartFrame) / walkDuration));
+        dynamicCharacterState.x = interpolate(easedProgress, [0, 1], [fromX, toX]);
 
-      const easedProgress = interpolate(
-        walkLocalProgress,
-        [0, 1],
-        [0, 1],
-        {
-          extrapolateLeft: "clamp",
-          extrapolateRight: "clamp",
-          easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+        if (sceneLocalFrame >= walkStartFrame && sceneLocalFrame < walkStartFrame + walkDuration) {
+          charVelocity = Math.abs(toX - fromX) / (walkDuration * 0.5);
+          dynamicCharacterState.pose = "walking";
+        } else {
+          charVelocity = 0;
         }
-      );
-
-      dynamicCharacterState.x = interpolate(easedProgress, [0, 1], [fromX, toX]);
-
-      // Khi đang trong thời gian bước đi: vận tốc ổn định để duy trì walk cycle
-      if (sceneLocalFrame >= walkStartFrame && sceneLocalFrame < walkStartFrame + walkDuration) {
-        charVelocity = 2.0;
       } else {
+        // Tọa độ giữ nguyên
+        dynamicCharacterState.x = baseCharPos.x;
         charVelocity = 0;
       }
-    } else if (moveCharKf) {
-      // 2. Chuyển động khác (bật nảy, phản xạ) dùng springMove
-      const rawParams = moveCharKf.params || moveCharKf;
-      const { fromX, toX, fromY, toY } = rawParams;
-      const cfg = {
-        damping: 18,
-        stiffness: 70,
-        mass: 0.8,
-        ...moveCharKf.springConfig,
-        overshootClamping: true,
-      };
-      const kfFrame = Number(moveCharKf.frame ?? moveCharKf.startFrame ?? 0);
-      if (fromX !== undefined && toX !== undefined) {
-        dynamicCharacterState.x = springMove(
-          sceneLocalFrame,
-          fps,
-          fromX,
-          toX,
-          kfFrame,
-          cfg
-        );
-        const nextX = springMove(
-          sceneLocalFrame + 1,
-          fps,
-          fromX,
-          toX,
-          kfFrame,
-          cfg
-        );
-        charVelocity = Math.abs(nextX - dynamicCharacterState.x);
-      }
-      if (fromY !== undefined && toY !== undefined) {
+
+      if (rawParams.fromY !== undefined && rawParams.toY !== undefined) {
         dynamicCharacterState.y = springMove(
           sceneLocalFrame,
           fps,
-          fromY,
-          toY,
-          kfFrame,
-          cfg
+          Number(rawParams.fromY),
+          Number(rawParams.toY),
+          Number(moveCharKf.frame ?? 0),
+          { damping: 18, stiffness: 70, mass: 0.8, overshootClamping: true }
         );
       }
+    } else {
+      // Không có keyframe di chuyển: Giữ nguyên vững chắc tại vị trí Semantic Slot, tuyệt đối không trôi dạt
+      dynamicCharacterState.x = baseCharPos.x;
+      charVelocity = 0;
     }
   }
 
-  // Nếu pose là walking nhưng không có keyframe di chuyển: Tự động dạo bước nhịp nhàng qua khung hình
-  if (isWalkingPose && charVelocity <= 0.08) {
-    const strollDir = dynamicCharacterState.facing === "left" ? -1 : 1;
-    const strollSpeed = 2.2 * strollDir;
-    const baseX = dynamicCharacterState.x !== undefined ? dynamicCharacterState.x : 1280;
-    dynamicCharacterState.x = baseX + sceneLocalFrame * strollSpeed;
-    charVelocity = Math.abs(strollSpeed);
-  }
-
-  // --- Hiệu ứng bước chân (Walk Cycle Animation) KHI VÀ CHỈ KHI ĐANG DI CHUYỂN ---
-  const isWalkingActive = isWalkingPose && charVelocity > 0.08;
+  // --- Hiệu ứng bước chân (Walk Cycle Animation) KHI VÀ CHỈ KHI ĐANG DI CHUYỂN THỰC SỰ ---
+  const isWalkingActive = (isWalkingPose || charVelocity > 0.1) && charVelocity > 0.1;
   const walkWeight = isWalkingActive ? 1.0 : 0;
   dynamicCharacterState.walkWeight = walkWeight;
 
@@ -253,7 +220,7 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
     const walkBobY = Math.abs(Math.sin(sceneLocalFrame * 0.018 * Math.PI * 2)) * 6.0;
     dynamicCharacterState.y = (dynamicCharacterState.y || STAGE_CONFIG.floorY) - walkBobY;
   } else {
-    // Khi đứng yên: CHÂN ĐỨNG IM CHẠM ĐẤT 100%, không đạp chân
+    // Khi đứng yên: CHÂN ĐỨNG IM CHẠM ĐẤT 100%, không đạp chân, không trượt chân
     dynamicCharacterState.walkCycleProgress = 0;
     dynamicCharacterState.walkWeight = 0;
   }
@@ -272,16 +239,41 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
     if (latest.params.pupilGaze) dynamicCharacterState.pupilGaze = latest.params.pupilGaze;
   }
 
-  // --- Micro-Animations (breathing, blink, talk, idle sway) ---
+  // --- Micro-Animations (breathing, blink, talk, conversational gesturing, idle sway) ---
   if (isCharacterVisible) {
     if (shouldBlink(frame, fps)) {
       dynamicCharacterState.eyes = "closed";
     }
 
-    if (activeSubtitle && dynamicCharacterState.mouth !== "gasp") {
+    const isTalking = Boolean(activeSubtitle && dynamicCharacterState.mouth !== "gasp");
+    if (isTalking) {
       if (talkingMouthCycle(frame, fps)) {
         dynamicCharacterState.mouth = "talking";
       }
+    }
+
+    // Dynamic Conversational Gesturing & Micro-Articulations:
+    // Khi đang nói chuyện và đứng: Tay trước cử động nhịp nhàng theo câu nói, đầu hơi nghiêng biểu cảm
+    if (dynamicCharacterState.pose === "standing") {
+      if (isTalking) {
+        const speechCadence = Math.sin(sceneLocalFrame * 0.14);
+        const armGestureLift = Math.max(0, speechCadence) * 18;
+        dynamicCharacterState.limbAngles = {
+          ...dynamicCharacterState.limbAngles,
+          rightUpperArm: -18 - armGestureLift * 0.5,
+          rightLowerArm: -16 - armGestureLift * 0.75,
+          head: (dynamicCharacterState.limbAngles?.head ?? 0) + Math.sin(sceneLocalFrame * 0.08) * 3,
+        };
+      }
+    } else if (dynamicCharacterState.pose === "sittingBehindDesk") {
+      // Khi ngồi sau bàn làm việc: Đầu hơi cúi tập trung, tay cử động nhẹ nhàng trên mặt bàn
+      const deskCadence = Math.sin(sceneLocalFrame * 0.16) * 3.5;
+      dynamicCharacterState.limbAngles = {
+        ...dynamicCharacterState.limbAngles,
+        head: -7 + Math.sin(sceneLocalFrame * 0.07) * 2,
+        rightLowerArm: -38 + deskCadence,
+        leftLowerArm: -42 - deskCadence * 0.5,
+      };
     }
   }
 

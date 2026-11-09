@@ -99,31 +99,31 @@ export const StickmanRig: React.FC<StickmanRigProps> = ({
   // 1. TÍNH TOÁN GÓC XOAY KHỚP TAY (HIERARCHICAL ARM ANGLES)
   // Gồm: upperArmAngle (Góc toàn cục) và lowerArmLocalAngle (Góc cục bộ bên trong bắp tay)
   // =========================================================================
-  let leftUpperArmAngle = -28;
-  let leftLowerArmLocalAngle = 14;
+  // Góc nghỉ tự nhiên khi đứng: Hai tay buông xuôi mềm mại, hơi gập nhẹ ở cùi chỏ
+  let leftUpperArmAngle = -14;
+  let leftLowerArmLocalAngle = -12;
   let leftHandLocalAngle = 0;
 
-  let rightUpperArmAngle = 28;
-  let rightLowerArmLocalAngle = -14;
+  let rightUpperArmAngle = -18;
+  let rightLowerArmLocalAngle = -16;
   let rightHandLocalAngle = 0;
 
   if (isWalking && pose !== "holdingObject" && !holdingTarget) {
-    // Vung tay tự nhiên đối xứng với bước chân
-    const armSwing = Math.sin(walkCycleProgress * Math.PI * 2) * (34 * weight);
-    leftUpperArmAngle = -16 - armSwing;
-    leftLowerArmLocalAngle = 18 + Math.abs(armSwing) * 0.35;
+    // Vung tay tự nhiên đối xứng với bước chân khi thực sự di chuyển
+    const armSwing = Math.sin(walkCycleProgress * Math.PI * 2) * (32 * weight);
+    leftUpperArmAngle = -14 - armSwing;
+    leftLowerArmLocalAngle = -12 + Math.abs(armSwing) * 0.25;
 
-    rightUpperArmAngle = 16 + armSwing;
-    rightLowerArmLocalAngle = 18 + Math.abs(armSwing) * 0.35;
+    rightUpperArmAngle = -18 + armSwing;
+    rightLowerArmLocalAngle = -16 + Math.abs(armSwing) * 0.25;
   } else if (pose === "waving") {
     // Tay trái ở tư thế nghỉ tự nhiên
-    leftUpperArmAngle = -28;
-    leftLowerArmLocalAngle = 14;
+    leftUpperArmAngle = -14;
+    leftLowerArmLocalAngle = -12;
 
     // Tay phải giơ cao vẫy tay nhịp nhàng qua khớp cùi chỏ
     rightUpperArmAngle = -135; // Giơ xéo lên trên về phía trước
-    const waveProgress = walkCycleProgress || 0;
-    const waveSway = Math.sin(waveProgress * Math.PI * 8) * 28;
+    const waveSway = Math.sin((walkCycleProgress || 0) * Math.PI * 8) * 25;
     rightLowerArmLocalAngle = -35 + waveSway;
     rightHandLocalAngle = 12;
   } else if (pose === "holdingObject" && holdingTarget) {
@@ -144,16 +144,17 @@ export const StickmanRig: React.FC<StickmanRigProps> = ({
     rightUpperArmAngle = rightIK.upperAngleDeg;
     rightLowerArmLocalAngle = rightIK.lowerLocalAngleDeg;
   } else if (pose === "holdingObject") {
-    leftUpperArmAngle = -42;
-    leftLowerArmLocalAngle = 68;
-    rightUpperArmAngle = 42;
-    rightLowerArmLocalAngle = -68;
+    // Giơ hai tay ra phía trước ôm/cầm đồ vật tự nhiên
+    leftUpperArmAngle = -35;
+    leftLowerArmLocalAngle = -50;
+    rightUpperArmAngle = -40;
+    rightLowerArmLocalAngle = -45;
   } else if (pose === "sittingBehindDesk") {
-    // Hai tay xuôi tự nhiên từ vai và đặt nhẹ bàn tay lên mặt bàn
-    leftUpperArmAngle = -22;
-    leftLowerArmLocalAngle = 72;
-    rightUpperArmAngle = 22;
-    rightLowerArmLocalAngle = 72;
+    // Hai tay xuôi tự nhiên từ vai và đặt nhẹ bàn tay lên mặt bàn phía trước
+    leftUpperArmAngle = -28;
+    leftLowerArmLocalAngle = -42;
+    rightUpperArmAngle = -32;
+    rightLowerArmLocalAngle = -38;
   } else if (pose === "pointing" && pointingTarget) {
     const targetLocal: Point2D = {
       x: ((pointingTarget.x - x) / scale) * flipSign,
@@ -163,18 +164,20 @@ export const StickmanRig: React.FC<StickmanRigProps> = ({
     rightUpperArmAngle = pointIK.upperAngleDeg;
     rightLowerArmLocalAngle = pointIK.lowerLocalAngleDeg;
 
-    leftUpperArmAngle = -28;
-    leftLowerArmLocalAngle = 14;
+    leftUpperArmAngle = -14;
+    leftLowerArmLocalAngle = -12;
   } else if (pose === "pointing") {
-    rightUpperArmAngle = -75;
-    rightLowerArmLocalAngle = 15;
-    leftUpperArmAngle = -28;
-    leftLowerArmLocalAngle = 14;
+    // Chỉ tay dứt khoát về phía trước/trên
+    rightUpperArmAngle = -70;
+    rightLowerArmLocalAngle = -8;
+    leftUpperArmAngle = -14;
+    leftLowerArmLocalAngle = -12;
   } else if (pose === "shrugging") {
-    leftUpperArmAngle = -52;
-    leftLowerArmLocalAngle = 92;
-    rightUpperArmAngle = 52;
-    rightLowerArmLocalAngle = -92;
+    // Nhún vai biểu cảm: Hai cùi chỏ khép sát sườn, hai cẳng tay ngửa lên phía trước
+    leftUpperArmAngle = -18;
+    leftLowerArmLocalAngle = -65;
+    rightUpperArmAngle = -22;
+    rightLowerArmLocalAngle = -70;
   }
 
   // Áp dụng ghi đè góc chi tiết (nếu có từ Animation Keyframes)
@@ -189,12 +192,13 @@ export const StickmanRig: React.FC<StickmanRigProps> = ({
   // 2. TÍNH TOÁN GÓC XOAY KHỚP CHÂN (HIERARCHICAL LEG ANGLES)
   // Gồm: thighAngle (Toàn cục), calfLocalAngle (Cục bộ đùi) và footLocalAngle (Cục bộ cẳng chân)
   // =========================================================================
-  let leftThighAngle = -6;
-  let leftCalfLocalAngle = 6;
+  // Đứng thẳng vững chãi, hai chân song song chạm đất phẳng 100%
+  let leftThighAngle = -2;
+  let leftCalfLocalAngle = 2;
   let leftFootLocalAngle = 0;
 
-  let rightThighAngle = 6;
-  let rightCalfLocalAngle = -6;
+  let rightThighAngle = 1;
+  let rightCalfLocalAngle = -1;
   let rightFootLocalAngle = 0;
 
   if (isWalking) {
@@ -215,11 +219,12 @@ export const StickmanRig: React.FC<StickmanRigProps> = ({
     rightCalfLocalAngle = walkData.rightCalfLocalAngle;
     rightFootLocalAngle = walkData.rightFootLocalAngle;
   } else if (pose === "sittingBehindDesk") {
-    leftThighAngle = -85;
-    leftCalfLocalAngle = 85;
+    // Cả hai đùi hướng về phía trước dưới bàn, hai cẳng chân vuông góc xuống đất
+    leftThighAngle = -80;
+    leftCalfLocalAngle = 80;
     leftFootLocalAngle = 0;
-    rightThighAngle = 85;
-    rightCalfLocalAngle = -85;
+    rightThighAngle = -82;
+    rightCalfLocalAngle = 82;
     rightFootLocalAngle = 0;
   }
 

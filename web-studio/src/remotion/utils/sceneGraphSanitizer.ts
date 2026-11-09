@@ -66,7 +66,7 @@ export function stripDirectorialInstructions(text: string): string {
  * Giữ nguyên 100% tham số đặc thù của từng loại action (eyes, mouth, fromScale, toScale, fromDeg, toDeg...)
  */
 export function sanitizeKeyframe(kf: any, defaultFrame: number = 0): SceneKeyframe {
-  const action = String(kf?.action || kf?.type || "moveCharacter") as SceneKeyframe["action"];
+  const action = String(kf?.action || kf?.type || "changeExpression") as SceneKeyframe["action"];
   const target = String(kf?.target || kf?.targetId || (action === "moveCharacter" || action === "changeExpression" ? "character" : "prop"));
   const frame = numOrDef(kf?.frame !== undefined ? kf.frame : kf?.startFrame, defaultFrame);
 
@@ -110,15 +110,13 @@ export function sanitizeKeyframe(kf: any, defaultFrame: number = 0): SceneKeyfra
 
     case "moveCharacter":
     case "moveProp": {
+      if (rawParams.fromSlot) sanitizedParams.fromSlot = String(rawParams.fromSlot);
+      if (rawParams.toSlot) sanitizedParams.toSlot = String(rawParams.toSlot);
       if (rawParams.fromX !== undefined) sanitizedParams.fromX = Number(rawParams.fromX);
       if (rawParams.toX !== undefined) sanitizedParams.toX = Number(rawParams.toX);
       if (rawParams.fromY !== undefined) sanitizedParams.fromY = Number(rawParams.fromY);
       if (rawParams.toY !== undefined) sanitizedParams.toY = Number(rawParams.toY);
-
-      if (action === "moveCharacter") {
-        if (sanitizedParams.fromX === undefined) sanitizedParams.fromX = 600;
-        if (sanitizedParams.toX === undefined) sanitizedParams.toX = 1850;
-      }
+      if (rawParams.durationFrames !== undefined) sanitizedParams.durationFrames = Number(rawParams.durationFrames);
       break;
     }
 
@@ -323,7 +321,7 @@ export function sanitizeSceneGraph(
     // Phân giải tư thế Pose và Hướng nhìn
     let characterPose = "standing";
     const rawPose = String(rawChar?.pose || "").toLowerCase();
-    const hasWalkKeywords = /bước đi|từ từ bước|dạo bước|đi bộ|bước|đi dạo|chạy|di chuyển|ra vườn|walking|walk|stroll/i.test(sceneCombinedText);
+    const hasWalkKeywords = /(?:bước đi từ|đi bộ từ|chạy từ|walking across|walks from)/i.test(sceneCombinedText);
 
     // QUY TẮC TƯ THẾ NGỒI:
     // Tuyệt đối không dùng 'working' hay 'writing' đơn lẻ để ép tư thế ngồi.
@@ -337,7 +335,7 @@ export function sanitizeSceneGraph(
 
     if (isExplicitSitting) {
       characterPose = "sittingBehindDesk";
-    } else if (/walk|bước|đi/i.test(rawPose) || hasWalkKeywords) {
+    } else if (/^walk/i.test(rawPose) || hasWalkKeywords) {
       characterPose = "walking";
     } else if (/hold|cầm|mang|xách/i.test(rawPose) || /cầm|bê|mang|xách|giữ|nâng|holding|carry/i.test(sceneCombinedText)) {
       characterPose = "holdingObject";
@@ -345,6 +343,8 @@ export function sanitizeSceneGraph(
       characterPose = "pointing";
     } else if (/shrug/i.test(rawPose)) {
       characterPose = "shrugging";
+    } else if (/wave/i.test(rawPose)) {
+      characterPose = "waving";
     } else if (rawChar?.pose && typeof rawChar.pose === "string") {
       characterPose = rawChar.pose;
     }
@@ -405,24 +405,10 @@ export function sanitizeSceneGraph(
       panDurationFrames: numOrUndef(s?.camera?.panDurationFrames),
     };
 
-    // 5. Chuẩn hóa Keyframes có phân biệt Action (BẢO TOÀN TRỌN VẸN PARAMS)
+    // 5. Chuẩn hóa Keyframes có phân biệt Action (BẢO TOÀN TRỌN VẸN PARAMS, không tự ý chèn trượt lướt 600 -> 1850)
     let finalKeyframes: SceneKeyframe[] = Array.isArray(s?.keyframes) && s.keyframes.length > 0
       ? s.keyframes.map((kf: any) => sanitizeKeyframe(kf, 0))
       : [];
-
-    if (finalKeyframes.length === 0 && hasWalkKeywords && charVisible) {
-      finalKeyframes = [
-        {
-          action: "moveCharacter",
-          target: "character",
-          frame: 0,
-          params: {
-            fromX: 600,
-            toX: 1850,
-          },
-        },
-      ];
-    }
 
     // 6. Chuẩn hóa hiệu ứng môi trường & đạo cụ Props (BẢO TOÀN x=0, y=0, scale tùy chỉnh, visible, containment)
     let envVfx: EnvironmentVfxType[] = Array.isArray(s?.environmentVfx) ? [...s.environmentVfx] : [];
