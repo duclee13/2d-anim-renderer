@@ -1,0 +1,212 @@
+{
+  "meta": {
+    "resolution": {
+      "width": 2560,
+      "height": 1440
+    },
+    "fps": 60,
+    "totalFrames": 1620
+  },
+  "scenes": [
+    {
+      "sceneId": "scene_01",
+      "startFrame": 0,
+      "endFrame": 458,
+      "durationFrames": 459,
+      "environment": {
+        "id": "room_indoor_day",
+        "type": "indoor",
+        "backgroundStyle": "clean_minimalist",
+        "lighting": "soft_daylight"
+      },
+      "subtitles": {
+        "text": "Tôi nhìn thấy một con nhện nhỏ trong chiếc lọ thủy tinh trên sàn nhà. Tôi bảo 'Để sau!' rồi quên bẵng nó.",
+        "startFrame": 0,
+        "endFrame": 458
+      },
+      "camera": {
+        "type": "wide",
+        "focalPoint": "floor.center",
+        "zoom": 1
+      },
+      "characters": [
+        {
+          "id": "protagonist",
+          "visible": true,
+          "slot": "floor.centerLeft",
+          "facing": "right",
+          "pose": "looking_down_shrugging",
+          "expression": "indifferent",
+          "speechBubble": {
+            "text": "Để sau!",
+            "visible": true,
+            "startFrame": 150,
+            "endFrame": 320
+          }
+        }
+      ],
+      "props": [
+        {
+          "id": "glass_jar_with_spider",
+          "type": "container",
+          "slot": "floor.centerRight",
+          "properties": {
+            "isTransparent": true,
+            "hasLid": true,
+            "hasSpiderInside": true,
+            "spiderScale": "small"
+          }
+        }
+      ]
+    },
+    {
+      "sceneId": "scene_02",
+      "startFrame": 459,
+      "endFrame": 788,
+      "durationFrames": 330,
+      "environment": {
+        "id": "close_up_surface",
+        "type": "indoor_closeup",
+        "backgroundStyle": "blurred_neutral",
+        "lighting": "focused_spotlight"
+      },
+      "subtitles": {
+        "text": "Tôi dán nhãn lên chiếc lọ thủy tinh và đặt tên cho nó là Tám.",
+        "startFrame": 459,
+        "endFrame": 788
+      },
+      "camera": {
+        "type": "macro_closeup",
+        "focalPoint": "screen.centerCloseUp",
+        "zoom": 2.2
+      },
+      "characters": [
+        {
+          "id": "protagonist",
+          "visible": false,
+          "slot": "floor.center",
+          "facing": "right",
+          "pose": "offscreen",
+          "expression": "neutral"
+        }
+      ],
+      "props": [
+        {
+          "id": "labeled_jar",
+          "type": "container",
+          "slot": "screen.centerCloseUp",
+          "properties": {
+            "isTransparent": true,
+            "hasLid": true,
+            "hasSpiderInside": true,
+            "labelText": "Tám",
+            "labelState": "adhered_to_glass"
+          }
+        }
+      ]
+    },
+    {
+      "sceneId": "scene_03",
+      "startFrame": 789,
+      "endFrame": 1139,
+      "durationFrames": 351,
+      "environment": {
+        "id": "infographic_slate",
+        "type": "conceptual",
+        "backgroundStyle": "dark_diagram_grid",
+        "lighting": "digital_glow"
+      },
+      "subtitles": {
+        "text": "Nó tự hạ tốc độ trao đổi chất xuống mức cực thấp để có thể sống sót.",
+        "startFrame": 789,
+        "endFrame": 1139
+      },
+      "camera": {
+        "type": "orthographic",
+        "focalPoint": "screen.center",
+        "zoom": 1
+      },
+      "characters": [
+        {
+          "id": "protagonist",
+          "visible": false,
+          "slot": "floor.center",
+          "facing": "center",
+          "pose": "offscreen",
+          "expression": "neutral"
+        }
+      ],
+      "props": [
+        {
+          "id": "metabolism_gauge",
+          "type": "infographic_meter",
+          "slot": "screen.center",
+          "properties": {
+            "title": "Tốc độ trao đổi chất",
+            "meterType": "analog_dial",
+            "indicatorLevel": "extremely_low",
+            "highlightZone": "dormancy_survival_mode",
+            "accentIcon": "hibernating_spider"
+          }
+        }
+      ]
+    },
+    {
+      "sceneId": "scene_04",
+      "startFrame": 1140,
+      "endFrame": 1619,
+      "durationFrames": 480,
+      "environment": {
+        "id": "study_room_night",
+        "type": "indoor",
+        "backgroundStyle": "cozy_night",
+        "lighting": "warm_desk_lamp",
+        "backdropElements": {
+          "windowView": "crescent_moon_and_stars",
+          "skyColor": "#0d1b2a"
+        }
+      },
+      "subtitles": {
+        "text": "Một buổi tối bình thường, tôi ngồi làm việc bên bàn học dưới ánh đèn ấm áp, ngoài cửa sổ là trăng sao.",
+        "startFrame": 1140,
+        "endFrame": 1619
+      },
+      "camera": {
+        "type": "medium_shot",
+        "focalPoint": "desk.seat",
+        "zoom": 1.15
+      },
+      "characters": [
+        {
+          "id": "protagonist",
+          "visible": true,
+          "slot": "desk.seat",
+          "facing": "left",
+          "pose": "sitting_working_writing",
+          "expression": "calm_focused"
+        }
+      ],
+      "props": [
+        {
+          "id": "study_desk",
+          "type": "furniture",
+          "slot": "floor.center",
+          "properties": {
+            "hasNotebook": true,
+            "hasLaptop": false
+          }
+        },
+        {
+          "id": "desk_lamp",
+          "type": "light_source",
+          "slot": "desk.topLeft",
+          "properties": {
+            "state": "on",
+            "lightCone": "warm_yellow_glow",
+            "intensity": 0.85
+          }
+        }
+      ]
+    }
+  ]
+}

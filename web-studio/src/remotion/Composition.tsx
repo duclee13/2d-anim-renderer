@@ -232,6 +232,15 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
     }
   }
 
+  // Nếu pose là walking nhưng không có keyframe di chuyển: Tự động dạo bước nhịp nhàng qua khung hình
+  if (isWalkingPose && charVelocity <= 0.08) {
+    const strollDir = dynamicCharacterState.facing === "left" ? -1 : 1;
+    const strollSpeed = 2.2 * strollDir;
+    const baseX = dynamicCharacterState.x !== undefined ? dynamicCharacterState.x : 1280;
+    dynamicCharacterState.x = baseX + sceneLocalFrame * strollSpeed;
+    charVelocity = Math.abs(strollSpeed);
+  }
+
   // --- Hiệu ứng bước chân (Walk Cycle Animation) KHI VÀ CHỈ KHI ĐANG DI CHUYỂN ---
   const isWalkingActive = isWalkingPose && charVelocity > 0.08;
   const walkWeight = isWalkingActive ? 1.0 : 0;
@@ -617,7 +626,7 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
 
           {/* LAYER 30: CHARACTER LOWER LAYER KHI NGỒI SAU BÀN (TOÀN BỘ ĐẦU, THÂN VÀ TAY Ở SAU MẶT BÀN) */}
           {isSitting && isCharacterVisible && (
-            <g id="layer-character-seated">
+            <g id="layer-character-seated" clipPath="url(#seated-occlusion-mask)">
               <StickmanRig
                 state={dynamicCharacterState}
                 renderPart="bodyOnly"
@@ -775,9 +784,38 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
                 );
               })}
           </g>
+        </CameraRig>
 
-          {/* LAYER 60: SPEECH BUBBLES TRONG KHÔNG GIAN SÂN KHẤU */}
-          <g id="layer-speech-bubbles">
+        {/* VIGNETTE LỚP VIỀN NGOÀI CÙNG (ĐÃ GIẢM TỐI ĐA XUỐNG 0.08 ĐỂ NỀN HOẠT HÌNH TRONG TRẺO) */}
+        <rect
+          x={0}
+          y={0}
+          width={width}
+          height={height}
+          fill="url(#vignetteGradient)"
+          opacity={0.08}
+          className="pointer-events-none"
+        />
+      </svg>
+
+      {/* ===============================================================
+          LAYER 99999: UI OVERLAY LAYER (BONG BÓNG THOẠI & PHỤ ĐỀ NẰM NGOÀI CAMERARIG ĐỂ KHÔNG BỊ PHÓNG ĐẠI)
+      =============================================================== */}
+      {(activeSubtitle || activeSpeechBubbles.length > 0) && (
+        <AbsoluteFill
+          style={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 99999,
+            pointerEvents: "none",
+          }}
+        >
+          <svg
+            viewBox={`0 0 ${DESIGN_WIDTH} ${DESIGN_HEIGHT}`}
+            className="w-full h-full select-none"
+            preserveAspectRatio="xMidYMid meet"
+          >
+            {/* Bong bóng lời thoại nổi trên UI */}
             {activeSpeechBubbles.map((bubble) => {
               const bubbleProgress = springScale(
                 frame,
@@ -800,46 +838,18 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
                 </g>
               );
             })}
-          </g>
-        </CameraRig>
 
-        {/* VIGNETTE LỚP VIỀN NGOÀI CÙNG (ĐÃ GIẢM TỐI ĐA XUỐNG 0.08 ĐỂ NỀN HOẠT HÌNH TRONG TRẺO) */}
-        <rect
-          x={0}
-          y={0}
-          width={width}
-          height={height}
-          fill="url(#vignetteGradient)"
-          opacity={0.08}
-          className="pointer-events-none"
-        />
-      </svg>
-
-      {/* ===============================================================
-          LAYER 99999: SUBTITLE BOX (LUÔN NỔI TUYỆT ĐỐI TRÊN MỌI VẬT THỂ & KHÔNG BỊ ZOOM THEO CAMERA)
-      =============================================================== */}
-      {activeSubtitle && (
-        <AbsoluteFill
-          style={{
-            position: "absolute",
-            inset: 0,
-            zIndex: 99999,
-            pointerEvents: "none",
-          }}
-        >
-          <svg
-            viewBox={`0 0 ${DESIGN_WIDTH} ${DESIGN_HEIGHT}`}
-            className="w-full h-full select-none"
-            preserveAspectRatio="xMidYMid meet"
-          >
-            <SubtitleBox
-              text={activeSubtitle.text}
-              words={activeSubtitle.words}
-              currentFrame={frame}
-              fps={fps}
-              x={1280}
-              y={1320}
-            />
+            {/* Hộp phụ đề nổi */}
+            {activeSubtitle && (
+              <SubtitleBox
+                text={activeSubtitle.text}
+                words={activeSubtitle.words}
+                currentFrame={frame}
+                fps={fps}
+                x={1280}
+                y={1320}
+              />
+            )}
           </svg>
         </AbsoluteFill>
       )}

@@ -1,0 +1,309 @@
+{
+  "version": "3.1.0",
+  "title": "2D Animation Story",
+  "width": 2560,
+  "height": 1440,
+  "fps": 60,
+  "totalDurationInFrames": 240,
+  "scenes": [
+    {
+      "id": "1",
+      "name": "Cảnh 1",
+      "startFrame": 0,
+      "durationInFrames": 60,
+      "background": {
+        "preset": "livingRoomDay"
+      },
+      "camera": {
+        "x": 1280,
+        "y": 720,
+        "zoom": 1
+      },
+      "character": {
+        "slot": "floor.centerRight",
+        "visible": true,
+        "x": 1280,
+        "y": 1120,
+        "scale": 1,
+        "facing": "right",
+        "pose": "holdingObject",
+        "eyes": "neutral",
+        "eyebrows": "neutral",
+        "mouth": "smile",
+        "pupilGaze": {
+          "x": 0,
+          "y": 0
+        }
+      },
+      "props": [
+        {
+          "id": "cardboard_box",
+          "type": "cardboard-box",
+          "slot": "floor.centerLeft",
+          "layer": "midgroundFrontLayer",
+          "x": 1280,
+          "y": 1120,
+          "scale": 1,
+          "scaleX": 1,
+          "scaleY": 1,
+          "rotation": 0,
+          "opacity": 1,
+          "visible": true,
+          "properties": {}
+        }
+      ],
+      "subtitles": [
+        {
+          "id": "sub_0_0",
+          "text": "Một chú mèo con nghịch ngợm bên cạnh chiếc hộp giấy đặt trên sàn phòng khách.",
+          "startFrame": 5,
+          "endFrame": 55,
+          "words": []
+        }
+      ],
+      "speechBubbles": [],
+      "keyframes": [],
+      "lines": [],
+      "environmentVfx": [],
+      "lighting": {
+        "preset": "neutral"
+      },
+      "propAnimations": []
+    },
+    {
+      "id": "2",
+      "name": "Cảnh 2",
+      "startFrame": 60,
+      "durationInFrames": 60,
+      "background": {
+        "preset": "livingRoomDay"
+      },
+      "camera": {
+        "x": 1280,
+        "y": 720,
+        "zoom": 1,
+        "focusSlot": "screen.centerCloseUp"
+      },
+      "character": {
+        "slot": "floor.center",
+        "visible": false,
+        "x": 1280,
+        "y": 1120,
+        "scale": 1,
+        "facing": "right",
+        "pose": "standing",
+        "eyes": "neutral",
+        "eyebrows": "neutral",
+        "mouth": "smile",
+        "pupilGaze": {
+          "x": 0,
+          "y": 0
+        }
+      },
+      "props": [
+        {
+          "id": "glass_jar",
+          "type": "glass-jar",
+          "slot": "screen.centerCloseUp",
+          "layer": "midgroundFrontLayer",
+          "x": 1280,
+          "y": 1120,
+          "scale": 1.7,
+          "scaleX": 1,
+          "scaleY": 1,
+          "rotation": 0,
+          "opacity": 1,
+          "visible": true,
+          "anchorPoint": "center",
+          "pivotPoint": "center",
+          "properties": {
+            "hasSpiderInside": true,
+            "label": "Tiết Kiệm"
+          }
+        }
+      ],
+      "subtitles": [
+        {
+          "id": "sub_1_0",
+          "text": "Chiếc lọ thủy tinh đựng những đồng xu lấp lánh có dán nhãn 'Tiết Kiệm'.",
+          "startFrame": 65,
+          "endFrame": 115,
+          "words": []
+        }
+      ],
+      "speechBubbles": [],
+      "keyframes": [],
+      "lines": [],
+      "environmentVfx": [],
+      "lighting": {
+        "preset": "neutral"
+      },
+      "propAnimations": []
+    },
+    {
+      "id": "3",
+      "name": "Cảnh 3",
+      "startFrame": 120,
+      "durationInFrames": 60,
+      "background": {
+        "preset": "infographicStripes"
+      },
+      "camera": {
+        "x": 1280,
+        "y": 720,
+        "zoom": 1,
+        "focusSlot": "screen.center"
+      },
+      "character": {
+        "slot": "floor.center",
+        "visible": false,
+        "x": 1280,
+        "y": 1120,
+        "scale": 1,
+        "facing": "right",
+        "pose": "standing",
+        "eyes": "neutral",
+        "eyebrows": "neutral",
+        "mouth": "smile",
+        "pupilGaze": {
+          "x": 0,
+          "y": 0
+        }
+      },
+      "props": [
+        {
+          "id": "growth_chart",
+          "type": "growth-chart",
+          "slot": "screen.center",
+          "layer": "midgroundFrontLayer",
+          "x": 1280,
+          "y": 1120,
+          "scale": 1,
+          "scaleX": 1,
+          "scaleY": 1,
+          "rotation": 0,
+          "opacity": 1,
+          "visible": true,
+          "anchorPoint": "center",
+          "pivotPoint": "center",
+          "properties": {}
+        }
+      ],
+      "subtitles": [
+        {
+          "id": "sub_2_0",
+          "text": "Minh họa biểu đồ tăng trưởng tài chính với các chỉ số đang vươn lên mạnh mẽ.",
+          "startFrame": 125,
+          "endFrame": 175,
+          "words": []
+        }
+      ],
+      "speechBubbles": [],
+      "keyframes": [],
+      "lines": [],
+      "environmentVfx": [],
+      "lighting": {
+        "preset": "neutral"
+      },
+      "propAnimations": []
+    },
+    {
+      "id": "4",
+      "name": "Cảnh 4",
+      "startFrame": 180,
+      "durationInFrames": 60,
+      "background": {
+        "preset": "livingRoomNight"
+      },
+      "camera": {
+        "x": 1280,
+        "y": 720,
+        "zoom": 1,
+        "focusSlot": "desk.seat"
+      },
+      "character": {
+        "slot": "desk.seat",
+        "visible": true,
+        "x": 1280,
+        "y": 1120,
+        "scale": 1,
+        "facing": "right",
+        "pose": "sittingBehindDesk",
+        "eyes": "neutral",
+        "eyebrows": "neutral",
+        "mouth": "smile",
+        "pupilGaze": {
+          "x": 0,
+          "y": 0
+        }
+      },
+      "props": [
+        {
+          "id": "desk",
+          "type": "desk",
+          "slot": "floor.center",
+          "layer": "midgroundFrontLayer",
+          "x": 1280,
+          "y": 1120,
+          "scale": 1,
+          "scaleX": 1,
+          "scaleY": 1,
+          "rotation": 0,
+          "opacity": 1,
+          "visible": true,
+          "properties": {}
+        },
+        {
+          "id": "laptop",
+          "type": "laptop",
+          "slot": "desk.topCenter",
+          "layer": "midgroundFrontLayer",
+          "x": 1280,
+          "y": 1120,
+          "scale": 1,
+          "scaleX": 1,
+          "scaleY": 1,
+          "rotation": 0,
+          "opacity": 1,
+          "visible": true,
+          "properties": {}
+        },
+        {
+          "id": "desk_lamp",
+          "type": "desk-lamp",
+          "slot": "desk.topRight",
+          "layer": "midgroundFrontLayer",
+          "x": 1280,
+          "y": 1120,
+          "scale": 1.15,
+          "scaleX": 1,
+          "scaleY": 1,
+          "rotation": 0,
+          "opacity": 1,
+          "visible": true,
+          "properties": {}
+        }
+      ],
+      "subtitles": [
+        {
+          "id": "sub_3_0",
+          "text": "Đêm muộn, người kỹ sư ngồi sau bàn học cặm cụi gõ máy tính dưới ánh đèn bàn vàng ấm.",
+          "startFrame": 185,
+          "endFrame": 235,
+          "words": []
+        }
+      ],
+      "speechBubbles": [],
+      "keyframes": [],
+      "lines": [],
+      "environmentVfx": [
+        "cloudDrift"
+      ],
+      "lighting": {
+        "preset": "warmNightLamp"
+      },
+      "propAnimations": []
+    }
+  ],
+  "sanitizerAuditLog": []
+}

@@ -15,6 +15,63 @@ export interface CameraRigProps {
   canvasHeight?: number;
 }
 
+export interface ClampedCameraTransform {
+  zoom: number;
+  focalX: number;
+  focalY: number;
+  transformString: string;
+}
+
+/**
+ * Hàm toán học clampCameraTransform khóa cứng không gian thế giới vào viewport 2K:
+ * - Ở mọi mức zoom, mép khung hình không bao giờ bị hở mép ngoài của Background (0 <= left, right <= 2560, 0 <= top, bottom <= 1440).
+ * - Không bao giờ cắt mất phần đầu của nhân vật chính (đỉnh đầu luôn >= 150px trong viewport).
+ */
+export function clampCameraTransform(
+  rawZoom: number,
+  rawFocalX: number,
+  rawFocalY: number,
+  canvasWidth: number = 2560,
+  canvasHeight: number = 1440,
+  characterHeadY?: number
+): ClampedCameraTransform {
+  const centerX = canvasWidth / 2;
+  const centerY = canvasHeight / 2;
+
+  let zoom = Math.max(1.0, rawZoom);
+  let focalX = rawFocalX;
+  let focalY = rawFocalY;
+
+  if (zoom <= 1.001) {
+    zoom = 1.0;
+    focalX = centerX;
+    focalY = centerY;
+  } else {
+    const halfVisibleW = centerX / zoom;
+    const halfVisibleH = centerY / zoom;
+
+    // Kẹp biên trục X: Không hở khoảng trống bên trái hoặc phải canvas
+    focalX = Math.max(halfVisibleW, Math.min(canvasWidth - halfVisibleW, focalX));
+
+    // Kẹp biên trục Y: Không hở trên (y=0) và không lộ đáy sàn dưới (y=1440)
+    const minFocalY = halfVisibleH;
+    const maxFocalY = canvasHeight - halfVisibleH;
+    focalY = Math.max(minFocalY, Math.min(maxFocalY, focalY));
+
+    // Đảm bảo đỉnh đầu nhân vật luôn >= 150px trong viewport
+    if (characterHeadY !== undefined) {
+      const charHeadViewportY = (characterHeadY - focalY) * zoom + centerY;
+      if (charHeadViewportY < 150) {
+        const neededFocalY = characterHeadY - (150 - centerY) / zoom;
+        focalY = Math.max(minFocalY, Math.min(maxFocalY, neededFocalY));
+      }
+    }
+  }
+
+  const transformString = `translate(${centerX}, ${centerY}) scale(${zoom}) translate(${-focalX}, ${-focalY})`;
+  return { zoom, focalX, focalY, transformString };
+}
+
 /**
  * CameraRig: Hệ thống Camera Điện ảnh 2K (Cinematography Camera Engine)
  * 
@@ -43,7 +100,6 @@ export const CameraRig: React.FC<CameraRigProps> = ({
 
   if (camera?.focusSlot) {
     const slotPoint = resolveSemanticSlot(camera.focusSlot, targetPoint);
-    // Nếu slot là vị trí nhân vật (ngồi bàn, sofa hoặc sàn), focus vào phần ngực/khuôn mặt nhân vật thay vì bàn chân
     if (
       camera.focusSlot === "desk.seat" ||
       camera.focusSlot.startsWith("floor.") ||
@@ -60,7 +116,7 @@ export const CameraRig: React.FC<CameraRigProps> = ({
     if (camera.focusTarget === "character" && character && character.visible !== false) {
       targetPoint = {
         x: character.x,
-        y: character.y - 420, // Focus vào ngực/khuôn mặt nhân vật
+        y: character.y - 420,
       };
     } else {
       const foundProp = propsList.find(
@@ -112,45 +168,23 @@ export const CameraRig: React.FC<CameraRigProps> = ({
     currentFocalY = interpolate(progress, [0, 1], [centerY, targetPoint.y]);
   }
 
-  // 3. KẸP BIÊN CAMERA (CLAMP CAMERA BOUNDS - BẢO VỆ TUYỆT ĐỐI KHÔNG LỘ ĐÁY & KHÔNG MẤT ĐẦU)
-  if (currentZoom <= 1.001) {
-    // Khi zoom = 1.0, bắt buộc panX = 0, panY = 0 (tâm cố định chính giữa màn hình)
-    currentFocalX = centerX;
-    currentFocalY = centerY;
-    currentZoom = 1.0;
-  } else {
-    // Bán kính vùng nhìn thấy theo không gian thế giới (World Space)
-    const halfVisibleW = centerX / currentZoom;
-    const halfVisibleY = centerY / currentZoom;
+  // 3. KẸP BIÊN CAMERA BẰNG HÀM TOÁN HỌC CHUẨN
+  const charHeadY =
+    character && character.visible !== false && character.x > -9000
+      ? character.y - 755
+      : undefined;
 
-    // Kẹp biên trục X: Không hở khoảng trống bên trái hoặc phải canvas
-    currentFocalX = Math.max(halfVisibleW, Math.min(canvasWidth - halfVisibleW, currentFocalX));
-
-    // Kẹp biên trục Y:
-    // Cạnh dưới màn hình (y = 1440) tuyệt đối không bao giờ bị kéo cao hơn đáy canvas (không lộ đáy trống dưới sàn)
-    // Cạnh trên không hở quá y = 0
-    const minFocalY = halfVisibleY;
-    const maxFocalY = canvasHeight - halfVisibleY;
-    currentFocalY = Math.max(minFocalY, Math.min(maxFocalY, currentFocalY));
-
-    // Đảm bảo nếu có nhân vật hiển thị trong cảnh, đỉnh đầu nhân vật luôn >= 150px trong viewport
-    if (character && character.visible !== false && character.x > -9000) {
-      const charHeadWorldY = character.y - 755; // Đỉnh đầu nhân vật
-      const charHeadViewportY = (charHeadWorldY - currentFocalY) * currentZoom + centerY;
-      if (charHeadViewportY < 150) {
-        // Đẩy tiêu cự Y lên để đầu nhân vật lùi xuống đạt tối thiểu 150px
-        const neededFocalY = charHeadWorldY - (150 - centerY) / currentZoom;
-        currentFocalY = Math.max(minFocalY, Math.min(maxFocalY, neededFocalY));
-      }
-    }
-  }
-
-  // 4. CÔNG THỨC BIẾN ĐỔI CAMERA (GIỮ TÂM TIÊU ĐIỂM TẠI CHÍNH GIỮA MÀN HÌNH)
-  // Translate to viewport center -> Scale -> Translate back to negative focal point
-  const cameraTransform = `translate(${centerX}, ${centerY}) scale(${currentZoom}) translate(${-currentFocalX}, ${-currentFocalY})`;
+  const clamped = clampCameraTransform(
+    currentZoom,
+    currentFocalX,
+    currentFocalY,
+    canvasWidth,
+    canvasHeight,
+    charHeadY
+  );
 
   return (
-    <g id="camera-rig-viewport" transform={cameraTransform}>
+    <g id="camera-rig-viewport" transform={clamped.transformString}>
       {children}
     </g>
   );

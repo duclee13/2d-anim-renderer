@@ -149,6 +149,22 @@ export const SvgDefsLibrary: React.FC = () => {
         <stop offset="94%" stopColor="#000000" stopOpacity={0.04} />
         <stop offset="100%" stopColor="#000000" stopOpacity={0.08} />
       </radialGradient>
+
+      {/* =========================================================================
+          7. UNIVERSAL OCCLUSION MASKING (CHE CHẮN TOÀN CỤC KHI NGỒI BÀN/QUẦY)
+          Cắt dứt khoát phần hông và chân bên dưới mặt bàn gỗ (y > 980px)
+         ========================================================================= */}
+      <clipPath id="seated-occlusion-mask">
+        <rect x="0" y="0" width="2560" height="980" />
+      </clipPath>
+
+      {/* =========================================================================
+          8. WINDOW GLASS CLIPPING (GIỚI HẠN THỜI TIẾT NGOÀI CỬA SỔ CHO CẢNH INDOOR)
+          Giới hạn mây, mưa, sao đêm bên trong ô kính cửa sổ (x:240, y:160, 560x460)
+         ========================================================================= */}
+      <clipPath id="window-glass-clip">
+        <rect x="240" y="160" width="560" height="460" rx="10" />
+      </clipPath>
     </defs>
   );
 };

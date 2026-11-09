@@ -24,6 +24,8 @@ export const ScriptEditor: React.FC<ScriptEditorProps> = ({
   const [selectedModel, setSelectedModel] = useState("gemini-3.1-flash-lite");
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [pipelineStep, setPipelineStep] = useState<number | null>(null);
+  const [pipelinePercent, setPipelinePercent] = useState<number>(0);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const samplePrompts = [
@@ -46,6 +48,8 @@ Cảnh 4: Buổi tối bình thường, tôi ngồi sau bàn học làm việc d
       abortControllerRef.current = null;
     }
     setIsLoadingGemini(false);
+    setPipelineStep(null);
+    setPipelinePercent(0);
     setStatusMessage("Đã hủy yêu cầu tạo Scene Graph. Kịch bản và phân cảnh trước đó được giữ nguyên.");
   };
 
@@ -55,6 +59,8 @@ Cảnh 4: Buổi tối bình thường, tôi ngồi sau bàn học làm việc d
       return;
     }
     setIsLoadingGemini(true);
+    setPipelineStep(null);
+    setPipelinePercent(0);
     setErrorMessage(null);
     setStatusMessage("Đang sinh Scene Graph qua Procedural Script Engine (không phụ thuộc mạng/AI)...");
     try {
@@ -84,26 +90,69 @@ Cảnh 4: Buổi tối bình thường, tôi ngồi sau bàn học làm việc d
 
     const activeModel = typeof modelOverride === "string" && modelOverride ? modelOverride : selectedModel;
     setIsLoadingGemini(true);
+    setPipelineStep(1);
+    setPipelinePercent(5);
     setErrorMessage(null);
-    setStatusMessage(`Đang kết nối tới ${activeModel} và tính toán Scene Graph 1080p...`);
+    setStatusMessage(`Đang khởi động Multi-Prompt Pipeline (Model: ${activeModel})...`);
 
     abortControllerRef.current = new AbortController();
 
     try {
-      const res = await fetch("/api/gemini", {
+      // 1. Thử gọi qua endpoint Streaming SSE /api/pipeline/generate
+      const res = await fetch("/api/pipeline/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: script, apiKey, model: activeModel }),
         signal: abortControllerRef.current.signal,
       });
 
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || "Không thể sinh Scene Graph");
-      }
+      const contentType = res.headers.get("content-type") || "";
 
-      onSceneGraphGenerated(data.sceneGraph);
-      setStatusMessage(`Đã tạo Scene Graph thành công qua model ${data.modelUsed || activeModel}! Live Preview đã cập nhật.`);
+      if (contentType.includes("text/event-stream")) {
+        const reader = res.body?.getReader();
+        const decoder = new TextDecoder("utf-8");
+        let buffer = "";
+
+        if (reader) {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n\n");
+            buffer = lines.pop() || "";
+
+            for (const line of lines) {
+              const trimmed = line.trim();
+              if (trimmed.startsWith("data: ")) {
+                try {
+                  const event = JSON.parse(trimmed.slice(6));
+                  if (event.type === "progress") {
+                    setPipelineStep(event.step);
+                    setPipelinePercent(event.percent);
+                    setStatusMessage(`[Bước ${event.step}/4] ${event.message}`);
+                  } else if (event.type === "complete") {
+                    setPipelinePercent(100);
+                    onSceneGraphGenerated(event.result.sceneGraph);
+                    setStatusMessage(`Đã tạo Scene Graph thành công qua model ${activeModel}! Live Preview đã cập nhật.`);
+                  } else if (event.type === "error") {
+                    throw new Error(event.error);
+                  }
+                } catch (pe: any) {
+                  if (pe.message && !pe.message.includes("JSON")) throw pe;
+                }
+              }
+            }
+          }
+        }
+      } else {
+        // Fallback: nếu server trả về JSON thông thường
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || "Không thể sinh Scene Graph");
+        }
+        onSceneGraphGenerated(data.sceneGraph);
+        setStatusMessage(`Đã tạo Scene Graph thành công! Live Preview đã cập nhật.`);
+      }
     } catch (err: any) {
       if (err.name === "AbortError") {
         setStatusMessage("Đã hủy yêu cầu. Kịch bản và dữ liệu hiện tại được giữ nguyên.");
@@ -112,6 +161,7 @@ Cảnh 4: Buổi tối bình thường, tôi ngồi sau bàn học làm việc d
       }
     } finally {
       setIsLoadingGemini(false);
+      setPipelineStep(null);
       abortControllerRef.current = null;
     }
   };
@@ -232,10 +282,51 @@ Cảnh 4: Buổi tối bình thường, tôi ngồi sau bàn học làm việc d
       )}
 
       {/* Notice khi kịch bản được thay đổi nhưng chưa bấm Sinh Scene Graph */}
-      {isScriptOutOfSync && !statusMessage && !errorMessage && (
+      {isScriptOutOfSync && !statusMessage && !errorMessage && !isLoadingGemini && (
         <div className="flex items-center space-x-2 rounded-lg bg-amber-950/40 border border-amber-500/30 px-3 py-2 text-xs text-amber-200 animate-pulse">
           <AlertCircle className="h-4 w-4 shrink-0 text-amber-400" />
           <span>Kịch bản vừa được sửa đổi! Bấm <strong>&quot;Sinh Scene Graph&quot;</strong> bên dưới để cập nhật video.</span>
+        </div>
+      )}
+
+      {/* Multi-Prompt Pipeline Stepper Progress */}
+      {isLoadingGemini && (
+        <div className="flex flex-col space-y-2.5 rounded-xl border border-blue-500/30 bg-blue-950/20 p-3.5">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-semibold text-blue-300">
+              {pipelineStep ? `Bước ${pipelineStep}/4: ` : "Đang xử lý: "}
+              {pipelineStep === 1 && "Phân rã nhịp 3-5s & Edge-TTS"}
+              {pipelineStep === 2 && "Thiết kế SVG 400x400 từng Object"}
+              {pipelineStep === 3 && "Đạo diễn chi tiết Micro-Scenes"}
+              {pipelineStep === 4 && "Khóa hình học & Ghép nối Master Graph"}
+              {!pipelineStep && "Khởi động quy trình..."}
+            </span>
+            <span className="font-bold text-blue-400">{pipelinePercent}%</span>
+          </div>
+
+          {/* Progress Track */}
+          <div className="h-2 w-full overflow-hidden rounded-full bg-blue-950/80">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-300"
+              style={{ width: `${Math.max(5, pipelinePercent)}%` }}
+            />
+          </div>
+
+          {/* 4 Step Pills */}
+          <div className="grid grid-cols-4 gap-1.5 pt-1 text-[10px] text-center">
+            <div className={`rounded py-1 px-1 font-medium ${(pipelineStep || 1) >= 1 ? "bg-blue-600/30 text-blue-300 border border-blue-500/40" : "bg-zinc-800/40 text-zinc-500"}`}>
+              1. Cắt nhịp 3-5s
+            </div>
+            <div className={`rounded py-1 px-1 font-medium ${(pipelineStep || 1) >= 2 ? "bg-blue-600/30 text-blue-300 border border-blue-500/40" : "bg-zinc-800/40 text-zinc-500"}`}>
+              2. Vẽ SVG 400x400
+            </div>
+            <div className={`rounded py-1 px-1 font-medium ${(pipelineStep || 1) >= 3 ? "bg-blue-600/30 text-blue-300 border border-blue-500/40" : "bg-zinc-800/40 text-zinc-500"}`}>
+              3. Đạo diễn cảnh
+            </div>
+            <div className={`rounded py-1 px-1 font-medium ${(pipelineStep || 1) >= 4 ? "bg-blue-600/30 text-blue-300 border border-blue-500/40" : "bg-zinc-800/40 text-zinc-500"}`}>
+              4. Ghép 1080p
+            </div>
+          </div>
         </div>
       )}
 
@@ -251,7 +342,7 @@ Cảnh 4: Buổi tối bình thường, tôi ngồi sau bàn học làm việc d
           ) : (
             <Sparkles className="h-4 w-4 text-blue-200" />
           )}
-          <span>{isLoadingGemini ? "Đang xử lý & thử lại tự động..." : "Sinh Scene Graph với Gemini"}</span>
+          <span>{isLoadingGemini ? `Đang tạo qua Pipeline (${pipelinePercent}%)...` : "Sinh Scene Graph với Gemini"}</span>
         </button>
 
         {isLoadingGemini && (

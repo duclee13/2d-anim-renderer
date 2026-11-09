@@ -1,0 +1,95 @@
+{
+  "project": "Stickman Explainer Video",
+  "resolution": "2560x1440",
+  "fps": 60,
+  "scenes": [
+    {
+      "sceneId": 1,
+      "duration": 5,
+      "description": "Kitten playing next to a cardboard box on the living room floor.",
+      "characters": [
+        {
+          "id": "kitten_01",
+          "pose": "standing",
+          "slot": "floor.centerRight",
+          "visible": true
+        }
+      ],
+      "props": [
+        {
+          "id": "cardboard_box",
+          "slot": "floor.centerLeft"
+        }
+      ],
+      "subtitles": "Một chú mèo con nghịch ngợm bên cạnh chiếc hộp giấy đặt trên sàn phòng khách."
+    },
+    {
+      "sceneId": 2,
+      "duration": 4,
+      "description": "Close-up of a glass jar with shiny coins labeled 'Savings'.",
+      "characters": [
+        {
+          "id": "kitten_01",
+          "visible": false
+        }
+      ],
+      "props": [
+        {
+          "id": "glass_jar",
+          "slot": "screen.centerCloseUp",
+          "label": "Tiết Kiệm",
+          "contents": "coins"
+        }
+      ],
+      "subtitles": "Chiếc lọ thủy tinh đựng những đồng xu lấp lánh với nhãn dán Tiết Kiệm."
+    },
+    {
+      "sceneId": 3,
+      "duration": 4,
+      "description": "Financial growth chart illustration with rising indicators.",
+      "characters": [
+        {
+          "id": "kitten_01",
+          "visible": false
+        }
+      ],
+      "props": [
+        {
+          "id": "growth_chart",
+          "slot": "screen.center",
+          "state": "rising"
+        }
+      ],
+      "subtitles": "Biểu đồ tăng trưởng tài chính với các chỉ số đang vươn lên mạnh mẽ."
+    },
+    {
+      "sceneId": 4,
+      "duration": 6,
+      "description": "Engineer working at a desk late at night.",
+      "characters": [
+        {
+          "id": "engineer_01",
+          "pose": "sittingBehindDesk",
+          "slot": "desk.seat",
+          "visible": true
+        }
+      ],
+      "props": [
+        {
+          "id": "desk",
+          "slot": "floor.center"
+        },
+        {
+          "id": "laptop",
+          "slot": "desk.topCenter"
+        },
+        {
+          "id": "desk_lamp",
+          "slot": "desk.topRight",
+          "lightColor": "warmYellow"
+        }
+      ],
+      "subtitles": "Đêm muộn, người kỹ sư ngồi sau bàn học cặm cụi gõ máy tính dưới ánh đèn bàn vàng ấm."
+    }
+  ]
+}

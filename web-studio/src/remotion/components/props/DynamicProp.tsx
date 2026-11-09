@@ -339,27 +339,25 @@ export const DynamicProp: React.FC<DynamicPropProps> = ({
         </g>
       )}
 
-      {/* 2. VẬT THỂ CON BÊN TRONG (VÍ DỤ: CON NHỆN TRONG LỌ THỦY TINH ĐƯỢC CLIP KHỚP LÒNG LỌ) */}
-      {isGlassJar && (
-        <defs>
-          {/* Lòng trong của lọ thủy tinh để cắt gọn gàng chân nhện, tuyệt đối không thò ra ngoài đáy hay thành lọ */}
-          <clipPath id={`jar-inner-clip-${id}`}>
-            <rect
-              x={-130}
-              y={effectiveAnchor === "center" ? -125 : -335}
-              width={260}
-              height={305}
-              rx={28}
-              ry={28}
-            />
-          </clipPath>
-        </defs>
-      )}
+      {/* 2. VẬT THỂ CON BÊN TRONG (ĐƯỢC CLIP KHỚP TRONG LÒNG CONTAINER BẢO TOÀN HÌNH HỌC) */}
+      <defs>
+        {/* Lòng trong của container để cắt gọn vật thể con, tuyệt đối không thò ra ngoài đáy hay thành vật chứa */}
+        <clipPath id={`container-inner-clip-${id}`}>
+          <rect
+            x={-Math.round(width * 0.40)}
+            y={effectiveAnchor === "center" ? -Math.round(height * 0.42) : -Math.round(height * 0.88)}
+            width={Math.round(width * 0.80)}
+            height={Math.round(height * 0.82)}
+            rx={28}
+            ry={28}
+          />
+        </clipPath>
+      </defs>
 
       {children && (
         <g
           id={`prop-children-${id}`}
-          clipPath={isGlassJar ? `url(#jar-inner-clip-${id})` : undefined}
+          clipPath={`url(#container-inner-clip-${id})`}
         >
           <g transform={`translate(0, ${childrenY})`}>
             {children}

@@ -253,9 +253,10 @@ export const EnvironmentVfxLayer: React.FC<EnvironmentVfxLayerProps> = ({
 
       {/* =========================================================================
           5. RAIN LOOP & GROUND SPLASHES (MƯA RƠI CHÉO PARALLAX VÀ GỢN SÓNG NƯỚC)
+          Nếu ở trong phòng indoor: Mưa được giới hạn bên ngoài cửa sổ qua window-glass-clip
          ========================================================================= */}
       {hasRain && (
-        <g id="vfx-rain-loop">
+        <g id="vfx-rain-loop" clipPath={isIndoor ? "url(#window-glass-clip)" : undefined}>
           {/* Các vệt mưa rơi xiên góc -14 độ */}
           <g stroke="#93C5FD" strokeLinecap="round">
             {RAIN_DROPS.map((drop) => {
@@ -276,27 +277,29 @@ export const EnvironmentVfxLayer: React.FC<EnvironmentVfxLayerProps> = ({
             })}
           </g>
 
-          {/* Gợn nước lăn tăn trên mặt sàn (y = floorY) */}
-          <g id="vfx-rain-splashes" stroke="#93C5FD" fill="none">
-            {RAIN_SPLASHES.map((splash) => {
-              const life = (frame + splash.phase) % splash.period;
-              const progress = life / splash.period;
-              const rx = progress * 24;
-              const ry = rx * 0.35;
-              const splashOpacity = (1 - progress) * 0.65;
-              return (
-                <ellipse
-                  key={splash.id}
-                  cx={splash.x}
-                  cy={splash.y}
-                  rx={rx}
-                  ry={ry}
-                  strokeWidth={2}
-                  opacity={splashOpacity}
-                />
-              );
-            })}
-          </g>
+          {/* Gợn nước lăn tăn trên mặt sàn (chỉ ngoài trời, không bao giờ xuất hiện trên sàn phòng khách) */}
+          {!isIndoor && (
+            <g id="vfx-rain-splashes" stroke="#93C5FD" fill="none">
+              {RAIN_SPLASHES.map((splash) => {
+                const life = (frame + splash.phase) % splash.period;
+                const progress = life / splash.period;
+                const rx = progress * 24;
+                const ry = rx * 0.35;
+                const splashOpacity = (1 - progress) * 0.65;
+                return (
+                  <ellipse
+                    key={splash.id}
+                    cx={splash.x}
+                    cy={splash.y}
+                    rx={rx}
+                    ry={ry}
+                    strokeWidth={2}
+                    opacity={splashOpacity}
+                  />
+                );
+              })}
+            </g>
+          )}
         </g>
       )}
     </g>
