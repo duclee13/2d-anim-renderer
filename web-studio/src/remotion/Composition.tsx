@@ -558,37 +558,49 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
 
           {/* LAYER 20: MIDGROUND BACK LAYER (Sofa, Chân sau bàn học) */}
           <g id="layer-midground-back">
-            {currentScene.props
-              .filter((p) => p.layer === "midgroundBackLayer" && p.visible !== false)
-              .map((prop) => {
-                const t = computePropTransform(prop);
-                const opacity = computeEntranceOpacity(prop);
-                const isScreenSlot = Boolean(prop.slot && prop.slot.startsWith("screen."));
-                const isExplicitCenter = prop.anchorPoint === "center" || prop.pivotPoint === "center" || isScreenSlot;
-                const propAnchor = isExplicitCenter ? "center" : "bottomCenter";
-                return (
-                  <g key={prop.id} opacity={opacity}>
-                    <DynamicProp
-                      id={resolvePropAssetId(prop.type)}
-                      x={t.x}
-                      y={t.y}
-                      scale={t.scaleVal}
-                      scaleX={prop.scaleX}
-                      scaleY={prop.scaleY}
-                      rotation={t.rotation}
-                      opacity={prop.opacity}
-                      alphaConfig={prop.alphaConfig}
-                      frame={sceneLocalFrame}
-                      sceneDurationInFrames={currentScene.durationInFrames}
-                      anchorPoint={propAnchor}
-                      pivotPoint={prop.pivotPoint}
-                      pivotX={prop.pivotX}
-                      pivotY={prop.pivotY}
-                      foliageSway={hasFoliageSway}
-                    />
-                  </g>
-                );
-              })}
+            {(() => {
+              const hasJarWithSpider = currentScene.props.some((p) => {
+                const aid = resolvePropAssetId(p.type);
+                return (aid === "glass-jar" || /jar|thuy-tinh|glass/i.test(p.type)) && Boolean(p.properties?.hasSpiderInside);
+              });
+
+              return currentScene.props
+                .filter((p) => {
+                  if (p.visible === false || p.layer !== "midgroundBackLayer") return false;
+                  // Chống trùng lặp prop: nếu đã có lọ chứa nhện bên trong, tự động xóa bỏ instance thừa của con nhện ở ngoài sàn
+                  if (hasJarWithSpider && resolvePropAssetId(p.type) === "spider") return false;
+                  return true;
+                })
+                .map((prop) => {
+                  const t = computePropTransform(prop);
+                  const opacity = computeEntranceOpacity(prop);
+                  const isScreenSlot = Boolean(prop.slot && prop.slot.startsWith("screen."));
+                  const isExplicitCenter = prop.anchorPoint === "center" || prop.pivotPoint === "center" || isScreenSlot;
+                  const propAnchor = isExplicitCenter ? "center" : "bottomCenter";
+                  return (
+                    <g key={prop.id} opacity={opacity}>
+                      <DynamicProp
+                        id={resolvePropAssetId(prop.type)}
+                        x={t.x}
+                        y={t.y}
+                        scale={t.scaleVal}
+                        scaleX={prop.scaleX}
+                        scaleY={prop.scaleY}
+                        rotation={t.rotation}
+                        opacity={prop.opacity}
+                        alphaConfig={prop.alphaConfig}
+                        frame={sceneLocalFrame}
+                        sceneDurationInFrames={currentScene.durationInFrames}
+                        anchorPoint={propAnchor}
+                        pivotPoint={prop.pivotPoint}
+                        pivotX={prop.pivotX}
+                        pivotY={prop.pivotY}
+                        foliageSway={hasFoliageSway}
+                      />
+                    </g>
+                  );
+                });
+            })()}
 
             {isSitting && (
               <DynamicProp
@@ -687,20 +699,31 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
 
           {/* LAYER 40: MIDGROUND FRONT LAYER (Đèn bàn, Lọ thủy tinh trên bàn/sàn) */}
           <g id="layer-midground-front">
-            {currentScene.props
-              .filter((p) => p.layer !== "midgroundBackLayer" && p.visible !== false)
-              .map((prop) => {
-                const t = computePropTransform(prop);
-                const opacity = computeEntranceOpacity(prop);
-                const assetId = resolvePropAssetId(prop.type);
-                const hasSpider = prop.properties?.hasSpiderInside;
-                const propLabel =
-                  prop.properties?.label ||
-                  prop.properties?.labelText ||
-                  prop.properties?.title ||
-                  (prop as any).label;
-                const isScreenSlot = Boolean(prop.slot && prop.slot.startsWith("screen."));
-                const isExplicitCenter = prop.anchorPoint === "center" || prop.pivotPoint === "center" || isScreenSlot;
+            {(() => {
+              const hasJarWithSpider = currentScene.props.some((p) => {
+                const aid = resolvePropAssetId(p.type);
+                return (aid === "glass-jar" || /jar|thuy-tinh|glass/i.test(p.type)) && Boolean(p.properties?.hasSpiderInside);
+              });
+
+              return currentScene.props
+                .filter((p) => {
+                  if (p.visible === false || p.layer === "midgroundBackLayer") return false;
+                  // Chống trùng lặp prop: nếu đã có lọ chứa nhện bên trong, tự động xóa bỏ instance thừa của con nhện ở ngoài sàn
+                  if (hasJarWithSpider && resolvePropAssetId(p.type) === "spider") return false;
+                  return true;
+                })
+                .map((prop) => {
+                  const t = computePropTransform(prop);
+                  const opacity = computeEntranceOpacity(prop);
+                  const assetId = resolvePropAssetId(prop.type);
+                  const hasSpider = prop.properties?.hasSpiderInside;
+                  const propLabel =
+                    prop.properties?.label ||
+                    prop.properties?.labelText ||
+                    prop.properties?.title ||
+                    (prop as any).label;
+                  const isScreenSlot = Boolean(prop.slot && prop.slot.startsWith("screen."));
+                  const isExplicitCenter = prop.anchorPoint === "center" || prop.pivotPoint === "center" || isScreenSlot;
                 const propAnchor = isExplicitCenter ? "center" : "bottomCenter";
 
                 return (
@@ -750,7 +773,8 @@ export const MainScene: React.FC<MainCompositionProps> = (props) => {
                     </g>
                   </g>
                 );
-              })}
+              });
+            })()}
           </g>
 
           {/* LAYER 45: CHARACTER UPPER LAYER (CHỈ VẼ KHI ĐỨNG, TUYỆT ĐỐI KHÔNG VẼ KHI NGỒI SAU BÀN ĐỂ KHÔNG ĐÈ LÊN MẶT BÀN) */}

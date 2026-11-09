@@ -424,7 +424,9 @@ export function sanitizeSceneGraph(
       ];
     }
 
-    // 6. Chuẩn hóa đạo cụ Props (BẢO TOÀN x=0, y=0, scale tùy chỉnh, visible, containment)
+    // 6. Chuẩn hóa hiệu ứng môi trường & đạo cụ Props (BẢO TOÀN x=0, y=0, scale tùy chỉnh, visible, containment)
+    let envVfx: EnvironmentVfxType[] = Array.isArray(s?.environmentVfx) ? [...s.environmentVfx] : [];
+
     const rawPropsList = Array.isArray(s?.props)
       ? s.props
       : Array.isArray(s?.assets)
@@ -497,9 +499,54 @@ export function sanitizeSceneGraph(
           }
         }
 
-        // BẢO VỆ CHỐNG DUPLICATE SPIDER TRONG CÙNG VẬT CHỨA:
-        // Tuyệt đối KHÔNG tự ý xóa nhện ngoài lọ nếu đó là một đối tượng riêng biệt (khác slot, khác vị trí).
-        // Chỉ bỏ qua nếu prop nhện này được đánh dấu rõ ràng là trùng lặp của con nhện nằm bên trong lọ.
+        // 1. CHUYỂN ĐỔI HIỆU ỨNG THỜI TIẾT KHAI BÁO NHẦM THÀNH PROP (WIND, BREEZE, RAIN, SUNBEAMS)
+        // Tuyệt đối không render thành prop hộp chữ trên sàn, mà bổ sung vào environmentVfx
+        if (
+          /^(?:wind|breeze|lan-gio|con-gio|gio-thoang|wind-breeze|windbreeze)$/i.test(canonicalType) ||
+          /^(?:wind|breeze|gio)$/i.test(rawTypeStr) ||
+          /wind|breeze/i.test(rawIdStr)
+        ) {
+          if (!envVfx.includes("windBreeze")) envVfx.push("windBreeze");
+          return null;
+        }
+        if (
+          /^(?:rain|mua|rain-loop|rainloop)$/i.test(canonicalType) ||
+          /^(?:rain|mua)$/i.test(rawTypeStr)
+        ) {
+          if (!envVfx.includes("rainLoop")) envVfx.push("rainLoop");
+          return null;
+        }
+        if (/^(?:sunbeams|tia-nang|sun-rays|godrays)$/i.test(canonicalType)) {
+          if (!envVfx.includes("sunbeams")) envVfx.push("sunbeams");
+          return null;
+        }
+        if (/^(?:clouds?|may-troi|cloud-drift|clouddrift)$/i.test(canonicalType)) {
+          if (!envVfx.includes("cloudDrift")) envVfx.push("cloudDrift");
+          return null;
+        }
+
+        // 2. TẤT CẢ BIẾN THỂ BIỂU ĐỒ, ĐỒNG HỒ ĐO TỐC ĐỘ / TRAO ĐỔI CHẤT -> GAUGE-METER HOÀN CHỈNH
+        if (
+          /speed|meter|gauge|metabol|trao-doi-chat|dong-ho-do/i.test(canonicalType) ||
+          /speed|meter|gauge|metabol|trao-doi/i.test(rawTypeStr) ||
+          /speed|meter|gauge|trao_doi/i.test(rawIdStr) ||
+          (isDiagramScene && (canonicalType === "chart" || canonicalType === "unknown-prop" || canonicalType === "prop"))
+        ) {
+          canonicalType = "gauge-meter";
+        }
+
+        // 3. TẤT CẢ BIẾN THỂ MŨI TÊN CHỈ DẪN -> ARROW-INDICATOR
+        if (
+          /pointer|arrow|mui-ten|chi-dan/i.test(canonicalType) ||
+          /pointer|arrow/i.test(rawTypeStr) ||
+          /pointer|arrow/i.test(rawIdStr)
+        ) {
+          canonicalType = "arrow-indicator";
+        }
+
+        // 4. BẢO VỆ CHỐNG DUPLICATE SPIDER TRONG CÙNG VẬT CHỨA:
+        // Khi một sinh vật/đạo cụ (như con nhện spider) đã được xếp nằm BÊN TRONG vật chứa (glass-jar có hasSpiderInside: true),
+        // hệ thống phải TỰ ĐỘNG XÓA BỎ instance thừa của con nhện đó ở bên ngoài sàn nhà!
         const jarProp = rawProps.find(
           (other: any) =>
             other !== p &&
@@ -508,15 +555,7 @@ export function sanitizeSceneGraph(
         );
 
         if (canonicalType === "spider" && jarProp) {
-          const isExplicitSpiderInsideJar =
-            p?.properties?.insideJar === true ||
-            p?.slot === jarProp.slot ||
-            /inside_jar|in_jar|spider_in_glass/i.test(rawIdStr);
-
-          if (isExplicitSpiderInsideJar) {
-            return null; // Trùng lặp chính con nhện đã được vẽ bên trong lòng lọ
-          }
-          // Nếu là con nhện độc lập ở slot khác (ví dụ: đang bò trên sàn, trên tường): GIỮ NGUYÊN!
+          return null; // Tự động xóa bỏ instance thừa của con nhện ở ngoài sàn nhà!
         }
 
         // Loại bỏ nội thất trong nhà khi ở cảnh ngoài trời gardenDay
@@ -606,7 +645,6 @@ export function sanitizeSceneGraph(
       .filter(Boolean) as PropItem[];
 
     // 7. Environment VFX & Lighting
-    let envVfx: EnvironmentVfxType[] = Array.isArray(s?.environmentVfx) ? [...s.environmentVfx] : [];
     const isNight = preset === "livingRoomNight" || preset === "nightSky";
     if (preset === "gardenDay" || preset === "beachSunny") {
       if (!envVfx.includes("cloudDrift")) envVfx.push("cloudDrift");

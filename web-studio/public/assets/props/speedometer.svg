@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-260 -240 520 280" width="520" height="280">
+  <g stroke="#141414" stroke-width="10" stroke-linejoin="round">
+    <!-- Green Arc -->
+    <path d="M -220 0 A 220 220 0 0 1 -126 -180 L -80 -115 A 140 140 0 0 0 -140 0 Z" fill="#34A853" />
+    <!-- Yellow Arc -->
+    <path d="M -126 -180 A 220 220 0 0 1 126 -180 L 80 -115 A 140 140 0 0 0 -80 -115 Z" fill="#FBBC05" />
+    <!-- Red Arc -->
+    <path d="M 126 -180 A 220 220 0 0 1 220 0 L 140 0 A 140 140 0 0 0 80 -115 Z" fill="#EA4335" />
+    <!-- Baseline -->
+    <line x1="-250" y1="0" x2="250" y2="0" stroke="#141414" stroke-width="10" stroke-linecap="round" />
+  </g>
+  <!-- Needle (Pivots at 0, 0 pointing towards ~35%) -->
+  <g transform="rotate(-35, 0, 0)">
+    <polygon points="-4,0 0,-185 4,0" fill="#141414" />
+  </g>
+  <!-- Center Pin -->
+  <circle cx="0" cy="0" r="16" fill="#141414" />
+  <circle cx="0" cy="0" r="5" fill="#FFFFFF" />
+</svg>

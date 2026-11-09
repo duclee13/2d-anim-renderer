@@ -1,0 +1,37 @@
+<svg viewBox="0 0 400 400" width="400" height="400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bodyGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#333;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#555;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#333;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="capGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#e63946;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#d62828;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#e63946;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Layer 1: Ground contact shadow -->
+  <ellipse cx="200" cy="380" rx="60" ry="10" fill="#000000" opacity="0.25"/>
+
+  <!-- Layer 2: Main Body -->
+  <rect x="175" y="150" width="50" height="230" rx="10" fill="url(#bodyGrad)" stroke="#1A1A1A" stroke-width="8"/>
+  
+  <!-- Layer 3: Marker Cap -->
+  <rect x="170" y="80" width="60" height="70" rx="8" fill="url(#capGrad)" stroke="#1A1A1A" stroke-width="8"/>
+  
+  <!-- Layer 4: Ambient Occlusion & 3D curves -->
+  <path d="M 180 150 L 180 380" stroke="#000" stroke-opacity="0.2" stroke-width="5" fill="none"/>
+  <rect x="170" y="80" width="60" height="20" fill="#000" opacity="0.15"/>
+
+  <!-- Layer 5: Specular Highlights -->
+  <rect x="185" y="90" width="10" height="50" fill="#fff" opacity="0.3" rx="5"/>
+  <rect x="185" y="160" width="15" height="200" fill="#fff" opacity="0.2" rx="5"/>
+
+  <!-- Layer 6: Tip -->
+  <path d="M 190 80 L 210 80 L 205 60 L 195 60 Z" fill="#1A1A1A" stroke="#1A1A1A" stroke-width="5" stroke-linejoin="round"/>
+  
+  <!-- Layer 7: Clip -->
+  <path d="M 215 85 L 215 120 C 215 125 225 125 225 120 L 225 90" fill="none" stroke="#1A1A1A" stroke-width="6" stroke-linecap="round"/>
+</svg>

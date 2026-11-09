@@ -1,0 +1,37 @@
+<svg viewBox="0 0 400 400" width="400" height="400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="chartBodyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#FDFDFD;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#E8E8E8;stop-opacity:1"/>
+    </linearGradient>
+    <linearGradient id="graphLineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#FF5E5E;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#FF9D5E;stop-opacity:1"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Layer 1: Ground contact shadow -->
+  <ellipse cx="200" cy="380" rx="90" ry="12" fill="#000000" opacity="0.15"/>
+
+  <!-- Layer 2: Main Body -->
+  <rect x="110" y="120" width="180" height="260" rx="15" ry="15" fill="url(#chartBodyGrad)" stroke="#1A1A1A" stroke-width="10"/>
+
+  <!-- Layer 3: Ambient Occlusion (Internal frame shadow) -->
+  <rect x="130" y="140" width="140" height="220" rx="5" ry="5" fill="#D1D1D1" opacity="0.4"/>
+
+  <!-- Layer 4: Chart Details (Grid lines) -->
+  <path d="M130 180 h140 M130 220 h140 M130 260 h140 M130 300 h140" stroke="#B0B0B0" stroke-width="2" fill="none"/>
+  
+  <!-- Layer 5: Metabolism Trend Line -->
+  <path d="M130 320 C 160 310, 200 180, 270 160" fill="none" stroke="url(#graphLineGrad)" stroke-width="8" stroke-linecap="round"/>
+
+  <!-- Layer 6: Specular Highlights -->
+  <path d="M125 125 h150 v20 a 10 10 0 0 0 -10 -10 h-140 z" fill="#FFFFFF" opacity="0.3"/>
+  
+  <!-- Layer 7: Frame Detail (Bolt) -->
+  <circle cx="120" cy="130" r="4" fill="#1A1A1A"/>
+  <circle cx="280" cy="130" r="4" fill="#1A1A1A"/>
+  <circle cx="120" cy="370" r="4" fill="#1A1A1A"/>
+  <circle cx="280" cy="370" r="4" fill="#1A1A1A"/>
+
+</svg>

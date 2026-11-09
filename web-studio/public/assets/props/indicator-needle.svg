@@ -1,0 +1,31 @@
+<svg viewBox="0 0 400 400" width="400" height="400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="needleGrad" cx="200" cy="380" r="280" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FF4D4D"/>
+      <stop offset="100%" stop-color="#CC0000"/>
+    </radialGradient>
+    <linearGradient id="shine" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Layer 1: Ground contact shadow -->
+  <ellipse cx="200" cy="380" rx="60" ry="8" fill="#000000" opacity="0.2"/>
+
+  <!-- Layer 2: Main needle body -->
+  <path d="M185 380 L185 120 L200 80 L215 120 L215 380 Z" fill="url(#needleGrad)" stroke="#1A1A1A" stroke-width="10" stroke-linejoin="round"/>
+
+  <!-- Layer 3: Ambient occlusion (darker edges) -->
+  <path d="M190 380 L190 130 L200 100 L200 380 Z" fill="#000000" opacity="0.15"/>
+
+  <!-- Layer 4: Specular highlight -->
+  <path d="M205 120 L205 380 L212 380 L212 120 Z" fill="url(#shine)" />
+
+  <!-- Layer 5: Accent details (pivot point) -->
+  <circle cx="200" cy="380" r="25" fill="#333333" stroke="#1A1A1A" stroke-width="8"/>
+  <circle cx="200" cy="380" r="10" fill="#FFD700" stroke="#1A1A1A" stroke-width="4"/>
+
+  <!-- Layer 6: Decorative notch -->
+  <path d="M195 250 L205 250 M195 280 L205 280 M195 310 L205 310" stroke="#1A1A1A" stroke-width="3" stroke-linecap="round"/>
+</svg>

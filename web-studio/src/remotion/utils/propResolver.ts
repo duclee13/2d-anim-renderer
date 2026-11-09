@@ -13,12 +13,14 @@
 export const CANONICAL_PROP_IDS = [
   "alarm-clock",
   "apple",
+  "arrow-indicator",
   "balloon",
   "book",
   "bush",
   "car",
   "cat",
   "chair",
+  "chart",
   "clock",
   "coffee-cup",
   "cup",
@@ -32,6 +34,7 @@ export const CANONICAL_PROP_IDS = [
   "glass-jar",
   "guitar",
   "heart",
+  "label-sticker",
   "laptop",
   "phone",
   "pizza",
@@ -44,6 +47,7 @@ export const CANONICAL_PROP_IDS = [
   "trophy",
   "tv",
   "whiteboard",
+  "window",
 ] as const;
 
 export type CanonicalPropId = (typeof CANONICAL_PROP_IDS)[number];
@@ -194,15 +198,48 @@ const EXACT_PROP_ALIASES: Record<string, CanonicalPropId> = {
   "den-ban-hoc": "desk-lamp",
   "reading-lamp": "desk-lamp",
 
-  // 11. Đồng hồ đo chỉ số (Gauge Meter)
+  // 11. Đồng hồ đo chỉ số (Gauge Meter) - Mọi biến thể tốc độ / trao đổi chất
   "gauge-meter": "gauge-meter",
   "gaugemeter": "gauge-meter",
   "gauge": "gauge-meter",
   "infographic-meter": "gauge-meter",
   "dong-ho-do": "gauge-meter",
+  "dong-ho-toc-do": "gauge-meter",
+  "dong-ho-do-toc-do": "gauge-meter",
+  "dong-ho-trao-doi-chat": "gauge-meter",
   "trao-doi-chat": "gauge-meter",
   "speedometer": "gauge-meter",
+  "speed-meter": "gauge-meter",
+  "speedmeter": "gauge-meter",
+  "speed-gauge": "gauge-meter",
+  "speed": "gauge-meter",
   "meter": "gauge-meter",
+  "metabolic-chart": "gauge-meter",
+  "metabolism-chart": "gauge-meter",
+  "metabolism": "gauge-meter",
+  "metabolic": "gauge-meter",
+  "bieu-do-trao-doi-chat": "gauge-meter",
+  "chi-so-trao-doi-chat": "gauge-meter",
+
+  // Mũi tên chỉ dẫn (Arrow Indicator)
+  "arrow": "arrow-indicator",
+  "pointer": "arrow-indicator",
+  "pointer-arrow": "arrow-indicator",
+  "arrow-pointer": "arrow-indicator",
+  "pointer-indicator": "arrow-indicator",
+  "arrow-indicator": "arrow-indicator",
+  "indicator-needle": "arrow-indicator",
+  "mui-ten": "arrow-indicator",
+  "chi-dan": "arrow-indicator",
+  "kim-chi": "arrow-indicator",
+
+  // Nhãn dán (Label Sticker)
+  "label": "label-sticker",
+  "sticker": "label-sticker",
+  "label-sticker": "label-sticker",
+  "nhan-dan": "label-sticker",
+  "nhan-tam": "label-sticker",
+  "name-tag": "label-sticker",
 
   // 12. Ghế sofa & Ghế đơn
   "sofa": "sofa",
@@ -320,8 +357,12 @@ const TOKEN_BOUNDARIES: Array<{ regex: RegExp; canonicalId: CanonicalPropId }> =
   { regex: /(?:^|-)(?:spider|nhen|con-nhen|tam)(?:-|$)/i, canonicalId: "spider" },
   // Đèn bàn
   { regex: /(?:^|-)(?:desk-lamp|den-ban|den-hoc)(?:-|$)/i, canonicalId: "desk-lamp" },
-  // Đồng hồ đo
-  { regex: /(?:^|-)(?:gauge-meter|gauge|dong-ho-do|trao-doi-chat)(?:-|$)/i, canonicalId: "gauge-meter" },
+  // Đồng hồ đo / Tốc độ / Trao đổi chất (Tất cả quy về gauge-meter chuẩn)
+  { regex: /(?:^|-)(?:gauge-meter|gauge|speed-meter|speedometer|speedmeter|speed-gauge|dong-ho-do|trao-doi-chat|metabolic|metabolism)(?:-|$)/i, canonicalId: "gauge-meter" },
+  // Mũi tên / Chỉ dẫn
+  { regex: /(?:^|-)(?:arrow-indicator|arrow|pointer-arrow|pointer|mui-ten|chi-dan)(?:-|$)/i, canonicalId: "arrow-indicator" },
+  // Nhãn dán
+  { regex: /(?:^|-)(?:label-sticker|label|sticker|nhan-dan)(?:-|$)/i, canonicalId: "label-sticker" },
   // Đồng hồ báo thức
   { regex: /(?:^|-)(?:alarm-clock|dong-ho-bao-thuc)(?:-|$)/i, canonicalId: "alarm-clock" },
   // Đồng hồ

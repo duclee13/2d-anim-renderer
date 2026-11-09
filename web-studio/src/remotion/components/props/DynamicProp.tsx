@@ -4,6 +4,7 @@ import { Point2D, PropAnchorPorts } from "../../types/character";
 import { computeAutoAnchorPorts, extractSvgDimensions, SvgDimensionInfo } from "../../lib/autoAnchoring";
 import { AlphaConfig } from "../../types/sceneGraph";
 import { normalizePropAssetId } from "../../utils/propResolver";
+import { GaugeMeter } from "./GaugeMeter";
 
 export interface DynamicPropProps {
   id: string; // Tên file trong public/assets/props/${id}.svg
@@ -39,6 +40,12 @@ const KNOWN_PROP_DIMENSIONS: Record<string, SvgDimensionInfo> = {
   "desk-front": { width: 1100, height: 400 },
   "desk-back": { width: 1100, height: 400 },
   "gauge-meter": { width: 520, height: 280 },
+  "arrow-indicator": { width: 400, height: 400 },
+  "label-sticker": { width: 300, height: 160 },
+  "metabolic-chart": { width: 400, height: 400 },
+  "metabolism-chart": { width: 400, height: 400 },
+  "chart": { width: 400, height: 400 },
+  "window": { width: 560, height: 460 },
   "desk-lamp": { width: 390, height: 300 },
   "potted-plant": { width: 280, height: 350 },
   "laptop": { width: 340, height: 260 },
@@ -280,9 +287,17 @@ export const DynamicProp: React.FC<DynamicPropProps> = ({
       opacity={Math.max(0, Math.min(1, effectiveOpacity))}
       data-prop-id={id}
     >
-      {/* 1. NẠP HÌNH ẢNH SVG ĐỘNG */}
+      {/* 1. NẠP HÌNH ẢNH SVG ĐỘNG HOẶC COMPONENT TỰ THÂN */}
       <g id={`artwork-container-${id}`}>
-        {!hasLoadError ? (
+        {isGauge ? (
+          <GaugeMeter
+            x={0}
+            y={needleCenterY}
+            scale={1}
+            needleAngle={needleAngle !== undefined ? needleAngle : -35}
+            label={label || "TRAO ĐỔI CHẤT: THẤP"}
+          />
+        ) : !hasLoadError ? (
           <image
             href={assetUrl}
             xlinkHref={assetUrl}
@@ -293,45 +308,11 @@ export const DynamicProp: React.FC<DynamicPropProps> = ({
             preserveAspectRatio="xMidYMid meet"
             onError={() => setHasLoadError(true)}
           />
-        ) : (
-          <g id={`fallback-badge-${id}`}>
-            <rect
-              x={-width / 2}
-              y={effectiveAnchor === "center" ? -height / 2 : -height}
-              width={width}
-              height={height}
-              rx={24}
-              fill="#F3F4F6"
-              stroke="#141414"
-              strokeWidth={8}
-            />
-            <rect
-              x={-width / 2 + 16}
-              y={(effectiveAnchor === "center" ? -height / 2 : -height) + 16}
-              width={width - 32}
-              height={height - 32}
-              rx={16}
-              fill="#E0E7FF"
-              stroke="#6366F1"
-              strokeWidth={4}
-            />
-            <text
-              x={0}
-              y={effectiveAnchor === "center" ? 10 : -height / 2 + 10}
-              textAnchor="middle"
-              fill="#141414"
-              fontSize={24}
-              fontWeight="900"
-              fontFamily="var(--font-be-vietnam-pro), sans-serif"
-            >
-              {id.replace(/[-_]/g, " ").toUpperCase()}
-            </text>
-          </g>
-        )}
+        ) : null}
       </g>
 
-      {/* 1.5. KIM ĐỒNG HỒ ĐỘNG QUAY QUANH TRỤC (NẾU LÀ GAUGE-METER VÀ CÓ KIM XOAY) */}
-      {isGauge && needleAngle !== undefined && (
+      {/* 1.5. KIM ĐỒNG HỒ ĐỘNG QUAY QUANH TRỤC (NẾU KHÔNG PHẢI GAUGE-METER VÀ CÓ KIM XOAY) */}
+      {!isGauge && needleAngle !== undefined && (
         <g transform={`translate(0, ${needleCenterY}) rotate(${needleAngle}, 0, 0)`}>
           <polygon points="-5,0 0,-185 5,0" fill="#141414" />
           <circle cx={0} cy={0} r={16} fill="#141414" />
@@ -365,8 +346,8 @@ export const DynamicProp: React.FC<DynamicPropProps> = ({
         </g>
       )}
 
-      {/* 3. TỰ ĐỘNG GẮN NHÃN DÁN */}
-      {label && !showPointerCallout && (
+      {/* 3. TỰ ĐỘNG GẮN NHÃN DÁN (CHO CÁC ĐẠO CỤ KHÔNG PHẢI GAUGE-METER VÌ GAUGE-METER ĐÃ CÓ NHÃN RIÊNG) */}
+      {label && !isGauge && !showPointerCallout && (
         <g id={`prop-label-decal-${id}`} transform={`translate(0, ${labelY})`}>
           <rect
             x={-labelBoxWidth / 2}
